@@ -20,6 +20,7 @@ export function ReservaForm({ servicios, barberos }: { servicios: Servicio[], ba
   const [isLoadingHorarios, setIsLoadingHorarios] = useState(false)
   const [errorMsg, setErrorMsg] = useState('')
 
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (step === 3 && fecha && barberoSeleccionado && servicioSeleccionado) {
       setHoraSeleccionada('')
@@ -30,6 +31,7 @@ export function ReservaForm({ servicios, barberos }: { servicios: Servicio[], ba
         .finally(() => setIsLoadingHorarios(false))
     }
   }, [fecha, barberoSeleccionado, servicioSeleccionado, step])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const today = new Date().toISOString().split('T')[0]
   const maxDate = new Date()

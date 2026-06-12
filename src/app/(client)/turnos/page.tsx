@@ -58,7 +58,11 @@ export default async function TurnosPage({ searchParams }: { searchParams: Searc
           </div>
         ) : (
           turnos.map((turno) => (
-            <TurnoCard key={turno.id} turno={turno as { id: string; fecha: string; hora: string; estado: string; barberos: { nombre: string; apellido: string }; servicios: { nombre: string; duracion_minutos: number; precio: number } }} />
+            <TurnoCard key={turno.id} turno={{
+              ...turno,
+              barberos: Array.isArray(turno.barberos) ? turno.barberos[0] ?? { nombre: '', apellido: '' } : turno.barberos,
+              servicios: Array.isArray(turno.servicios) ? turno.servicios[0] ?? { nombre: '', duracion_minutos: 0, precio: 0 } : turno.servicios,
+            } as { id: string; fecha: string; hora: string; estado: string; barberos: { nombre: string; apellido: string }; servicios: { nombre: string; duracion_minutos: number; precio: number } }} />
           ))
         )}
       </div>

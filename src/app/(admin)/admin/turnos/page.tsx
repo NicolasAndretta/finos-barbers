@@ -36,9 +36,11 @@ export default function AdminTurnosPage() {
     }
   }, [filtroEstado, filtroFecha])
 
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     loadTurnos()
   }, [loadTurnos])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const handleConfirmar = (turnoId: string) => {
     startTransition(async () => {

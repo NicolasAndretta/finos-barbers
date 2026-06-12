@@ -87,9 +87,9 @@ export async function adminConfirmarTurno(turnoId: string) {
 
   const [year, month, day] = turno.fecha.split('-')
   const fechaLegible = `${day}/${month}/${year}`
-  const cliente = turno.profiles as { nombre: string; apellido: string; email: string }
-  const barbero = turno.barberos as { nombre: string; apellido: string }
-  const servicio = turno.servicios as { nombre: string }
+  const cliente = (Array.isArray(turno.profiles) ? turno.profiles[0] : turno.profiles) as { nombre: string; apellido: string; email: string }
+  const barbero = (Array.isArray(turno.barberos) ? turno.barberos[0] : turno.barberos) as { nombre: string; apellido: string }
+  const servicio = (Array.isArray(turno.servicios) ? turno.servicios[0] : turno.servicios) as { nombre: string }
 
   await sendConfirmacionTurno({
     nombreCliente: `${cliente.nombre} ${cliente.apellido}`,
@@ -132,9 +132,9 @@ export async function adminCancelarTurno(turnoId: string) {
 
   const [year, month, day] = turno.fecha.split('-')
   const fechaLegible = `${day}/${month}/${year}`
-  const cliente = turno.profiles as { nombre: string; apellido: string; email: string }
-  const barbero = turno.barberos as { nombre: string; apellido: string }
-  const servicio = turno.servicios as { nombre: string }
+  const cliente = (Array.isArray(turno.profiles) ? turno.profiles[0] : turno.profiles) as { nombre: string; apellido: string; email: string }
+  const barbero = (Array.isArray(turno.barberos) ? turno.barberos[0] : turno.barberos) as { nombre: string; apellido: string }
+  const servicio = (Array.isArray(turno.servicios) ? turno.servicios[0] : turno.servicios) as { nombre: string }
 
   await sendCancelacionTurno({
     nombreCliente: `${cliente.nombre} ${cliente.apellido}`,

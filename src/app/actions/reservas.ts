@@ -72,9 +72,10 @@ export async function getHorariosDisponibles(barberoId: string, fecha: string, s
   if (tErr) throw new Error(tErr.message)
 
   // Parsear turnos ocupados: { inicio: 'HH:mm', fin: 'HH:mm' }
-  const ocupados = (turnos || []).map((t: { hora: string; servicios: { duracion_minutos: number } }) => {
+  const ocupados = (turnos || []).map((t: { hora: string; servicios: { duracion_minutos: number }[] }) => {
     const inicio = formatHora(t.hora)
-    const fin = addMinutesToTime(inicio, t.servicios.duracion_minutos)
+    const servicio = Array.isArray(t.servicios) ? t.servicios[0] : t.servicios
+    const fin = addMinutesToTime(inicio, servicio.duracion_minutos)
     return { inicio, fin }
   })
 
@@ -247,8 +248,8 @@ export async function cancelarTurno(turnoId: string) {
   
   // El tipado que retorna Supabase de los joins es un array o un objeto único según si es 1:1.
   // Barberos y servicios son tablas relacionadas donde el turno tiene las FK, así que es objeto único.
-  const barbero = turno.barberos as { nombre: string; apellido: string }
-  const servicio = turno.servicios as { nombre: string }
+  const barbero = (Array.isArray(turno.barberos) ? turno.barberos[0] : turno.barberos) as { nombre: string; apellido: string }
+  const servicio = (Array.isArray(turno.servicios) ? turno.servicios[0] : turno.servicios) as { nombre: string }
 
   await sendCancelacionTurno({
     nombreCliente: `${profile.nombre} ${profile.apellido}`,
