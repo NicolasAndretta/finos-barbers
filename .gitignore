@@ -44,7 +44,11 @@ next-env.d.ts
 # Herramientas y configuracion local
 .agents/
 .claude/
+.antigravity/
 skills-lock.json
+
+# Local media (fotos/videos de referencia, no parte del repo)
+public/images/local/
 CONTEXTO-PARA-CONTINUAR.md
 *-checkpoint.md
 *-session*.md
