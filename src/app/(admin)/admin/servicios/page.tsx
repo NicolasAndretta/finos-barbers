@@ -32,6 +32,7 @@ export default function AdminServiciosPage() {
     precio: '',
     duracion_minutos: '',
   })
+  const [errorMsg, setErrorMsg] = useState('')
 
   const resetForm = useCallback(() => {
     setFormData({
@@ -41,6 +42,7 @@ export default function AdminServiciosPage() {
       duracion_minutos: '',
     })
     setEditingServicio(null)
+    setErrorMsg('')
   }, [])
 
   const loadServicios = useCallback(async () => {
@@ -75,7 +77,7 @@ export default function AdminServiciosPage() {
         fd.append('id', editingServicio.id)
         const res = await adminActualizarServicio(fd)
         if (res.error) {
-          alert(res.error)
+          setErrorMsg(res.error)
         } else {
           await loadServicios()
           setShowForm(false)
@@ -85,7 +87,7 @@ export default function AdminServiciosPage() {
       } else {
         const res = await adminCrearServicio(fd)
         if (res.error) {
-          alert(res.error)
+          setErrorMsg(res.error)
         } else {
           await loadServicios()
           setShowForm(false)
@@ -140,7 +142,7 @@ export default function AdminServiciosPage() {
             setShowForm(true)
             resetForm()
           }}
-          className="bg-amber-500 hover:bg-amber-600 text-black text-sm font-bold px-5 py-2.5 rounded-lg transition-colors cursor-pointer"
+          className="bg-amber-500 hover:bg-amber-400 text-black text-sm font-bold px-5 py-2.5 rounded-lg transition-colors cursor-pointer"
         >
           + Nuevo Servicio
         </button>
@@ -151,6 +153,12 @@ export default function AdminServiciosPage() {
           <h2 className="text-xl font-bold text-white mb-4">
             {editingServicio ? 'Editar Servicio' : 'Nuevo Servicio'}
           </h2>
+
+          {errorMsg && (
+            <p className="text-red-400 text-sm bg-red-500/10 border border-red-500/20 rounded-lg px-4 py-2.5 mb-4">
+              {errorMsg}
+            </p>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
@@ -230,7 +238,7 @@ export default function AdminServiciosPage() {
               <button
                 type="submit"
                 disabled={isPending}
-                className="flex-1 sm:flex-none bg-amber-500 hover:bg-amber-600 disabled:bg-amber-500/50 text-black text-sm font-bold px-6 py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                className="flex-1 sm:flex-none bg-amber-500 hover:bg-amber-400 disabled:bg-amber-500/50 text-black text-sm font-bold px-6 py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2 cursor-pointer"
               >
                 {isPending && <Spinner className="w-4 h-4 text-black" />}
                 {editingServicio ? 'Actualizar' : 'Crear'}

@@ -12,7 +12,7 @@ export default async function ClientDashboardPage() {
           Bienvenido, <span className="text-zinc-300">{profile.nombre}</span>!
         </h1>
         <p className="text-zinc-400 mt-3 text-base leading-relaxed">
-          Desde aqui podes gestionar tus reservas en Finos Barbers.
+          Desde aquí podés gestionar tus reservas en Finos Barbers.
         </p>
       </div>
 
@@ -24,7 +24,7 @@ export default async function ClientDashboardPage() {
             </svg>
           </div>
           <h2 className="text-2xl font-bold text-white mb-2">Reservar Turno</h2>
-          <p className="text-zinc-400 text-sm leading-relaxed max-w-[85%]">Elegi el servicio, el barbero y la hora para tu proxima visita.</p>
+          <p className="text-zinc-400 text-sm leading-relaxed max-w-[85%]">Elegí el servicio, el barbero y la hora para tu próxima visita.</p>
           <div className="mt-6 flex items-center text-sm font-bold text-zinc-300 gap-2">
             <span>Comenzar reserva</span>
             <svg className="w-4 h-4 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -40,7 +40,7 @@ export default async function ClientDashboardPage() {
             </svg>
           </div>
           <h2 className="text-2xl font-bold text-white mb-2">Mis Turnos</h2>
-          <p className="text-zinc-400 text-sm leading-relaxed max-w-[85%]">Revisa tus turnos agendados, pendientes o cancelados.</p>
+          <p className="text-zinc-400 text-sm leading-relaxed max-w-[85%]">Revisá tus turnos agendados, pendientes o cancelados.</p>
           <div className="mt-6 flex items-center text-sm font-bold text-zinc-300 gap-2">
             <span>Ver mis turnos</span>
             <svg className="w-4 h-4 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -51,7 +51,7 @@ export default async function ClientDashboardPage() {
       </div>
 
       <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-8 shadow-xl">
-        <h2 className="text-xl font-bold text-white mb-6">Informacion de la Cuenta</h2>
+        <h2 className="text-xl font-bold text-white mb-6">Información de la Cuenta</h2>
         <dl className="grid sm:grid-cols-2 gap-6 text-sm">
           <div>
             <dt className="text-zinc-500 font-medium">Nombre Completo</dt>

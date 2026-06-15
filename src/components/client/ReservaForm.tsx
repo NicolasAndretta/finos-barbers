@@ -33,10 +33,10 @@ export function ReservaForm({ servicios, barberos }: { servicios: Servicio[], ba
   }, [fecha, barberoSeleccionado, servicioSeleccionado, step])
   /* eslint-enable react-hooks/set-state-in-effect */
 
-  const today = new Date().toISOString().split('T')[0]
-  const maxDate = new Date()
-  maxDate.setDate(maxDate.getDate() + 60)
-  const maxDateStr = maxDate.toISOString().split('T')[0]
+  const now = new Date()
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+  const maxDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 60)
+  const maxDateStr = `${maxDate.getFullYear()}-${String(maxDate.getMonth() + 1).padStart(2, '0')}-${String(maxDate.getDate()).padStart(2, '0')}`
 
   async function handleConfirmar(formData: FormData) {
     setErrorMsg('')
@@ -102,7 +102,7 @@ export function ReservaForm({ servicios, barberos }: { servicios: Servicio[], ba
             <button onClick={() => setStep(1)} className="text-zinc-500 hover:text-white">
               &larr; Volver
             </button>
-            <h2 className="text-xl font-bold text-white">Con quien te atendés?</h2>
+            <h2 className="text-xl font-bold text-white">¿Con quién te atendés?</h2>
           </div>
           <div className="grid grid-cols-2 gap-4">
             {barberos.map((b) => (
@@ -179,7 +179,7 @@ export function ReservaForm({ servicios, barberos }: { servicios: Servicio[], ba
               <div className="space-y-2 text-sm text-zinc-400 mb-6 bg-zinc-900/50 p-4 rounded-xl">
                 <p><strong>Servicio:</strong> {servicioSeleccionado.nombre} (${servicioSeleccionado.precio})</p>
                 <p><strong>Barbero:</strong> {barberoSeleccionado.nombre} {barberoSeleccionado.apellido}</p>
-                <p><strong>Fecha:</strong> {fecha}</p>
+                <p><strong>Fecha:</strong> {fecha.split('-').reverse().join('/')}</p>
                 <p><strong>Hora:</strong> {horaSeleccionada}</p>
               </div>
 

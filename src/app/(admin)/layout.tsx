@@ -20,6 +20,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <Link href="/admin/dashboard" className="hover:text-white transition-colors">Dashboard</Link>
           <Link href="/admin/servicios" className="hover:text-white transition-colors">Servicios</Link>
           <Link href="/admin/turnos" className="hover:text-white transition-colors">Turnos</Link>
+          <Link href="/admin/calendario" className="hover:text-white transition-colors">Calendario</Link>
+          <Link href="/admin/productos" className="hover:text-white transition-colors">Productos</Link>
+          <Link href="/admin/finanzas" className="hover:text-white transition-colors">Finanzas</Link>
         </nav>
 
         <div className="flex items-center gap-4 w-full sm:w-auto border-t border-zinc-900 sm:border-t-0 pt-4 sm:pt-0">
@@ -37,7 +40,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       </header>
 
       <main className="flex-1 flex flex-col relative">
-        <div className="relative z-10 p-6 md:p-10 w-full max-w-5xl mx-auto flex flex-col gap-8">
+        <div className="relative z-10 p-6 md:p-10 w-full max-w-7xl mx-auto flex flex-col gap-8">
           {children}
         </div>
       </main>

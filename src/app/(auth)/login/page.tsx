@@ -15,7 +15,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Search
           <svg className="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          <span>Cuenta creada con exito! Por favor, inicia sesion.</span>
+          <span>¡Cuenta creada con éxito! Por favor, iniciá sesión.</span>
         </div>
       )}
       <AuthForm type="login" action={loginAction} />

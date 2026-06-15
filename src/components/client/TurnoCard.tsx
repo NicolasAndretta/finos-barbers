@@ -57,7 +57,7 @@ export function TurnoCard({ turno }: { turno: Turno }) {
         <p className="font-bold text-white">${turno.servicios.precio}</p>
         {isCancelable && (
           <button onClick={handleCancelar} disabled={isPending}
-            className="w-full sm:w-auto text-xs font-bold text-red-400 hover:text-red-300 bg-red-400/10 hover:bg-red-400/20 px-3 py-1.5 rounded-lg transition-colors flex items-center justify-center gap-2">
+            className="w-full sm:w-auto text-xs font-bold text-red-400 hover:text-red-300 bg-red-400/10 hover:bg-red-400/20 px-3 py-1.5 rounded-lg transition-colors flex items-center justify-center gap-2 cursor-pointer">
             {isPending && <Spinner className="w-3 h-3 text-red-400" />}
             Cancelar
           </button>

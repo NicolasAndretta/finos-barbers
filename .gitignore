@@ -30,8 +30,9 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
+# env files — nunca commitear credenciales reales
 .env*
+!.env.local.example
 
 # vercel
 .vercel
@@ -39,6 +40,11 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Herramientas y configuracion local
+.agents/
+.claude/
+skills-lock.json
 CONTEXTO-PARA-CONTINUAR.md
 *-checkpoint.md
 *-session*.md

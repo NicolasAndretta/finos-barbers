@@ -39,7 +39,7 @@ export default async function TurnosPage({ searchParams }: { searchParams: Searc
         </div>
         <Link
           href="/reservar"
-          className="bg-amber-500 hover:bg-amber-600 text-black text-sm font-bold px-5 py-2.5 rounded-lg transition-colors shadow-lg shadow-amber-500/20"
+          className="bg-amber-500 hover:bg-amber-400 text-black text-sm font-bold px-5 py-2.5 rounded-lg transition-colors shadow-lg shadow-amber-500/20"
         >
           Nuevo Turno
         </Link>
