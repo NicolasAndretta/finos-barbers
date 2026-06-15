@@ -19,12 +19,17 @@ export async function registerAction(
 
   let redirectPath: string | null = null
 
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+
   try {
     const supabase = await createClient()
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
+        // Tras confirmar el email, Supabase redirige a nuestra ruta de callback,
+        // que verifica el token y muestra la pantalla de éxito.
+        emailRedirectTo: `${appUrl}/auth/callback`,
         data: {
           nombre,
           apellido,
@@ -41,7 +46,7 @@ export async function registerAction(
       return { error: 'No se pudo crear la cuenta. Por favor, intenta de nuevo.' }
     }
 
-    redirectPath = '/login?registered=1'
+    redirectPath = '/login?confirmar=1'
   } catch (err: unknown) {
     if (err instanceof Error && 'digest' in err && typeof (err as { digest?: string }).digest === 'string' && (err as { digest: string }).digest.startsWith('NEXT_REDIRECT')) {
       throw err

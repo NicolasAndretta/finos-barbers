@@ -20,6 +20,15 @@
   }
 }
 
+html,
+body {
+  /* Red de seguridad: evita scroll horizontal en mobile por elementos
+     decorativos que desbordan (blurs, etc.). 'clip' no crea un contenedor de
+     scroll, así que no rompe los headers sticky. */
+  overflow-x: clip;
+  max-width: 100%;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);

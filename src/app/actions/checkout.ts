@@ -87,6 +87,14 @@ export async function crearPedido(formData: FormData) {
   const accessToken = process.env.MERCADOPAGO_ACCESS_TOKEN
   if (!accessToken) return { error: 'Pago no configurado — contactá al administrador' }
 
+  // NOTA sobre prueba vs real:
+  // Esta cuenta de MercadoPago tiene un único Access Token (APP_USR-...). Que
+  // un pago sea real o de prueba NO depende del token ni del código, sino de si
+  // las "Credenciales de producción" están activadas en el panel de MercadoPago:
+  //   - Producción NO activada → solo pagan las CUENTAS DE PRUEBA (sin dinero real)
+  //   - Producción activada     → pagan tarjetas reales y se mueve dinero real
+  // Por eso acá no hay lógica de modo ni dependencia de NODE_ENV.
+
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
 
   const preferenceBody = {
@@ -106,8 +114,8 @@ export async function crearPedido(formData: FormData) {
       failure: `${appUrl}/checkout/failure`,
       pending: `${appUrl}/checkout/success`,
     },
-    // auto_return solo en producción — con localhost MP no puede verificar la URL
-    ...(process.env.NODE_ENV === 'production' && { auto_return: 'approved' as const }),
+    // auto_return solo con URL pública — con localhost MP no puede verificar la URL
+    ...(!appUrl.includes('localhost') && { auto_return: 'approved' as const }),
     external_reference: pedido.id,
   }
 
@@ -121,10 +129,10 @@ export async function crearPedido(formData: FormData) {
       .update({ mp_preference_id: result.id })
       .eq('id', pedido.id)
 
-    const urlCheckout =
-      process.env.NODE_ENV === 'production'
-        ? result.init_point
-        : result.sandbox_init_point
+    // init_point es la URL de checkout de MercadoPago (sandbox_init_point queda
+    // como fallback legacy). El modo prueba/real lo define el estado de las
+    // credenciales de producción en la cuenta, no esta URL.
+    const urlCheckout = result.init_point ?? result.sandbox_init_point
 
     return { url_checkout: urlCheckout ?? '' }
   } catch (err) {

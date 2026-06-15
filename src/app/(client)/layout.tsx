@@ -39,7 +39,7 @@ export default async function ClientLayout({ children }: { children: React.React
           </div>
         </header>
 
-        <main className="flex-1 flex flex-col relative">
+        <main className="flex-1 flex flex-col relative overflow-x-hidden">
           <div className="absolute top-0 left-1/3 w-[500px] h-[500px] bg-white/3 rounded-full blur-[100px] pointer-events-none" />
           <div className="relative z-10 p-6 md:p-10 w-full max-w-5xl mx-auto flex flex-col gap-8">
             {children}
