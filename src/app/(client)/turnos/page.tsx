@@ -32,9 +32,10 @@ export default async function TurnosPage({ searchParams }: { searchParams: Searc
 
       <div className="mb-8 text-center sm:text-left w-full flex flex-col sm:flex-row justify-between items-center gap-4">
         <div>
-          <h1 className="text-3xl font-extrabold text-white tracking-tight">Mis Turnos</h1>
+          <span className="text-xs font-semibold uppercase tracking-[0.25em] text-amber-500">Tus citas</span>
+          <h1 className="font-display uppercase text-4xl sm:text-5xl font-extrabold text-white tracking-tight mt-1">Mis Turnos</h1>
           <p className="mt-2 text-zinc-400 text-sm">
-            Gestiona tus próximas citas o revisa el historial.
+            Gestioná tus próximas citas o revisá el historial.
           </p>
         </div>
         <Link

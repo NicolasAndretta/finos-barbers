@@ -2,29 +2,23 @@
 @layer base, components, utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #09090b;
+  --foreground: #fafafa;
+  --accent: #f59e0b;
+  --accent-dim: #b45309;
+  --font-sans: var(--font-barlow);
+  --font-display: var(--font-barlow-condensed);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --font-sans: var(--font-barlow);
+  --font-display: var(--font-barlow-condensed);
 }
 
 html,
 body {
-  /* Red de seguridad: evita scroll horizontal en mobile por elementos
-     decorativos que desbordan (blurs, etc.). 'clip' no crea un contenedor de
-     scroll, así que no rompe los headers sticky. */
   overflow-x: clip;
   max-width: 100%;
 }
@@ -32,37 +26,77 @@ body {
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  font-family: var(--font-barlow), system-ui, sans-serif;
 }
 
-/* Smooth fade-in animation for page transitions */
+/* Display font for titles */
+.font-display {
+  font-family: var(--font-barlow-condensed), system-ui, sans-serif;
+}
+
+/* ─── Animations ─────────────────────────────────────────── */
 @keyframes fade-in {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
-.animate-fade-in {
-  animation: fade-in 0.3s ease-out;
+@keyframes fade-in-fast {
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 
 @keyframes slide-up {
-  from {
-    opacity: 0;
-    transform: translateY(16px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slide-in-right {
+  from { opacity: 0; transform: translateX(20px); }
+  to   { opacity: 1; transform: translateX(0); }
 }
 
 @keyframes fade-backdrop {
   from { opacity: 0; }
   to   { opacity: 1; }
+}
+
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes pulse-amber {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4); }
+  50%       { box-shadow: 0 0 0 8px rgba(245, 158, 11, 0); }
+}
+
+.animate-fade-in       { animation: fade-in 0.35s ease-out both; }
+.animate-fade-in-fast  { animation: fade-in-fast 0.2s ease-out both; }
+.animate-slide-up      { animation: slide-up 0.4s ease-out both; }
+.animate-slide-in-right{ animation: slide-in-right 0.3s ease-out both; }
+.animate-pulse-amber   { animation: pulse-amber 2s infinite; }
+
+/* Staggered children */
+.stagger > *:nth-child(1) { animation-delay: 0ms; }
+.stagger > *:nth-child(2) { animation-delay: 60ms; }
+.stagger > *:nth-child(3) { animation-delay: 120ms; }
+.stagger > *:nth-child(4) { animation-delay: 180ms; }
+.stagger > *:nth-child(5) { animation-delay: 240ms; }
+.stagger > *:nth-child(6) { animation-delay: 300ms; }
+
+/* ─── Amber glow decorators ──────────────────────────────── */
+.glow-amber {
+  background: radial-gradient(ellipse 60% 60% at 50% 0%, rgba(245,158,11,0.12) 0%, transparent 70%);
+}
+
+/* ─── Scrollbar ──────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #09090b; }
+::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #52525b; }
+
+/* ─── Input date — chrome dark ───────────────────────────── */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1) opacity(0.4);
+  cursor: pointer;
 }

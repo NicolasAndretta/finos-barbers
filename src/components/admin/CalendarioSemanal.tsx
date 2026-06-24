@@ -261,7 +261,7 @@ export function CalendarioSemanal() {
               onClick={() => setFiltro(null)}
               className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors cursor-pointer ${
                 filtro === null
-                  ? 'bg-white/10 text-white border-white/20'
+                  ? 'bg-amber-500/15 text-amber-400 border-amber-500/30'
                   : 'bg-zinc-900 text-zinc-500 border-zinc-800 hover:text-zinc-300 hover:border-zinc-700'
               }`}
             >
