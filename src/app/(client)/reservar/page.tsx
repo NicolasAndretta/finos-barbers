@@ -11,11 +11,12 @@ export default async function ReservarPage() {
   return (
     <div className="flex flex-col items-center justify-start text-center pb-12 animate-fade-in w-full">
       <div className="mb-8">
-        <h1 className="text-3xl font-extrabold text-white tracking-tight sm:text-4xl">
+        <span className="text-xs font-semibold uppercase tracking-[0.25em] text-amber-500">Reservá online</span>
+        <h1 className="font-display uppercase text-4xl sm:text-5xl font-extrabold text-white tracking-tight mt-1">
           Nueva Reserva
         </h1>
         <p className="mt-4 text-zinc-400 max-w-md text-sm md:text-base mx-auto">
-          Reserva tu turno online de forma rápida. Selecciona el servicio, elige a tu barbero y encuentra el horario perfecto.
+          En 3 pasos. Seleccioná el servicio, elegí a tu barbero y encontrá el horario perfecto.
         </p>
       </div>
 

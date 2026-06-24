@@ -2,9 +2,17 @@
 
 ## Identidad visual
 - Estética: barbería premium, oscura, masculina, sofisticada
-- Inspiración: lujo moderno, no recargado
+- Inspiración: lujo moderno, editorial, no recargado
 - Paleta principal: zinc-950 (fondo), zinc-900 (cards), amber-400/500 (acento)
-- Tipografía: extrabold para títulos, semibold para subtítulos, zinc-400 para textos secundarios
+
+## Tipografía
+- **Titulares / display:** Barlow Condensed (`font-display`), uppercase, con
+  tracking abierto. Condensada y con carácter — el sello visual de la marca.
+  Usar en H1/H2, números grandes (precios, stats, KPIs) y el wordmark FINOS.
+- **Cuerpo / UI:** Barlow (`font-sans`), pesos 400–700. Legible y consistente
+  en formularios, párrafos y navegación.
+- Jerarquía: display extrabold para títulos, semibold para subtítulos,
+  zinc-400 para textos secundarios, eyebrows en amber uppercase + tracking.
 
 ## Tokens de color
 - Fondo base: bg-zinc-950

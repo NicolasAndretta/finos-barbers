@@ -31,16 +31,17 @@ export function TurnoCard({ turno }: { turno: Turno }) {
   }
 
   const statusColors: Record<string, string> = {
-    pendiente: 'bg-zinc-700/50 text-zinc-300 border-zinc-600',
+    pendiente: 'bg-amber-500/10 text-amber-400 border-amber-500/25',
     confirmado: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
     cancelado: 'bg-red-500/10 text-red-400 border-red-500/20',
   }
 
   return (
-    <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-5 shadow-lg flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div className="group relative bg-zinc-900/40 border border-zinc-800 rounded-2xl p-5 shadow-lg flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:border-zinc-700 transition-colors overflow-hidden">
+      <span className="absolute left-0 top-0 bottom-0 w-1 bg-amber-500/0 group-hover:bg-amber-500/60 transition-colors" />
       <div>
         <div className="flex items-center gap-3 mb-2">
-          <h3 className="text-lg font-bold text-white">{turno.servicios.nombre}</h3>
+          <h3 className="font-display uppercase text-lg font-bold tracking-wide text-white">{turno.servicios.nombre}</h3>
           <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold border capitalize ${statusColors[turno.estado] || 'bg-zinc-800 text-zinc-400'}`}>
             {turno.estado}
           </span>
@@ -54,7 +55,7 @@ export function TurnoCard({ turno }: { turno: Turno }) {
       </div>
 
       <div className="flex flex-col items-end gap-2 w-full sm:w-auto">
-        <p className="font-bold text-white">${turno.servicios.precio}</p>
+        <p className="font-display text-2xl font-bold text-amber-500">${turno.servicios.precio}</p>
         {isCancelable && (
           <button onClick={handleCancelar} disabled={isPending}
             className="w-full sm:w-auto text-xs font-bold text-red-400 hover:text-red-300 bg-red-400/10 hover:bg-red-400/20 px-3 py-1.5 rounded-lg transition-colors flex items-center justify-center gap-2 cursor-pointer">

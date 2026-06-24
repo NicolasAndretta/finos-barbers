@@ -14,7 +14,8 @@ export default async function TiendaPage() {
     <div className="w-full">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-extrabold text-white tracking-tight">Tienda</h1>
+        <span className="text-xs font-semibold uppercase tracking-[0.25em] text-amber-500">Shop</span>
+        <h1 className="font-display uppercase text-4xl sm:text-5xl font-extrabold text-white tracking-tight mt-1">Tienda</h1>
         <p className="text-zinc-400 text-sm mt-1">
           Productos premium para el cuidado de tu cabello y barba
         </p>
