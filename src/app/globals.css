@@ -1,30 +1,58 @@
 @import "tailwindcss";
 @layer base, components, utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/*
+  FINO'S BARBER'S — Sistema de diseño
+  ------------------------------------------------------------------
+  Marca (manual oficial): blanco y negro + tipografías ChunkFive (logo)
+  y Montserrat (secundaria). Dirección elegida: B&N premium con acento
+  MADERA/COBRE cálido y textura de madera sutil.
+
+  Truco de rebrand: el sitio usa clases `amber-*` para los acentos.
+  Acá remapeamos toda la escala `amber` de Tailwind al tono madera, así
+  el sitio entero queda rebrandeado sin tocar cada componente.
+*/
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+
+  /* Tipografía */
+  --font-sans: var(--font-body), "Montserrat", Arial, Helvetica, sans-serif;
+  --font-body: var(--font-body), "Montserrat", Arial, sans-serif;
+  --font-display: var(--font-display), "Bevan", Georgia, serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* Acento MADERA / COBRE — remapea la escala `amber-*` de Tailwind.
+     Hue cálido ~32°, saturación media: latón/madera noble. */
+  --color-amber-50: #faf6f0;
+  --color-amber-100: #f3e9da;
+  --color-amber-200: #e7d2b4;
+  --color-amber-300: #d8b98c;
+  --color-amber-400: #c79c64; /* acento principal */
+  --color-amber-500: #b3854c;
+  --color-amber-600: #976c3c;
+  --color-amber-700: #785531;
+  --color-amber-800: #5b4126;
+  --color-amber-900: #44311e;
+  --color-amber-950: #281c11;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+:root {
+  --background: #0a0a0a;
+  --foreground: #f4f1ec;
+
+  /* Tokens semánticos de marca */
+  --wood: #c79c64;
+  --wood-deep: #976c3c;
+  --ink: #0a0a0a;
+  --paper: #f4f1ec;
+  --hairline: rgba(244, 241, 236, 0.08);
 }
 
 html,
 body {
-  /* Red de seguridad: evita scroll horizontal en mobile por elementos
-     decorativos que desbordan (blurs, etc.). 'clip' no crea un contenedor de
-     scroll, así que no rompe los headers sticky. */
+  /* Evita scroll horizontal por decorativos que desbordan. */
   overflow-x: clip;
   max-width: 100%;
 }
@@ -32,10 +60,81 @@ body {
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  font-family: var(--font-body), "Montserrat", Arial, Helvetica, sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
-/* Smooth fade-in animation for page transitions */
+/* ── Tipografía display de marca ─────────────────────────────────── */
+.font-display {
+  font-family: var(--font-display), "Bevan", Georgia, serif;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+}
+
+/* Texto con degradé madera, para titulares destacados. */
+.text-wood-gradient {
+  background: linear-gradient(180deg, #e7d2b4 0%, #c79c64 55%, #976c3c 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* ── Texturas y superficies ──────────────────────────────────────── */
+
+/* Textura de madera sutil: vetas cálidas casi imperceptibles sobre el
+   fondo casi-negro. Pensada como fondo de sección. */
+.bg-wood-texture {
+  background-color: #0a0a0a;
+  background-image:
+    radial-gradient(120% 80% at 50% 0%, rgba(199, 156, 100, 0.06), transparent 60%),
+    repeating-linear-gradient(
+      90deg,
+      rgba(199, 156, 100, 0.022) 0px,
+      rgba(199, 156, 100, 0.022) 1px,
+      transparent 1px,
+      transparent 4px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      rgba(0, 0, 0, 0.25) 0px,
+      rgba(0, 0, 0, 0.25) 2px,
+      transparent 2px,
+      transparent 9px
+    );
+}
+
+/* Grano de película muy tenue, para dar textura premium a héroes. */
+.texture-grain::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.04;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* Línea fina de marca (hairline) para separar secciones con clase. */
+.hairline {
+  border-color: var(--hairline);
+}
+
+/* Brillo metálico para bordes de cards premium en hover. */
+.ring-wood\/30 {
+  --tw-ring-color: rgba(199, 156, 100, 0.3);
+}
+
+/* ── Logo en blanco (sobre fondo oscuro) ─────────────────────────── */
+/* El logo de origen es negro; lo renderizamos blanco con filtro para
+   fondos oscuros, manteniendo nitidez sin necesidad de un segundo asset. */
+.logo-white {
+  filter: brightness(0) invert(1);
+}
+.logo-wood {
+  filter: brightness(0) saturate(100%) invert(72%) sepia(28%) saturate(540%)
+    hue-rotate(354deg) brightness(89%) contrast(86%);
+}
+
+/* ── Animaciones ─────────────────────────────────────────────────── */
 @keyframes fade-in {
   from {
     opacity: 0;
@@ -62,7 +161,35 @@ body {
   }
 }
 
+.animate-slide-up {
+  animation: slide-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
 @keyframes fade-backdrop {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes shine {
+  from {
+    background-position: -200% 0;
+  }
+  to {
+    background-position: 200% 0;
+  }
+}
+
+/* Respeta a quien prefiere menos movimiento. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
