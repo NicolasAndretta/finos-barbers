@@ -39,7 +39,16 @@ gitignoreado). Ya está en la base, respetando el patrón RLS existente (`is_adm
 - Campos en `turnos`: `metodo_pago`, `sena_monto`, `sena_estado`, `mp_*`.
 - Credenciales por env (MP), nunca hardcodeadas. Falta **probar un pago MP real** end-to-end.
 
-## 🧹 Menor / próximo
+## 🔜 Próximo — Cobros online con OAuth (estándar de la casa)
+Finos va a usar **OAuth (Mercado Pago Connect)**, no el token simple: el cliente
+conecta su MP con un clic, sin developer accounts ni compartir credenciales. Es la
+capacidad de plataforma que Andretta Studio ofrece como add-on serio de "cobros online"
+(decisión jun 2026 — ver `../../freelance/producto-base-y-addons.md`). Construir una vez:
+app en MP (`client_id`/`client_secret`), botón "Conectar", callback que cambia el código
+por token (server-side), guardado + refresh por cliente. Mientras tanto, el token simple
++ transferencia/efectivo ya funcionan.
+
+## 🧹 Menor
 - Admin de turnos: mostrar `metodo_pago` + `sena_estado` + botón "confirmar seña" (transferencias).
 - Limpiar productos demo viejos inactivos del admin (nombres de prueba).
 - Formato de precios con separador de miles (`$8.500`).
