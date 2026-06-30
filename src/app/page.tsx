@@ -2,6 +2,8 @@ import React from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { getProfile } from "@/lib/auth";
+import { getBarberos } from "@/app/actions/barberos";
+import { getResenasVisibles } from "@/app/actions/resenas";
 import { Logo } from "@/components/ui/Logo";
 import { WhatsappFloat } from "@/components/ui/WhatsappFloat";
 import { SITE, whatsappLink } from "@/lib/site";
@@ -40,36 +42,36 @@ export default async function HomePage() {
     },
   ];
 
-  const barberos = [
-    {
-      nombre: "Leandro",
-      rol: "Master Barber · Fundador",
-      bio: "Más de una década detrás de la silla. Especialista en cortes clásicos y diseño de barba.",
-    },
-    {
-      nombre: "Facundo",
-      rol: "Barber · Sábados",
-      bio: "Fades, texturizados y tendencias modernas. Atiende los sábados con turnos limitados.",
-    },
-  ];
+  // Barberos y reseñas desde la base; si todavía no hay, mostramos un fallback
+  // para que la home nunca se vea vacía.
+  type BarberoRow = { nombre: string; apellido: string | null; especialidad: string | null; bio: string | null; dias: string[] | null };
+  type ResenaRow = { nombre: string; texto: string; rating: number };
 
-  const resenas = [
-    {
-      texto:
-        "El mejor corte que me hice en años. Te tratan como en casa y el resultado es impecable.",
-      autor: "Martín G.",
-    },
-    {
-      texto:
-        "Ambiente increíble, puntualidad y un trabajo de barba que no encontrás en otro lado.",
-      autor: "Joaquín R.",
-    },
-    {
-      texto:
-        "Reservé el turno online en un minuto. Profesionales de verdad, ya soy cliente fijo.",
-      autor: "Diego M.",
-    },
-  ];
+  const [barberosDb, resenasDb] = await Promise.all([
+    getBarberos().catch(() => [] as BarberoRow[]),
+    getResenasVisibles().catch(() => [] as ResenaRow[]),
+  ]);
+
+  const barberos =
+    (barberosDb as BarberoRow[]).length > 0
+      ? (barberosDb as BarberoRow[]).map((b) => ({
+          nombre: b.nombre,
+          rol: b.especialidad || (b.dias?.length ? `Barber · ${b.dias.join(", ")}` : "Barber"),
+          bio: b.bio || "",
+        }))
+      : [
+          { nombre: "Leandro", rol: "Master Barber · Fundador", bio: "Más de una década detrás de la silla. Especialista en cortes clásicos y diseño de barba." },
+          { nombre: "Facundo", rol: "Barber · Sábados", bio: "Fades, texturizados y tendencias modernas. Atiende los sábados con turnos limitados." },
+        ];
+
+  const resenas =
+    (resenasDb as ResenaRow[]).length > 0
+      ? (resenasDb as ResenaRow[]).map((r) => ({ texto: r.texto, autor: r.nombre, rating: r.rating }))
+      : [
+          { texto: "El mejor corte que me hice en años. Te tratan como en casa y el resultado es impecable.", autor: "Martín G.", rating: 5 },
+          { texto: "Ambiente increíble, puntualidad y un trabajo de barba que no encontrás en otro lado.", autor: "Joaquín R.", rating: 5 },
+          { texto: "Reservé el turno online en un minuto. Profesionales de verdad, ya soy cliente fijo.", autor: "Diego M.", rating: 5 },
+        ];
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col font-sans">
@@ -348,7 +350,7 @@ export default async function HomePage() {
                   className="rounded-2xl bg-zinc-900/50 border border-white/5 p-6 flex flex-col gap-4"
                 >
                   <div className="text-amber-400 text-sm tracking-widest">
-                    ★★★★★
+                    {"★".repeat(r.rating)}
                   </div>
                   <blockquote className="text-zinc-300 text-sm leading-relaxed flex-1">
                     “{r.texto}”
