@@ -1,9 +1,13 @@
 'use server'
 
-import { createClient } from '@/lib/supabase'
+import { MercadoPagoConfig, Preference, Payment } from 'mercadopago'
+import { createClient, createServiceClient } from '@/lib/supabase'
 import { requireClient } from '@/lib/auth'
 import { sendConfirmacionTurno, sendCancelacionTurno } from '@/lib/resend'
+import { SITE } from '@/lib/site'
 import { revalidatePath } from 'next/cache'
+
+export type MetodoPago = 'mercadopago' | 'transferencia' | 'efectivo'
 
 // Formatear hora de 'HH:mm:ss' a 'HH:mm'
 function formatHora(horaSql: string) {
@@ -115,9 +119,13 @@ export async function crearReserva(formData: FormData) {
   const servicio_id = formData.get('servicio_id') as string
   const fecha = formData.get('fecha') as string
   const hora = formData.get('hora') as string
+  const metodo_pago = (formData.get('metodo_pago') as MetodoPago) || 'efectivo'
 
   if (!barbero_id || !servicio_id || !fecha || !hora) {
     return { error: 'Faltan datos para crear la reserva' }
+  }
+  if (!['mercadopago', 'transferencia', 'efectivo'].includes(metodo_pago)) {
+    return { error: 'Método de pago inválido' }
   }
 
   // Validar que la fecha esté dentro del rango permitido (hoy a 60 días)
@@ -140,9 +148,13 @@ export async function crearReserva(formData: FormData) {
 
   const supabase = await createClient()
 
-  // 1. Obtener detalles para el email
+  // 1. Obtener detalles para el email y el precio (para la seña)
   const { data: barbero } = await supabase.from('barberos').select('nombre, apellido').eq('id', barbero_id).single()
-  const { data: servicio } = await supabase.from('servicios').select('nombre').eq('id', servicio_id).single()
+  const { data: servicio } = await supabase.from('servicios').select('nombre, precio').eq('id', servicio_id).single()
+
+  // Seña = porcentaje del precio del servicio (definido en SITE).
+  const precio = servicio?.precio ?? 0
+  const senaMonto = Math.round((precio * SITE.senaPorcentaje) / 100)
 
   // 2. Insertar en la BD
   const { data, error } = await supabase
@@ -153,7 +165,10 @@ export async function crearReserva(formData: FormData) {
       servicio_id,
       fecha,
       hora: `${hora}:00`,
-      estado: 'pendiente'
+      estado: 'pendiente',
+      metodo_pago,
+      sena_monto: senaMonto,
+      sena_estado: 'pendiente',
     })
     .select()
     .single()
@@ -185,8 +200,75 @@ export async function crearReserva(formData: FormData) {
   // 4. Revalidar rutas
   revalidatePath('/turnos')
   revalidatePath('/admin/turnos')
-  
-  return { success: true, turnoId: data.id }
+
+  // 5. Pago de la seña según el método elegido
+  if (metodo_pago === 'mercadopago' && senaMonto > 0) {
+    const accessToken = process.env.MERCADOPAGO_ACCESS_TOKEN
+    if (!accessToken) {
+      return { success: true, turnoId: data.id, metodo: metodo_pago, sena: senaMonto, alias: SITE.aliasPago }
+    }
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+    try {
+      const mpClient = new MercadoPagoConfig({ accessToken })
+      const pref = await new Preference(mpClient).create({
+        body: {
+          items: [{
+            id: data.id,
+            title: `Seña ${SITE.senaPorcentaje}% — ${servicio?.nombre ?? 'Turno'} (Fino's)`,
+            quantity: 1,
+            unit_price: senaMonto,
+            currency_id: 'ARS',
+          }],
+          payer: { email: profile.email },
+          back_urls: {
+            success: `${appUrl}/turnos`,
+            failure: `${appUrl}/turnos`,
+            pending: `${appUrl}/turnos`,
+          },
+          ...(!appUrl.includes('localhost') && { auto_return: 'approved' as const }),
+          external_reference: data.id,
+        },
+      })
+      await supabase.from('turnos').update({ mp_preference_id: pref.id }).eq('id', data.id)
+      const url = pref.init_point ?? pref.sandbox_init_point
+      return { mp: true, url_checkout: url ?? '', turnoId: data.id }
+    } catch (err) {
+      console.error('[MP turno] Error al crear preferencia:', err)
+      // El turno queda creado; la seña se podrá pagar por otro medio.
+      return { success: true, turnoId: data.id, metodo: metodo_pago, sena: senaMonto, alias: SITE.aliasPago }
+    }
+  }
+
+  return { success: true, turnoId: data.id, metodo: metodo_pago, sena: senaMonto, alias: SITE.aliasPago }
+}
+
+/**
+ * Marca la seña de un turno como pagada tras la vuelta de MercadoPago.
+ * Idempotente. Verifica el pago con MP cuando es posible.
+ */
+export async function confirmarPagoSenaTurno(turnoId: string, paymentId: string) {
+  const supabase = createServiceClient()
+  const { data: turno } = await supabase
+    .from('turnos').select('id, sena_estado').eq('id', turnoId).single()
+  if (!turno) return { error: 'Turno no encontrado' }
+  if (turno.sena_estado === 'pagada') return { success: true }
+
+  const accessToken = process.env.MERCADOPAGO_ACCESS_TOKEN
+  if (accessToken && paymentId) {
+    try {
+      const payment = await new Payment(new MercadoPagoConfig({ accessToken })).get({ id: paymentId })
+      if (payment.status !== 'approved' && payment.status !== 'pending') {
+        return { error: 'El pago no fue aprobado' }
+      }
+    } catch { /* MP ya redirigió a success; seguimos */ }
+  }
+
+  await supabase.from('turnos')
+    .update({ sena_estado: 'pagada', mp_payment_id: paymentId, estado: 'confirmado' })
+    .eq('id', turnoId)
+  revalidatePath('/turnos')
+  revalidatePath('/admin/turnos')
+  return { success: true }
 }
 
 export async function getTurnosCliente() {

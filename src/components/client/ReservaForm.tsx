@@ -2,8 +2,9 @@
 
 import React, { useState, useTransition, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { getHorariosDisponibles, crearReserva } from '@/app/actions/reservas'
+import { getHorariosDisponibles, crearReserva, type MetodoPago } from '@/app/actions/reservas'
 import { Spinner } from '@/components/ui/Spinner'
+import { SITE } from '@/lib/site'
 
 type Servicio = { id: string; nombre: string; duracion_minutos: number; precio: number; descripcion: string }
 type Barbero = { id: string; nombre: string; apellido: string }
@@ -19,6 +20,8 @@ export function ReservaForm({ servicios, barberos }: { servicios: Servicio[], ba
   const [isPending, startTransition] = useTransition()
   const [isLoadingHorarios, setIsLoadingHorarios] = useState(false)
   const [errorMsg, setErrorMsg] = useState('')
+  const [metodoPago, setMetodoPago] = useState<MetodoPago>('efectivo')
+  const [confirmacion, setConfirmacion] = useState<{ metodo: string; sena: number; alias: string } | null>(null)
 
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
@@ -42,8 +45,20 @@ export function ReservaForm({ servicios, barberos }: { servicios: Servicio[], ba
     setErrorMsg('')
     startTransition(async () => {
       const res = await crearReserva(formData)
-      if (res.error) {
+      if ('error' in res && res.error) {
         setErrorMsg(res.error)
+        return
+      }
+      if ('mp' in res && res.mp && res.url_checkout) {
+        window.location.href = res.url_checkout
+        return
+      }
+      if ('metodo' in res) {
+        setConfirmacion({
+          metodo: res.metodo as string,
+          sena: (res.sena as number) ?? 0,
+          alias: (res.alias as string) ?? SITE.aliasPago,
+        })
       } else {
         router.push('/turnos?reserva=success')
       }
@@ -173,14 +188,43 @@ export function ReservaForm({ servicios, barberos }: { servicios: Servicio[], ba
             </div>
           )}
 
-          {horaSeleccionada && (
+          {horaSeleccionada && !confirmacion && (() => {
+            const sena = Math.round((servicioSeleccionado.precio * SITE.senaPorcentaje) / 100)
+            const metodos: { value: MetodoPago; label: string; desc: string }[] = [
+              { value: 'mercadopago', label: 'Mercado Pago', desc: 'Tarjeta o dinero en cuenta' },
+              { value: 'transferencia', label: 'Transferencia', desc: `Alias ${SITE.aliasPago}` },
+              { value: 'efectivo', label: 'Efectivo en el local', desc: 'Seña al llegar' },
+            ]
+            return (
             <div className="pt-6 border-t border-zinc-900">
               <h3 className="text-lg font-bold text-white mb-4">Resumen</h3>
-              <div className="space-y-2 text-sm text-zinc-400 mb-6 bg-zinc-900/50 p-4 rounded-xl">
-                <p><strong>Servicio:</strong> {servicioSeleccionado.nombre} (${servicioSeleccionado.precio})</p>
-                <p><strong>Barbero:</strong> {barberoSeleccionado.nombre} {barberoSeleccionado.apellido}</p>
-                <p><strong>Fecha:</strong> {fecha.split('-').reverse().join('/')}</p>
-                <p><strong>Hora:</strong> {horaSeleccionada}</p>
+              <div className="space-y-2 text-sm text-zinc-400 mb-5 bg-zinc-900/50 p-4 rounded-xl">
+                <p><strong className="text-zinc-200">Servicio:</strong> {servicioSeleccionado.nombre} (${servicioSeleccionado.precio})</p>
+                <p><strong className="text-zinc-200">Barbero:</strong> {barberoSeleccionado.nombre} {barberoSeleccionado.apellido}</p>
+                <p><strong className="text-zinc-200">Fecha:</strong> {fecha.split('-').reverse().join('/')}</p>
+                <p><strong className="text-zinc-200">Hora:</strong> {horaSeleccionada}</p>
+                <div className="pt-2 mt-2 border-t border-zinc-800 flex justify-between items-center">
+                  <span>Seña ({SITE.senaPorcentaje}%) para reservar</span>
+                  <span className="text-amber-400 font-bold text-base">${sena}</span>
+                </div>
+                <p className="text-xs text-zinc-600">El resto (${servicioSeleccionado.precio - sena}) se abona en el local.</p>
+              </div>
+
+              <p className="text-sm font-semibold text-white mb-3">¿Cómo querés dejar la seña?</p>
+              <div className="space-y-2 mb-5">
+                {metodos.map(m => (
+                  <label key={m.value}
+                    className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-colors ${
+                      metodoPago === m.value ? 'border-amber-500/60 bg-amber-500/5' : 'border-zinc-800 bg-zinc-900/50 hover:border-zinc-700'
+                    }`}>
+                    <input type="radio" name="metodo_radio" value={m.value} checked={metodoPago === m.value}
+                      onChange={() => setMetodoPago(m.value)} className="mt-0.5 accent-amber-500" />
+                    <div>
+                      <p className="text-white text-sm font-semibold">{m.label}</p>
+                      <p className="text-zinc-500 text-xs">{m.desc}</p>
+                    </div>
+                  </label>
+                ))}
               </div>
 
               <form action={handleConfirmar}>
@@ -188,15 +232,43 @@ export function ReservaForm({ servicios, barberos }: { servicios: Servicio[], ba
                 <input type="hidden" name="barbero_id" value={barberoSeleccionado.id} />
                 <input type="hidden" name="fecha" value={fecha} />
                 <input type="hidden" name="hora" value={horaSeleccionada} />
+                <input type="hidden" name="metodo_pago" value={metodoPago} />
                 <button
                   type="submit"
                   disabled={isPending}
-                  className="w-full bg-white hover:bg-zinc-200 text-zinc-950 font-bold py-3 rounded-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg"
+                  className="w-full bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold py-3 rounded-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg"
                 >
                   {isPending && <Spinner className="w-5 h-5 text-zinc-950" />}
-                  Confirmar Reserva
+                  {metodoPago === 'mercadopago' ? `Pagar seña $${sena}` : 'Confirmar reserva'}
                 </button>
               </form>
+            </div>
+            )
+          })()}
+
+          {confirmacion && (
+            <div className="pt-6 border-t border-zinc-900 text-center">
+              <div className="w-16 h-16 mx-auto rounded-full bg-emerald-500/15 flex items-center justify-center mb-4">
+                <svg className="w-8 h-8 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-bold text-white">¡Turno reservado!</h3>
+              {confirmacion.metodo === 'transferencia' ? (
+                <div className="mt-3 text-sm text-zinc-400">
+                  <p>Para confirmarlo, transferí la seña de <span className="text-amber-400 font-bold">${confirmacion.sena}</span> al alias:</p>
+                  <p className="mt-2 inline-block bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-2 text-white font-mono">{confirmacion.alias}</p>
+                  <p className="mt-2 text-xs text-zinc-600">Mandanos el comprobante por WhatsApp y listo.</p>
+                </div>
+              ) : (
+                <p className="mt-3 text-sm text-zinc-400">
+                  Dejás la seña de <span className="text-amber-400 font-bold">${confirmacion.sena}</span> en efectivo al llegar al local. ¡Te esperamos!
+                </p>
+              )}
+              <button onClick={() => router.push('/turnos')}
+                className="mt-6 bg-white hover:bg-zinc-200 text-zinc-950 font-bold px-6 py-3 rounded-xl transition-colors">
+                Ver mis turnos
+              </button>
             </div>
           )}
         </div>

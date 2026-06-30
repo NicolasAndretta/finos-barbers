@@ -1,7 +1,7 @@
 import React from 'react'
 import Link from 'next/link'
 import { requireClient } from '@/lib/auth'
-import { getTurnosCliente } from '@/app/actions/reservas'
+import { getTurnosCliente, confirmarPagoSenaTurno } from '@/app/actions/reservas'
 import { TurnoCard } from '@/components/client/TurnoCard'
 
 type SearchParams = Promise<{ [key: string]: string | string[] | undefined }>
@@ -9,7 +9,20 @@ type SearchParams = Promise<{ [key: string]: string | string[] | undefined }>
 export default async function TurnosPage({ searchParams }: { searchParams: SearchParams }) {
   await requireClient()
   const resolvedParams = await searchParams
-  const isSuccess = resolvedParams.reserva === 'success'
+
+  // Vuelta de MercadoPago tras pagar la seña del turno.
+  const turnoId = resolvedParams.external_reference as string | undefined
+  const paymentId = resolvedParams.payment_id as string | undefined
+  const mpStatus = (resolvedParams.status ?? resolvedParams.collection_status) as string | undefined
+  let senaPagada = false
+  if (turnoId && paymentId && (mpStatus === 'approved' || mpStatus === 'pending')) {
+    try {
+      const r = await confirmarPagoSenaTurno(turnoId, paymentId)
+      senaPagada = !('error' in r)
+    } catch { /* idempotente */ }
+  }
+
+  const isSuccess = resolvedParams.reserva === 'success' || senaPagada
   const turnos = await getTurnosCliente()
 
   return (
