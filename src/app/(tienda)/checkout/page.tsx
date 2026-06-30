@@ -1,10 +1,13 @@
 import { CheckoutForm } from '@/components/checkout/CheckoutForm'
+import { getProfile } from '@/lib/auth'
 
 export const metadata = {
   title: 'Checkout | Finos Barbers',
 }
 
-export default function CheckoutPage() {
+export default async function CheckoutPage() {
+  const profile = await getProfile()
+
   return (
     <div className="w-full">
       <div className="mb-8">
@@ -12,7 +15,7 @@ export default function CheckoutPage() {
         <p className="text-zinc-400 text-sm mt-1">Revisá tu pedido y elegí cómo recibirlo</p>
       </div>
 
-      <CheckoutForm />
+      <CheckoutForm loggedIn={!!profile} />
     </div>
   )
 }

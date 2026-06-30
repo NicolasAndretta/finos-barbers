@@ -72,7 +72,7 @@ export default async function SuccessPage({ searchParams }: { searchParams: Sear
       {/* CTAs */}
       <div className="flex flex-col sm:flex-row gap-3 mt-2">
         <Link
-          href="/dashboard"
+          href="/"
           className="bg-amber-500 hover:bg-amber-400 text-black font-bold text-sm px-6 py-3 rounded-xl transition-colors"
         >
           Ir al inicio

@@ -1,22 +1,35 @@
 'use server'
 
 import { MercadoPagoConfig, Preference, Payment } from 'mercadopago'
-import { createClient } from '@/lib/supabase'
-import { requireUser } from '@/lib/auth'
+import { createClient, createServiceClient } from '@/lib/supabase'
 import { revalidatePath } from 'next/cache'
 
 type ItemCarritoRaw = { id: string; cantidad: number }
 
 export async function crearPedido(formData: FormData) {
-  const user = await requireUser()
-
   const itemsRaw     = formData.get('items') as string
   const tipoEntrega  = formData.get('tipo_entrega') as string
   const direccionRaw = (formData.get('direccion_envio') as string | null) ?? ''
 
+  // Datos del invitado (cuando no hay sesión)
+  const guestNombre   = ((formData.get('cliente_nombre')   as string | null) ?? '').trim()
+  const guestEmail    = ((formData.get('cliente_email')    as string | null) ?? '').trim()
+  const guestTelefono = ((formData.get('cliente_telefono') as string | null) ?? '').trim()
+
   if (!itemsRaw || !tipoEntrega) return { error: 'Datos incompletos' }
   if (tipoEntrega === 'envio' && !direccionRaw.trim()) {
     return { error: 'Ingresá la dirección de envío' }
+  }
+
+  // Usuario OPCIONAL: si no hay sesión, es una compra de invitado.
+  const authClient = await createClient()
+  const { data: { user } } = await authClient.auth.getUser()
+
+  if (!user) {
+    if (!guestNombre) return { error: 'Ingresá tu nombre' }
+    if (!guestEmail && !guestTelefono) {
+      return { error: 'Dejá un email o teléfono de contacto' }
+    }
   }
 
   let itemsCarrito: ItemCarritoRaw[]
@@ -27,8 +40,8 @@ export async function crearPedido(formData: FormData) {
   }
   if (!itemsCarrito.length) return { error: 'El carrito está vacío' }
 
-  // Validate items against DB (use DB prices — never trust client)
-  const supabase = await createClient()
+  // Service role: validamos e insertamos server-side (sin debilitar el RLS).
+  const supabase = createServiceClient()
   const ids = itemsCarrito.map(i => i.id)
   const { data: productos, error: prodError } = await supabase
     .from('productos')
@@ -49,22 +62,26 @@ export async function crearPedido(formData: FormData) {
     return acc + prod.precio * item.cantidad
   }, 0)
 
-  // Create pedido
+  // Email para MercadoPago y para contacto del pedido.
+  const emailContacto = user?.email ?? guestEmail
+
   const { data: pedido, error: pedidoError } = await supabase
     .from('pedidos')
     .insert({
-      user_id: user.id,
-      estado: 'pendiente',
-      tipo_entrega: tipoEntrega,
-      direccion_envio: tipoEntrega === 'envio' ? direccionRaw.trim() : null,
+      user_id:          user?.id ?? null,
+      estado:           'pendiente',
+      tipo_entrega:     tipoEntrega,
+      direccion_envio:  tipoEntrega === 'envio' ? direccionRaw.trim() : null,
       total,
+      cliente_nombre:   user ? null : guestNombre,
+      cliente_email:    user ? null : (guestEmail || null),
+      cliente_telefono: user ? null : (guestTelefono || null),
     })
     .select()
     .single()
 
   if (pedidoError || !pedido) return { error: 'Error al crear el pedido' }
 
-  // Create items_pedido
   const { error: itemsError } = await supabase.from('items_pedido').insert(
     itemsCarrito.map(item => {
       const prod = productos.find(p => p.id === item.id)!
@@ -83,19 +100,12 @@ export async function crearPedido(formData: FormData) {
     return { error: 'Error al guardar los items del pedido' }
   }
 
-  // Create MercadoPago preference
   const accessToken = process.env.MERCADOPAGO_ACCESS_TOKEN
   if (!accessToken) return { error: 'Pago no configurado — contactá al administrador' }
 
-  // NOTA sobre prueba vs real:
-  // Esta cuenta de MercadoPago tiene un único Access Token (APP_USR-...). Que
-  // un pago sea real o de prueba NO depende del token ni del código, sino de si
-  // las "Credenciales de producción" están activadas en el panel de MercadoPago:
-  //   - Producción NO activada → solo pagan las CUENTAS DE PRUEBA (sin dinero real)
-  //   - Producción activada     → pagan tarjetas reales y se mueve dinero real
-  // Por eso acá no hay lógica de modo ni dependencia de NODE_ENV.
-
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL
+    || process.env.NEXT_PUBLIC_SITE_URL
+    || 'http://localhost:3000'
 
   const preferenceBody = {
     items: itemsCarrito.map(item => {
@@ -108,13 +118,12 @@ export async function crearPedido(formData: FormData) {
         currency_id: 'ARS',
       }
     }),
-    payer:              { email: user.email ?? '' },
+    payer:              { email: emailContacto || '' },
     back_urls: {
       success: `${appUrl}/checkout/success`,
       failure: `${appUrl}/checkout/failure`,
       pending: `${appUrl}/checkout/success`,
     },
-    // auto_return solo con URL pública — con localhost MP no puede verificar la URL
     ...(!appUrl.includes('localhost') && { auto_return: 'approved' as const }),
     external_reference: pedido.id,
   }
@@ -129,11 +138,7 @@ export async function crearPedido(formData: FormData) {
       .update({ mp_preference_id: result.id })
       .eq('id', pedido.id)
 
-    // init_point es la URL de checkout de MercadoPago (sandbox_init_point queda
-    // como fallback legacy). El modo prueba/real lo define el estado de las
-    // credenciales de producción en la cuenta, no esta URL.
     const urlCheckout = result.init_point ?? result.sandbox_init_point
-
     return { url_checkout: urlCheckout ?? '' }
   } catch (err) {
     console.error('[MP] Error al crear preferencia:', err)
@@ -143,32 +148,30 @@ export async function crearPedido(formData: FormData) {
 }
 
 export async function actualizarEstadoPedido(pedidoId: string, paymentId: string) {
-  const user = await requireUser()
-  const supabase = await createClient()
+  // Funciona para usuarios logueados y para invitados (verificamos por id de
+  // pedido + estado del pago en MercadoPago). Service role server-side.
+  const supabase = createServiceClient()
 
   const { data: pedido } = await supabase
     .from('pedidos')
-    .select('id, estado, total')
+    .select('id, estado, total, user_id')
     .eq('id', pedidoId)
-    .eq('user_id', user.id)
     .single()
 
   if (!pedido) return { error: 'Pedido no encontrado' }
   if (pedido.estado === 'pagado') return { success: true }
 
-  // Verify payment status with MP
   const accessToken = process.env.MERCADOPAGO_ACCESS_TOKEN
   if (accessToken) {
     try {
       const mpClient = new MercadoPagoConfig({ accessToken })
       const paymentClient = new Payment(mpClient)
       const payment = await paymentClient.get({ id: paymentId })
-
       if (payment.status !== 'approved' && payment.status !== 'pending') {
         return { error: 'El pago no fue aprobado' }
       }
     } catch {
-      // If MP verification fails, proceed anyway (MP already redirected to success)
+      // Si falla la verificación, seguimos (MP ya redirigió a success).
     }
   }
 
@@ -179,22 +182,25 @@ export async function actualizarEstadoPedido(pedidoId: string, paymentId: string
 
   if (error) return { error: error.message }
 
-  // Auto-registro financiero del pedido pagado
-  const hoy = new Date()
-  const fechaHoy = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`
+  // Registro financiero del pedido pagado (best-effort: si el pedido es de
+  // invitado y la tabla exige created_by, no rompemos el flujo).
+  try {
+    const hoy = new Date()
+    const fechaHoy = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`
+    await supabase.from('transacciones').insert({
+      tipo:        'ingreso',
+      categoria:   'productos',
+      monto:       pedido.total,
+      descripcion: `Pedido #${pedidoId.slice(0, 8).toUpperCase()} — tienda online`,
+      fecha:       fechaHoy,
+      origen:      'pedido',
+      pedido_id:   pedidoId,
+      created_by:  pedido.user_id,
+    })
+  } catch (err) {
+    console.error('[checkout] No se registró la transacción del pedido:', err)
+  }
 
-  await supabase.from('transacciones').insert({
-    tipo:        'ingreso',
-    categoria:   'productos',
-    monto:       pedido.total,
-    descripcion: `Pedido #${pedidoId.slice(0, 8).toUpperCase()} — tienda online`,
-    fecha:       fechaHoy,
-    origen:      'pedido',
-    pedido_id:   pedidoId,
-    created_by:  user.id,
-  })
-
-  revalidatePath('/dashboard')
   revalidatePath('/admin/finanzas')
   return { success: true }
 }

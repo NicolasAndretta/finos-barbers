@@ -101,3 +101,21 @@ export async function createClient() {
 export function createBrowserClient() {
   return _createBrowserClient(SUPABASE_URL!, SUPABASE_ANON_KEY!)
 }
+
+// ─── Cliente con SERVICE ROLE (solo servidor) ────────────────────────────────
+
+/**
+ * Cliente con permisos elevados (bypassa RLS). USAR SOLO EN EL SERVIDOR
+ * (Server Actions / Route Handlers) y para operaciones validadas server-side,
+ * como crear un pedido de invitado (sin sesión). NUNCA importar en un client
+ * component — expondría la service role key.
+ */
+export function createServiceClient() {
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!serviceKey) {
+    throw new Error('Falta SUPABASE_SERVICE_ROLE_KEY para operaciones de servidor.')
+  }
+  return _createServerClient(SUPABASE_URL!, serviceKey, {
+    cookies: { getAll() { return [] }, setAll() {} },
+  })
+}

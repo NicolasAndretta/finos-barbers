@@ -14,11 +14,14 @@ const CATEGORIA_EMOJI: Record<string, string> = {
   'otros': '📦',
 }
 
-export function CheckoutForm() {
+export function CheckoutForm({ loggedIn }: { loggedIn: boolean }) {
   const { items, total } = useCart()
   const [mounted, setMounted]             = useState(false)
   const [tipoEntrega, setTipoEntrega]     = useState<TipoEntrega>('retiro')
   const [direccion, setDireccion]         = useState('')
+  const [nombre, setNombre]               = useState('')
+  const [email, setEmail]                 = useState('')
+  const [telefono, setTelefono]           = useState('')
   const [error, setError]                 = useState('')
   const [isPending, startTransition]      = useTransition()
 
@@ -62,11 +65,23 @@ export function CheckoutForm() {
       return
     }
 
+    if (!loggedIn) {
+      if (!nombre.trim()) { setError('Ingresá tu nombre'); return }
+      if (!email.trim() && !telefono.trim()) {
+        setError('Dejá un email o teléfono de contacto'); return
+      }
+    }
+
     startTransition(async () => {
       const fd = new FormData()
       fd.append('items', JSON.stringify(items.map(i => ({ id: i.id, cantidad: i.cantidad }))))
       fd.append('tipo_entrega', tipoEntrega)
       if (tipoEntrega === 'envio') fd.append('direccion_envio', direccion.trim())
+      if (!loggedIn) {
+        fd.append('cliente_nombre', nombre.trim())
+        fd.append('cliente_email', email.trim())
+        fd.append('cliente_telefono', telefono.trim())
+      }
 
       const result = await crearPedido(fd)
 
@@ -124,6 +139,39 @@ export function CheckoutForm() {
 
       {/* Der: entrega + pago (2/5) */}
       <div className="lg:col-span-2 space-y-6">
+        {/* Datos del invitado (solo si no hay sesión) */}
+        {!loggedIn && (
+          <div>
+            <h2 className="text-lg font-bold text-white mb-1">Tus datos</h2>
+            <p className="text-zinc-500 text-xs mb-4">
+              Comprá sin crear cuenta. Te contactamos por acá.
+            </p>
+            <div className="space-y-3">
+              <input
+                type="text"
+                value={nombre}
+                onChange={e => setNombre(e.target.value)}
+                placeholder="Nombre y apellido"
+                className="w-full bg-zinc-900 border border-zinc-800 text-white text-sm rounded-lg px-3 py-2.5 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500/50"
+              />
+              <input
+                type="email"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                placeholder="Email (para el comprobante)"
+                className="w-full bg-zinc-900 border border-zinc-800 text-white text-sm rounded-lg px-3 py-2.5 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500/50"
+              />
+              <input
+                type="tel"
+                value={telefono}
+                onChange={e => setTelefono(e.target.value)}
+                placeholder="WhatsApp / teléfono"
+                className="w-full bg-zinc-900 border border-zinc-800 text-white text-sm rounded-lg px-3 py-2.5 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500/50"
+              />
+            </div>
+          </div>
+        )}
+
         {/* Método de entrega */}
         <div>
           <h2 className="text-lg font-bold text-white mb-4">Método de entrega</h2>
