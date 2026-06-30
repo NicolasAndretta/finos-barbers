@@ -6,6 +6,7 @@ import { getBarberos } from "@/app/actions/barberos";
 import { getResenasVisibles } from "@/app/actions/resenas";
 import { Logo } from "@/components/ui/Logo";
 import { WhatsappFloat } from "@/components/ui/WhatsappFloat";
+import { MobileMenu } from "@/components/ui/MobileMenu";
 import { SITE, whatsappLink } from "@/lib/site";
 
 export default async function HomePage() {
@@ -121,6 +122,11 @@ export default async function HomePage() {
                 </Link>
               </>
             )}
+
+            <MobileMenu
+              panelLink={panelLink}
+              panelLabel={profile?.role === "admin" ? "Ir al panel" : "Mi cuenta"}
+            />
           </div>
         </div>
       </header>

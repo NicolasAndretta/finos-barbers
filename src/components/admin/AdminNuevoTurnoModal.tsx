@@ -4,6 +4,7 @@ import { useState, useTransition, useEffect } from 'react'
 import { getServicios, getBarberos, getHorariosDisponibles } from '@/app/actions/reservas'
 import { adminGetClientes, adminCrearTurno } from '@/app/actions/admin'
 import { Spinner } from '@/components/ui/Spinner'
+import { formatPrecio } from '@/lib/format'
 import type { Servicio, Barbero } from '@/types'
 
 type ClienteResumen = {
@@ -275,7 +276,7 @@ export function AdminNuevoTurnoModal({ onClose, onSuccess }: Props) {
                       >
                         <div className="flex justify-between items-center">
                           <span className="text-white font-medium text-sm">{s.nombre}</span>
-                          <span className="text-amber-400 font-bold text-sm">${s.precio}</span>
+                          <span className="text-amber-400 font-bold text-sm">{formatPrecio(s.precio)}</span>
                         </div>
                         <p className="text-zinc-500 text-xs mt-1">{s.duracion_minutos} min</p>
                       </button>
@@ -419,7 +420,7 @@ export function AdminNuevoTurnoModal({ onClose, onSuccess }: Props) {
                       </div>
                       <div className="flex justify-between items-center px-4 py-3.5">
                         <span className="text-zinc-400 text-sm font-medium">Total</span>
-                        <span className="text-amber-400 font-bold text-lg">${servicioSeleccionado.precio}</span>
+                        <span className="text-amber-400 font-bold text-lg">{formatPrecio(servicioSeleccionado.precio)}</span>
                       </div>
                     </div>
 

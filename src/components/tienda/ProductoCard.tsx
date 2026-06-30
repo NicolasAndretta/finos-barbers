@@ -1,6 +1,7 @@
 'use client'
 
 import { useCart } from '@/lib/cart-context'
+import { formatPrecio } from '@/lib/format'
 import type { Producto } from '@/types'
 
 const CATEGORIA_META: Record<string, { label: string; emoji: string; badgeClass: string; gradientClass: string }> = {
@@ -84,7 +85,7 @@ export function ProductoCard({ producto }: { producto: Producto }) {
 
         {/* Precio + acción */}
         <div className="flex items-center justify-between gap-3 mt-1">
-          <span className="text-amber-400 font-black text-xl">${producto.precio}</span>
+          <span className="text-amber-400 font-black text-xl">{formatPrecio(producto.precio)}</span>
 
           {sinStock ? (
             <span className="text-zinc-600 text-xs font-medium">No disponible</span>

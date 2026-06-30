@@ -3,6 +3,7 @@
 import { useState, useEffect, useTransition } from 'react'
 import { adminGetCalendario, adminConfirmarTurno, adminCancelarTurno } from '@/app/actions/admin'
 import { Spinner } from '@/components/ui/Spinner'
+import { formatPrecio } from '@/lib/format'
 
 // ─── Constantes del grid ─────────────────────────────────────────────────────
 const HORA_INICIO = 9
@@ -493,7 +494,7 @@ export function CalendarioSemanal() {
                   </div>
                   <div className="flex justify-between items-center px-4 py-2.5">
                     <span className="text-zinc-500 text-sm">Precio</span>
-                    <span className="text-amber-400 font-bold text-base">${selected.servicios?.precio}</span>
+                    <span className="text-amber-400 font-bold text-base">{formatPrecio(selected.servicios?.precio)}</span>
                   </div>
                 </div>
 

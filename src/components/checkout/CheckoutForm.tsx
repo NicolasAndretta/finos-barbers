@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useCart } from '@/lib/cart-context'
 import { crearPedido } from '@/app/actions/checkout'
 import { Spinner } from '@/components/ui/Spinner'
+import { formatPrecio } from '@/lib/format'
 import type { TipoEntrega } from '@/types'
 
 const CATEGORIA_EMOJI: Record<string, string> = {
@@ -118,13 +119,13 @@ export function CheckoutForm({ loggedIn }: { loggedIn: boolean }) {
               <div className="flex-1 min-w-0">
                 <p className="text-white font-semibold text-sm truncate">{item.nombre}</p>
                 <p className="text-zinc-500 text-xs mt-0.5">
-                  ${item.precio} × {item.cantidad}
+                  {formatPrecio(item.precio)} × {item.cantidad}
                 </p>
               </div>
 
               {/* Subtotal */}
               <span className="text-amber-400 font-bold text-sm shrink-0">
-                ${(item.precio * item.cantidad).toFixed(2)}
+                {formatPrecio(item.precio * item.cantidad)}
               </span>
             </div>
           ))}
@@ -133,7 +134,7 @@ export function CheckoutForm({ loggedIn }: { loggedIn: boolean }) {
         {/* Total */}
         <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 flex justify-between items-center">
           <span className="text-zinc-400 font-medium">Total</span>
-          <span className="text-white font-black text-2xl">${total.toFixed(2)}</span>
+          <span className="text-white font-black text-2xl">{formatPrecio(total)}</span>
         </div>
       </div>
 

@@ -3,6 +3,7 @@
 import React, { useState, useTransition, useCallback, useEffect } from 'react'
 import { adminGetServicios, adminCrearServicio, adminActualizarServicio, adminToggleServicio } from '@/app/actions/admin'
 import { Spinner } from '@/components/ui/Spinner'
+import { formatPrecio } from '@/lib/format'
 
 type Servicio = {
   id: string
@@ -295,7 +296,7 @@ export default function AdminServiciosPage() {
                   <div>
                     <span className="text-zinc-500">Precio:</span>{' '}
                     <span className="text-amber-400 font-bold">
-                      ${servicio.precio}
+                      {formatPrecio(servicio.precio)}
                     </span>
                   </div>
                   <div>

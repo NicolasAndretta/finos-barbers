@@ -3,6 +3,7 @@
 import React, { useTransition } from 'react'
 import { cancelarTurno } from '@/app/actions/reservas'
 import { Spinner } from '@/components/ui/Spinner'
+import { formatPrecio } from '@/lib/format'
 
 type Turno = {
   id: string
@@ -54,7 +55,7 @@ export function TurnoCard({ turno }: { turno: Turno }) {
       </div>
 
       <div className="flex flex-col items-end gap-2 w-full sm:w-auto">
-        <p className="font-bold text-white">${turno.servicios.precio}</p>
+        <p className="font-bold text-white">{formatPrecio(turno.servicios.precio)}</p>
         {isCancelable && (
           <button onClick={handleCancelar} disabled={isPending}
             className="w-full sm:w-auto text-xs font-bold text-red-400 hover:text-red-300 bg-red-400/10 hover:bg-red-400/20 px-3 py-1.5 rounded-lg transition-colors flex items-center justify-center gap-2 cursor-pointer">

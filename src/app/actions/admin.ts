@@ -32,6 +32,9 @@ export async function adminGetTurnos(filters?: {
       hora,
       estado,
       created_at,
+      metodo_pago,
+      sena_monto,
+      sena_estado,
       profiles ( nombre, apellido, email ),
       barberos ( nombre, apellido ),
       servicios ( nombre, duracion_minutos, precio )
@@ -131,6 +134,38 @@ export async function adminConfirmarTurno(turnoId: string) {
   revalidatePath('/admin/turnos')
   revalidatePath('/turnos')
   revalidatePath('/admin/finanzas')
+  return { success: true }
+}
+
+/**
+ * Marca la seña de un turno como pagada (transferencia/efectivo confirmados a
+ * mano por el admin). Confirma el turno si estaba pendiente. Idempotente.
+ */
+export async function adminConfirmarSena(turnoId: string) {
+  await requireAdmin()
+  const supabase = await createClient()
+
+  const { data: turno, error: getErr } = await supabase
+    .from('turnos')
+    .select('id, estado, sena_estado')
+    .eq('id', turnoId)
+    .single()
+
+  if (getErr || !turno) return { error: 'Turno no encontrado' }
+  if (turno.sena_estado === 'pagada') return { success: true }
+
+  const { error: updErr } = await supabase
+    .from('turnos')
+    .update({
+      sena_estado: 'pagada',
+      ...(turno.estado === 'pendiente' ? { estado: 'confirmado' } : {}),
+    })
+    .eq('id', turnoId)
+
+  if (updErr) return { error: updErr.message }
+
+  revalidatePath('/admin/turnos')
+  revalidatePath('/turnos')
   return { success: true }
 }
 

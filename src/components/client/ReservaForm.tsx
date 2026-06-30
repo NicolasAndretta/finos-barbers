@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { getHorariosDisponibles, crearReserva, type MetodoPago } from '@/app/actions/reservas'
 import { Spinner } from '@/components/ui/Spinner'
 import { SITE } from '@/lib/site'
+import { formatPrecio } from '@/lib/format'
 
 type Servicio = { id: string; nombre: string; duracion_minutos: number; precio: number; descripcion: string }
 type Barbero = { id: string; nombre: string; apellido: string }
@@ -103,7 +104,7 @@ export function ReservaForm({ servicios, barberos }: { servicios: Servicio[], ba
                 <p className="text-xs text-zinc-400 mt-1">{s.descripcion}</p>
               </div>
               <div className="text-right">
-                <p className="font-bold text-white">${s.precio}</p>
+                <p className="font-bold text-white">{formatPrecio(s.precio)}</p>
                 <p className="text-xs text-zinc-500 mt-1">{s.duracion_minutos} min</p>
               </div>
             </button>
@@ -199,15 +200,15 @@ export function ReservaForm({ servicios, barberos }: { servicios: Servicio[], ba
             <div className="pt-6 border-t border-zinc-900">
               <h3 className="text-lg font-bold text-white mb-4">Resumen</h3>
               <div className="space-y-2 text-sm text-zinc-400 mb-5 bg-zinc-900/50 p-4 rounded-xl">
-                <p><strong className="text-zinc-200">Servicio:</strong> {servicioSeleccionado.nombre} (${servicioSeleccionado.precio})</p>
+                <p><strong className="text-zinc-200">Servicio:</strong> {servicioSeleccionado.nombre} ({formatPrecio(servicioSeleccionado.precio)})</p>
                 <p><strong className="text-zinc-200">Barbero:</strong> {barberoSeleccionado.nombre} {barberoSeleccionado.apellido}</p>
                 <p><strong className="text-zinc-200">Fecha:</strong> {fecha.split('-').reverse().join('/')}</p>
                 <p><strong className="text-zinc-200">Hora:</strong> {horaSeleccionada}</p>
                 <div className="pt-2 mt-2 border-t border-zinc-800 flex justify-between items-center">
                   <span>Seña ({SITE.senaPorcentaje}%) para reservar</span>
-                  <span className="text-amber-400 font-bold text-base">${sena}</span>
+                  <span className="text-amber-400 font-bold text-base">{formatPrecio(sena)}</span>
                 </div>
-                <p className="text-xs text-zinc-600">El resto (${servicioSeleccionado.precio - sena}) se abona en el local.</p>
+                <p className="text-xs text-zinc-600">El resto ({formatPrecio(servicioSeleccionado.precio - sena)}) se abona en el local.</p>
               </div>
 
               <p className="text-sm font-semibold text-white mb-3">¿Cómo querés dejar la seña?</p>
@@ -239,7 +240,7 @@ export function ReservaForm({ servicios, barberos }: { servicios: Servicio[], ba
                   className="w-full bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold py-3 rounded-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg"
                 >
                   {isPending && <Spinner className="w-5 h-5 text-zinc-950" />}
-                  {metodoPago === 'mercadopago' ? `Pagar seña $${sena}` : 'Confirmar reserva'}
+                  {metodoPago === 'mercadopago' ? `Pagar seña ${formatPrecio(sena)}` : 'Confirmar reserva'}
                 </button>
               </form>
             </div>
@@ -256,13 +257,13 @@ export function ReservaForm({ servicios, barberos }: { servicios: Servicio[], ba
               <h3 className="text-xl font-bold text-white">¡Turno reservado!</h3>
               {confirmacion.metodo === 'transferencia' ? (
                 <div className="mt-3 text-sm text-zinc-400">
-                  <p>Para confirmarlo, transferí la seña de <span className="text-amber-400 font-bold">${confirmacion.sena}</span> al alias:</p>
+                  <p>Para confirmarlo, transferí la seña de <span className="text-amber-400 font-bold">{formatPrecio(confirmacion.sena)}</span> al alias:</p>
                   <p className="mt-2 inline-block bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-2 text-white font-mono">{confirmacion.alias}</p>
                   <p className="mt-2 text-xs text-zinc-600">Mandanos el comprobante por WhatsApp y listo.</p>
                 </div>
               ) : (
                 <p className="mt-3 text-sm text-zinc-400">
-                  Dejás la seña de <span className="text-amber-400 font-bold">${confirmacion.sena}</span> en efectivo al llegar al local. ¡Te esperamos!
+                  Dejás la seña de <span className="text-amber-400 font-bold">{formatPrecio(confirmacion.sena)}</span> en efectivo al llegar al local. ¡Te esperamos!
                 </p>
               )}
               <button onClick={() => router.push('/turnos')}

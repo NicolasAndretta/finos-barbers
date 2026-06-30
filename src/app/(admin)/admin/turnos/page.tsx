@@ -1,18 +1,28 @@
 'use client'
 
 import React, { useState, useTransition, useCallback, useEffect } from 'react'
-import { adminGetTurnos, adminConfirmarTurno, adminCancelarTurno } from '@/app/actions/admin'
+import { adminGetTurnos, adminConfirmarTurno, adminConfirmarSena, adminCancelarTurno } from '@/app/actions/admin'
 import { AdminNuevoTurnoModal } from '@/components/admin/AdminNuevoTurnoModal'
 import { Spinner } from '@/components/ui/Spinner'
+import { formatPrecio } from '@/lib/format'
 
 type Turno = {
   id: string
   fecha: string
   hora: string
   estado: string
+  metodo_pago: string | null
+  sena_monto: number | null
+  sena_estado: string | null
   profiles: { nombre: string; apellido: string; email: string } | null
   barberos: { nombre: string; apellido: string } | null
   servicios: { nombre: string; duracion_minutos: number; precio: number } | null
+}
+
+const METODO_LABEL: Record<string, string> = {
+  mercadopago: 'Mercado Pago',
+  transferencia: 'Transferencia',
+  efectivo: 'Efectivo',
 }
 
 export default function AdminTurnosPage() {
@@ -54,6 +64,17 @@ export default function AdminTurnosPage() {
   const handleConfirmar = (turnoId: string) => {
     startTransition(async () => {
       const res = await adminConfirmarTurno(turnoId)
+      if (res.error) {
+        alert(res.error)
+      } else {
+        await loadTurnos()
+      }
+    })
+  }
+
+  const handleConfirmarSena = (turnoId: string) => {
+    startTransition(async () => {
+      const res = await adminConfirmarSena(turnoId)
       if (res.error) {
         alert(res.error)
       } else {
@@ -198,10 +219,31 @@ export default function AdminTurnosPage() {
                       <span className="text-zinc-300 font-medium">{formatHora(turno.hora)}</span>
                     </div>
                   </div>
+
+                  {/* Seña / método de pago */}
+                  {turno.metodo_pago && (
+                    <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
+                      <span className="text-zinc-500">Seña:</span>
+                      <span className="text-zinc-300 font-medium">
+                        {formatPrecio(turno.sena_monto)}
+                        {' · '}
+                        {METODO_LABEL[turno.metodo_pago] ?? turno.metodo_pago}
+                      </span>
+                      <span
+                        className={`px-2 py-0.5 rounded-full font-semibold border ${
+                          turno.sena_estado === 'pagada'
+                            ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                            : 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                        }`}
+                      >
+                        {turno.sena_estado === 'pagada' ? 'Seña pagada' : 'Seña pendiente'}
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex flex-col sm:flex-row items-end sm:items-center gap-3 w-full lg:w-auto">
-                  <p className="font-bold text-amber-400 text-lg">${turno.servicios?.precio}</p>
+                  <p className="font-bold text-amber-400 text-lg">{formatPrecio(turno.servicios?.precio)}</p>
 
                   <div className="flex gap-2 w-full sm:w-auto">
                     {turno.estado === 'pendiente' && (
@@ -214,6 +256,19 @@ export default function AdminTurnosPage() {
                         Confirmar
                       </button>
                     )}
+
+                    {turno.sena_estado === 'pendiente' &&
+                      turno.metodo_pago !== 'mercadopago' &&
+                      turno.estado !== 'cancelado' && (
+                        <button
+                          onClick={() => handleConfirmarSena(turno.id)}
+                          disabled={isPending}
+                          className="flex-1 sm:flex-none text-xs font-bold text-amber-400 hover:text-amber-300 bg-amber-400/10 hover:bg-amber-400/20 px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                        >
+                          {isPending && <Spinner className="w-3 h-3 text-amber-400" />}
+                          Confirmar seña
+                        </button>
+                      )}
 
                     {(turno.estado === 'pendiente' || turno.estado === 'confirmado') && (
                       <button

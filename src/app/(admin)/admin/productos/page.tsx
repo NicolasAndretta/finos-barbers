@@ -3,6 +3,7 @@
 import React, { useState, useTransition, useCallback, useEffect } from 'react'
 import { adminGetProductos, adminCrearProducto, adminActualizarProducto, adminToggleProducto } from '@/app/actions/tienda'
 import { Spinner } from '@/components/ui/Spinner'
+import { formatPrecio } from '@/lib/format'
 import type { Producto, CategoriaProducto } from '@/types'
 
 const CATEGORIAS: { value: CategoriaProducto; label: string }[] = [
@@ -322,7 +323,7 @@ export default function AdminProductosPage() {
                 </div>
                 <p className="text-zinc-500 text-xs truncate">{p.descripcion}</p>
                 <div className="flex gap-4 mt-2 text-sm">
-                  <span className="text-amber-400 font-bold">${p.precio}</span>
+                  <span className="text-amber-400 font-bold">{formatPrecio(p.precio)}</span>
                   <span className="text-zinc-500">
                     Stock: <span className={`font-semibold ${p.stock === 0 ? 'text-red-400' : p.stock <= 3 ? 'text-yellow-400' : 'text-zinc-300'}`}>
                       {p.stock}

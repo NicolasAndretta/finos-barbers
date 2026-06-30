@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useCart } from '@/lib/cart-context'
+import { formatPrecio } from '@/lib/format'
 
 export function CartDrawer() {
   const { items, isOpen, count, total, removeItem, updateCantidad, closeCart } = useCart()
@@ -80,7 +81,7 @@ export function CartDrawer() {
                   {/* Info */}
                   <div className="flex-1 min-w-0">
                     <p className="text-white font-medium text-sm leading-tight truncate">{item.nombre}</p>
-                    <p className="text-amber-400 font-bold text-sm mt-0.5">${item.precio}</p>
+                    <p className="text-amber-400 font-bold text-sm mt-0.5">{formatPrecio(item.precio)}</p>
 
                     {/* Controles de cantidad */}
                     <div className="flex items-center gap-2 mt-2">
@@ -100,7 +101,7 @@ export function CartDrawer() {
                         +
                       </button>
                       <span className="text-zinc-600 text-xs ml-1">
-                        = ${(item.precio * item.cantidad).toFixed(2)}
+                        = {formatPrecio(item.precio * item.cantidad)}
                       </span>
                     </div>
                   </div>
@@ -125,7 +126,7 @@ export function CartDrawer() {
               {/* Total */}
               <div className="flex justify-between items-center">
                 <span className="text-zinc-400 text-sm">Subtotal</span>
-                <span className="text-white font-bold text-xl">${total.toFixed(2)}</span>
+                <span className="text-white font-bold text-xl">{formatPrecio(total)}</span>
               </div>
 
               {/* CTAs */}
