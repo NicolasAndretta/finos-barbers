@@ -56,8 +56,15 @@ gitignoreado). Ya está en la base, respetando el patrón RLS existente (`is_adm
 2. **Deploy a Hostinger** (el callback necesita estar online).
 3. Entrar a `/admin/pagos` → "Conectar" → autorizar → probar un pago.
 
-## 🧹 Menor
-- Admin de turnos: mostrar `metodo_pago` + `sena_estado` + botón "confirmar seña" (transferencias).
-- Limpiar productos demo viejos inactivos del admin (nombres de prueba).
-- Formato de precios con separador de miles (`$8.500`).
-- Menú mobile (hamburguesa) en la home.
+## ✅ Pulido final (verificado en mobile con capturas)
+- **Menú mobile (hamburguesa)** en la home: drawer con portal a `document.body`
+  (para que el `fixed` se ancle al viewport y no al header con `backdrop-blur`).
+- **Formato de precios** con separador de miles (`$8.500`) vía helper `lib/format.ts`
+  (`formatPrecio`, es-AR), aplicado en tienda, carrito, checkout, reserva, turnos
+  del cliente y panel admin.
+- **Admin de turnos**: muestra `metodo_pago` + `sena_estado` y permite confirmar la
+  seña de transferencias/efectivo a mano (`adminConfirmarSena`).
+
+## 🧹 Menor (pendiente)
+- Limpiar productos demo viejos inactivos del admin (nombres de prueba). ⚠️ Requiere
+  decisión de Nico sobre cuáles borrar (operación destructiva sobre la base).
