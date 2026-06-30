@@ -15,26 +15,25 @@ Estado al 29/06/2026. Proyecto que pasa de demo a **cliente real (Leandro)**.
 - Responsive verificado (mobile/tablet/desktop). Build + lint OK.
 - Los 2 bugs del viejo `BUGS.md` ya estaban resueltos en el código.
 
-## 🔒 Pendiente — necesita acceso DDL a Supabase
-Estas features requieren **crear/alterar tablas** en Supabase. Con las keys REST del
-`.env.local` se pueden insertar datos, pero **no correr CREATE/ALTER TABLE**.
+## ✅ Schema aplicado (migración 0001)
+Acceso DDL resuelto con `scripts/migrate.mjs` (lee `SUPABASE_DB_URL` del `.env.local`
+gitignoreado). Ya está en la base, respetando el patrón RLS existente (`is_admin()`):
+- `pedidos.user_id` nullable + `cliente_nombre/email/telefono` (base para guest checkout).
+- Tabla `categorias` (productos y servicios, subcategorías vía `parent_id`).
+- `productos.categoria_id` + `productos.stock_minimo`; `servicios.categoria_id`.
+- `barberos.bio/foto_url/especialidad/dias`.
+- Tabla `resenas` + RLS (lectura pública de visibles, escritura admin).
 
-**Para destrabar (elegir una):**
-1. Pasar la **connection string de Postgres** de Supabase (Settings → Database →
-   Connection string). Con eso se aplica y verifica todo de punta a punta. *(No es un
-   dato ultra-sensible, pero igual conviene rotarla después si se comparte.)*
-2. O pegar el SQL de migración en el **SQL Editor** de Supabase (una vez).
-
-### Migración a aplicar
-- **Guest checkout** (comprar sin cuenta): `pedidos.user_id` nullable + columnas
-  `cliente_nombre`, `cliente_email`, `cliente_telefono`. Hacer la tienda pública
-  (hoy `(client)/layout.tsx` exige `requireUser()`). Checkout sin login.
-- **Categorías y subcategorías**: tabla `categorias` (`id, nombre, slug, tipo[producto|servicio],
-  parent_id, orden, activo`). FK `productos.categoria_id` y `servicios.categoria_id`.
-- **Stock pro**: `productos.stock_minimo` + alertas de stock bajo en el admin.
-- **Barberos**: `bio`, `foto_url`, `especialidad`, `dias[]` (ej. Facundo: sábados).
-- **Reseñas**: tabla `resenas` (`nombre, texto, rating, visible, orden`) administrable.
-- RLS: lectura pública de catálogo/reseñas; escritura solo admin.
+## 🛠️ Pendiente — código de app sobre el schema nuevo
+Ahora que el schema existe, falta el código que lo usa:
+- **Guest checkout**: tienda pública (hoy `(client)/layout.tsx` exige `requireUser()`),
+  checkout sin login (insertar pedido server-side con service role, validado), página
+  de éxito legible por invitado.
+- **Admin de categorías/subcategorías**: ABM + asignarlas a productos y servicios.
+- **Stock**: alertas de stock bajo (`stock <= stock_minimo`) en el panel.
+- **Barberos**: editar bio/foto/especialidad/días en el admin y mostrarlos en la home/reserva.
+- **Reseñas**: ABM en el admin + sección pública leyendo de `resenas`.
+- Seed de demo de todo lo anterior (categorías reales, bios de Leandro/Facundo, reseñas).
 
 ## 💳 Pendiente — pagos del turno (pedido de Nico, 29/06)
 - Al **reservar turno** se debe poder pagar con **todos los medios** (no solo Mercado
