@@ -15,13 +15,16 @@ export const SITE = {
   descripcion:
     "Barbería premium en Buenos Aires. Cortes, barba y afeitado tradicional con navaja, en un ambiente pensado para que la pases bien.",
 
-  direccion: "Ramón L. Falcón 4955",
+  direccion: "Av. Rivadavia 10072",
   ciudad: "CABA, Buenos Aires",
   email: "finos_barbers@outlook.com",
 
-  // TODO(Leandro): número real de WhatsApp. Placeholder por ahora.
-  whatsapp: "5491100000000",
-  whatsappMostrar: "+54 9 11 0000-0000",
+  // WhatsApp real de Leandro.
+  // OJO: el proyecto todavía NO está cerrado. Mientras sea demo, evitá que el
+  // botón mande mensajes reales a Leandro (mostrar la demo sin tocar "Enviar",
+  // o apuntar temporalmente al número de Nico si se muestra en vivo).
+  whatsapp: "5491133794955",
+  whatsappMostrar: "+54 9 11 3379-4955",
 
   instagram: "finos_barbers",
   instagramUrl: "https://instagram.com/finos_barbers",
@@ -33,10 +36,8 @@ export const SITE = {
   senaPorcentaje: 40,
   mediosPago: ["Transferencia", "Mercado Pago", "Efectivo", "Tarjetas"],
 
-  // TODO(Leandro): confirmar horarios reales.
   horarios: [
-    { dia: "Lunes a Viernes", horas: "10:00 – 20:00" },
-    { dia: "Sábados", horas: "09:00 – 18:00" },
+    { dia: "Lunes a Sábado", horas: "10:00 – 20:00" },
     { dia: "Domingos", horas: "Cerrado" },
   ],
 
