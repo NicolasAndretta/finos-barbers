@@ -33,8 +33,10 @@ export type Producto = {
   descripcion: string
   precio: number
   stock: number
+  stock_minimo: number
   imagen_url: string | null
   categoria: CategoriaProducto
+  categoria_id: string | null
   activo: boolean
   created_at: string
 }

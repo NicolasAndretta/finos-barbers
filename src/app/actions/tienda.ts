@@ -31,12 +31,13 @@ export async function adminGetProductos() {
 export async function adminCrearProducto(formData: FormData) {
   await requireAdmin()
 
-  const nombre      = formData.get('nombre') as string
-  const descripcion = formData.get('descripcion') as string
-  const precio      = formData.get('precio') as string
-  const stock       = formData.get('stock') as string
-  const imagen_url  = (formData.get('imagen_url') as string) || null
-  const categoria   = formData.get('categoria') as string
+  const nombre       = formData.get('nombre') as string
+  const descripcion  = formData.get('descripcion') as string
+  const precio       = formData.get('precio') as string
+  const stock        = formData.get('stock') as string
+  const stockMinimo  = formData.get('stock_minimo') as string
+  const imagen_url   = (formData.get('imagen_url') as string) || null
+  const categoria    = formData.get('categoria') as string
 
   if (!nombre || !descripcion || !precio || !stock || !categoria) {
     return { error: 'Faltan campos requeridos' }
@@ -48,6 +49,7 @@ export async function adminCrearProducto(formData: FormData) {
     descripcion,
     precio: parseFloat(precio),
     stock: parseInt(stock),
+    stock_minimo: stockMinimo ? parseInt(stockMinimo) : 3,
     imagen_url: imagen_url?.trim() || null,
     categoria,
     activo: true,
@@ -63,13 +65,14 @@ export async function adminCrearProducto(formData: FormData) {
 export async function adminActualizarProducto(formData: FormData) {
   await requireAdmin()
 
-  const id          = formData.get('id') as string
-  const nombre      = formData.get('nombre') as string
-  const descripcion = formData.get('descripcion') as string
-  const precio      = formData.get('precio') as string
-  const stock       = formData.get('stock') as string
-  const imagen_url  = (formData.get('imagen_url') as string) || null
-  const categoria   = formData.get('categoria') as string
+  const id           = formData.get('id') as string
+  const nombre       = formData.get('nombre') as string
+  const descripcion  = formData.get('descripcion') as string
+  const precio       = formData.get('precio') as string
+  const stock        = formData.get('stock') as string
+  const stockMinimo  = formData.get('stock_minimo') as string
+  const imagen_url   = (formData.get('imagen_url') as string) || null
+  const categoria    = formData.get('categoria') as string
 
   if (!id || !nombre || !descripcion || !precio || !stock || !categoria) {
     return { error: 'Faltan campos requeridos' }
@@ -83,6 +86,7 @@ export async function adminActualizarProducto(formData: FormData) {
       descripcion,
       precio: parseFloat(precio),
       stock: parseInt(stock),
+      ...(stockMinimo ? { stock_minimo: parseInt(stockMinimo) } : {}),
       imagen_url: imagen_url?.trim() || null,
       categoria,
     })

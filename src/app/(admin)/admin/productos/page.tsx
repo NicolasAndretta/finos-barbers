@@ -17,12 +17,13 @@ type FormState = {
   descripcion: string
   precio: string
   stock: string
+  stock_minimo: string
   imagen_url: string
   categoria: CategoriaProducto
 }
 
 const FORM_EMPTY: FormState = {
-  nombre: '', descripcion: '', precio: '', stock: '', imagen_url: '', categoria: 'cuidado-cabello',
+  nombre: '', descripcion: '', precio: '', stock: '', stock_minimo: '3', imagen_url: '', categoria: 'cuidado-cabello',
 }
 
 export default function AdminProductosPage() {
@@ -61,12 +62,13 @@ export default function AdminProductosPage() {
   const handleEdit = (p: Producto) => {
     setEditingProducto(p)
     setFormData({
-      nombre:      p.nombre,
-      descripcion: p.descripcion,
-      precio:      p.precio.toString(),
-      stock:       p.stock.toString(),
-      imagen_url:  p.imagen_url ?? '',
-      categoria:   p.categoria,
+      nombre:       p.nombre,
+      descripcion:  p.descripcion,
+      precio:       p.precio.toString(),
+      stock:        p.stock.toString(),
+      stock_minimo: (p.stock_minimo ?? 3).toString(),
+      imagen_url:   p.imagen_url ?? '',
+      categoria:    p.categoria,
     })
     setShowForm(true)
     setErrorMsg('')
@@ -80,10 +82,11 @@ export default function AdminProductosPage() {
       const fd = new FormData()
       fd.append('nombre',      formData.nombre)
       fd.append('descripcion', formData.descripcion)
-      fd.append('precio',      formData.precio)
-      fd.append('stock',       formData.stock)
-      fd.append('imagen_url',  formData.imagen_url)
-      fd.append('categoria',   formData.categoria)
+      fd.append('precio',       formData.precio)
+      fd.append('stock',        formData.stock)
+      fd.append('stock_minimo', formData.stock_minimo)
+      fd.append('imagen_url',   formData.imagen_url)
+      fd.append('categoria',    formData.categoria)
 
       let res: { error?: string }
       if (editingProducto) {
@@ -126,6 +129,26 @@ export default function AdminProductosPage() {
           + Nuevo Producto
         </button>
       </div>
+
+      {/* Aviso de stock bajo */}
+      {(() => {
+        const alertas = productos.filter(p => p.activo && p.stock <= (p.stock_minimo ?? 3))
+        if (alertas.length === 0) return null
+        const sinStock = alertas.filter(p => p.stock === 0).length
+        return (
+          <div className="mb-6 flex items-center gap-3 bg-yellow-500/10 border border-yellow-500/25 rounded-xl px-4 py-3">
+            <svg className="w-5 h-5 text-yellow-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                d="M12 9v2m0 4h.01M5 19h14a2 2 0 001.84-2.75L13.74 4a2 2 0 00-3.5 0L3.18 16.25A2 2 0 005 19z" />
+            </svg>
+            <p className="text-sm text-yellow-200">
+              <span className="font-bold">{alertas.length}</span> producto{alertas.length !== 1 ? 's' : ''} con stock bajo
+              {sinStock > 0 && <> · <span className="font-bold text-red-300">{sinStock} sin stock</span></>}.
+              Reponé para no perder ventas.
+            </p>
+          </div>
+        )
+      })()}
 
       {/* Formulario */}
       {showForm && (
@@ -202,15 +225,29 @@ export default function AdminProductosPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-zinc-400 mb-1">URL imagen (opcional)</label>
+                <label className="block text-sm font-medium text-zinc-400 mb-1">
+                  Stock mínimo
+                  <span className="text-zinc-600 font-normal"> (alerta)</span>
+                </label>
                 <input
-                  type="url"
-                  value={formData.imagen_url}
-                  onChange={e => setFormData({ ...formData, imagen_url: e.target.value })}
-                  placeholder="https://..."
+                  type="number" min="0"
+                  value={formData.stock_minimo}
+                  onChange={e => setFormData({ ...formData, stock_minimo: e.target.value })}
+                  placeholder="3"
                   className="w-full bg-zinc-900 border border-zinc-800 text-white rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
                 />
               </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-zinc-400 mb-1">URL imagen (opcional)</label>
+              <input
+                type="url"
+                value={formData.imagen_url}
+                onChange={e => setFormData({ ...formData, imagen_url: e.target.value })}
+                placeholder="https://..."
+                className="w-full bg-zinc-900 border border-zinc-800 text-white rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+              />
             </div>
 
             <div className="flex gap-3 pt-2">
@@ -273,6 +310,15 @@ export default function AdminProductosPage() {
                   }`}>
                     {p.activo ? 'Activo' : 'Inactivo'}
                   </span>
+                  {p.stock === 0 ? (
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold border bg-red-500/10 text-red-400 border-red-500/20">
+                      Sin stock
+                    </span>
+                  ) : p.stock <= (p.stock_minimo ?? 3) ? (
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold border bg-yellow-500/10 text-yellow-400 border-yellow-500/20">
+                      Stock bajo
+                    </span>
+                  ) : null}
                 </div>
                 <p className="text-zinc-500 text-xs truncate">{p.descripcion}</p>
                 <div className="flex gap-4 mt-2 text-sm">
