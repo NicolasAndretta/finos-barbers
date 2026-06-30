@@ -2,6 +2,7 @@ import React from 'react'
 import Link from 'next/link'
 import { requireUser } from '@/lib/auth'
 import { LogoutButton } from '@/components/ui/LogoutButton'
+import { Logo } from '@/components/ui/Logo'
 import { CartProvider } from '@/lib/cart-context'
 import { CartButton } from '@/components/tienda/CartButton'
 import { CartDrawer } from '@/components/tienda/CartDrawer'
@@ -14,9 +15,13 @@ export default async function ClientLayout({ children }: { children: React.React
       <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col font-sans">
         <header className="border-b border-zinc-900 bg-zinc-950/80 backdrop-blur-md sticky top-0 z-40 px-6 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
           <div className="flex items-center justify-between w-full sm:w-auto">
-            <Link href="/dashboard" className="flex flex-col focus:outline-none">
-              <span className="text-xl font-black tracking-widest text-white">FINOS</span>
-              <span className="text-[9px] uppercase tracking-[0.3em] text-zinc-500">Panel Cliente</span>
+            <Link href="/dashboard" className="flex items-center gap-3 focus:outline-none">
+              <Logo size={30} />
+              <span className="text-[9px] uppercase tracking-[0.3em] text-zinc-500 hidden sm:block">
+                Panel
+                <br />
+                Cliente
+              </span>
             </Link>
           </div>
 

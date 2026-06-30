@@ -1,6 +1,6 @@
 import React from 'react'
 import Link from 'next/link'
-import Image from 'next/image'
+import { Logo } from '@/components/ui/Logo'
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -10,7 +10,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       
       <div className="relative z-10 mb-8 flex flex-col items-center">
         <Link href="/">
-          <Image src="/images/logo.png" alt="Finos Barbers" width={120} height={44} className="invert" />
+          <Logo size={52} priority />
         </Link>
       </div>
 
