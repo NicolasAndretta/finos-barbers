@@ -2,6 +2,7 @@
 
 import { MercadoPagoConfig, Preference, Payment } from 'mercadopago'
 import { createClient, createServiceClient } from '@/lib/supabase'
+import { getAccessTokenComercio } from '@/lib/mp-oauth'
 import { revalidatePath } from 'next/cache'
 
 type ItemCarritoRaw = { id: string; cantidad: number }
@@ -100,7 +101,7 @@ export async function crearPedido(formData: FormData) {
     return { error: 'Error al guardar los items del pedido' }
   }
 
-  const accessToken = process.env.MERCADOPAGO_ACCESS_TOKEN
+  const accessToken = (await getAccessTokenComercio()) ?? process.env.MERCADOPAGO_ACCESS_TOKEN
   if (!accessToken) return { error: 'Pago no configurado — contactá al administrador' }
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL
@@ -161,7 +162,7 @@ export async function actualizarEstadoPedido(pedidoId: string, paymentId: string
   if (!pedido) return { error: 'Pedido no encontrado' }
   if (pedido.estado === 'pagado') return { success: true }
 
-  const accessToken = process.env.MERCADOPAGO_ACCESS_TOKEN
+  const accessToken = (await getAccessTokenComercio()) ?? process.env.MERCADOPAGO_ACCESS_TOKEN
   if (accessToken) {
     try {
       const mpClient = new MercadoPagoConfig({ accessToken })

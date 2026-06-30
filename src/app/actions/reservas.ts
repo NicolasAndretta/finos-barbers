@@ -2,6 +2,7 @@
 
 import { MercadoPagoConfig, Preference, Payment } from 'mercadopago'
 import { createClient, createServiceClient } from '@/lib/supabase'
+import { getAccessTokenComercio } from '@/lib/mp-oauth'
 import { requireClient } from '@/lib/auth'
 import { sendConfirmacionTurno, sendCancelacionTurno } from '@/lib/resend'
 import { SITE } from '@/lib/site'
@@ -203,7 +204,7 @@ export async function crearReserva(formData: FormData) {
 
   // 5. Pago de la seña según el método elegido
   if (metodo_pago === 'mercadopago' && senaMonto > 0) {
-    const accessToken = process.env.MERCADOPAGO_ACCESS_TOKEN
+    const accessToken = (await getAccessTokenComercio()) ?? process.env.MERCADOPAGO_ACCESS_TOKEN
     if (!accessToken) {
       return { success: true, turnoId: data.id, metodo: metodo_pago, sena: senaMonto, alias: SITE.aliasPago }
     }
@@ -253,7 +254,7 @@ export async function confirmarPagoSenaTurno(turnoId: string, paymentId: string)
   if (!turno) return { error: 'Turno no encontrado' }
   if (turno.sena_estado === 'pagada') return { success: true }
 
-  const accessToken = process.env.MERCADOPAGO_ACCESS_TOKEN
+  const accessToken = (await getAccessTokenComercio()) ?? process.env.MERCADOPAGO_ACCESS_TOKEN
   if (accessToken && paymentId) {
     try {
       const payment = await new Payment(new MercadoPagoConfig({ accessToken })).get({ id: paymentId })

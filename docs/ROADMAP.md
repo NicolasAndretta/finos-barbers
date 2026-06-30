@@ -39,14 +39,22 @@ gitignoreado). Ya está en la base, respetando el patrón RLS existente (`is_adm
 - Campos en `turnos`: `metodo_pago`, `sena_monto`, `sena_estado`, `mp_*`.
 - Credenciales por env (MP), nunca hardcodeadas. Falta **probar un pago MP real** end-to-end.
 
-## 🔜 Próximo — Cobros online con OAuth (estándar de la casa)
-Finos va a usar **OAuth (Mercado Pago Connect)**, no el token simple: el cliente
-conecta su MP con un clic, sin developer accounts ni compartir credenciales. Es la
-capacidad de plataforma que Andretta Studio ofrece como add-on serio de "cobros online"
-(decisión jun 2026 — ver `../../freelance/producto-base-y-addons.md`). Construir una vez:
-app en MP (`client_id`/`client_secret`), botón "Conectar", callback que cambia el código
-por token (server-side), guardado + refresh por cliente. Mientras tanto, el token simple
-+ transferencia/efectivo ya funcionan.
+## ✅ Cobros online con OAuth (construido — falta credenciales + prueba en vivo)
+**Código completo** (migración 0003 + `lib/mp-oauth.ts` + rutas + panel):
+- `mp_conexion` (tokens protegidos por RLS, solo server).
+- `lib/mp-oauth.ts`: URL de autorización, intercambio de código, **refresh** automático,
+  `getAccessTokenComercio()` (con fallback al token del `.env`).
+- `/api/mp/oauth/connect` (genera state anti-CSRF + redirige) y `/api/mp/oauth/callback`
+  (valida state, cambia código por token, guarda).
+- `/admin/pagos`: estado de conexión + botón "Conectar Mercado Pago" / "Desconectar".
+- Checkout y seña de turnos usan el token del comercio conectado.
+
+**Falta para activarlo (lo hace Nico):**
+1. Crear la **app de Mercado Pago** (panel developers de Andretta Studio) → `MP_CLIENT_ID`
+   + `MP_CLIENT_SECRET` en `.env.local` / env del hosting. Redirect URI:
+   `https://firebrick-giraffe-301726.hostingersite.com/api/mp/oauth/callback`.
+2. **Deploy a Hostinger** (el callback necesita estar online).
+3. Entrar a `/admin/pagos` → "Conectar" → autorizar → probar un pago.
 
 ## 🧹 Menor
 - Admin de turnos: mostrar `metodo_pago` + `sena_estado` + botón "confirmar seña" (transferencias).
