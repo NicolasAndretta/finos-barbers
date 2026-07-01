@@ -90,6 +90,29 @@ export async function requireClient(): Promise<Profile> {
     redirect('/admin/dashboard')
   }
 
+  if (profile.role === 'barbero') {
+    redirect('/barbero/calendario')
+  }
+
+  return profile
+}
+
+/**
+ * Garantiza que el usuario es barbero (o admin, que ve todo).
+ * - Sin sesión → /login
+ * - Cliente común → /dashboard
+ */
+export async function requireBarbero(): Promise<Profile> {
+  const profile = await getProfile()
+
+  if (!profile) {
+    redirect('/login')
+  }
+
+  if (profile.role !== 'barbero' && profile.role !== 'admin') {
+    redirect('/dashboard')
+  }
+
   return profile
 }
 
@@ -106,7 +129,7 @@ export async function requireAdmin(): Promise<Profile> {
   }
 
   if (profile.role !== 'admin') {
-    redirect('/dashboard')
+    redirect(profile.role === 'barbero' ? '/barbero/calendario' : '/dashboard')
   }
 
   return profile

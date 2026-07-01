@@ -20,7 +20,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 // ─── Clasificación de rutas ───────────────────────────────────────────────────
 
 /** Rutas que requieren sesión activa (rol cualquiera) */
-const PROTECTED_PREFIXES = ['/dashboard', '/reservar', '/turnos', '/admin']
+const PROTECTED_PREFIXES = ['/dashboard', '/reservar', '/turnos', '/admin', '/barbero']
 
 /** Rutas de autenticación: si hay sesión, redirigir al área correspondiente */
 const AUTH_ROUTES = ['/login', '/register']

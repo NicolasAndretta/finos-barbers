@@ -15,7 +15,9 @@ export default async function HomePage() {
   const panelLink = profile
     ? profile.role === "admin"
       ? "/admin/dashboard"
-      : "/dashboard"
+      : profile.role === "barbero"
+        ? "/barbero/calendario"
+        : "/dashboard"
     : null;
 
   const serviciosDestacados = [

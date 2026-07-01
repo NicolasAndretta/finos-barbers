@@ -1,6 +1,6 @@
 'use server'
 
-import { createClient } from '@/lib/supabase'
+import { createClient, createServiceClient } from '@/lib/supabase'
 import { requireAdmin } from '@/lib/auth'
 import { revalidatePath } from 'next/cache'
 
@@ -19,9 +19,61 @@ export async function getBarberos() {
 export async function adminGetBarberos() {
   await requireAdmin()
   const supabase = await createClient()
-  const { data, error } = await supabase.from('barberos').select('*').order('nombre')
+  // Embebemos las cuentas de acceso vinculadas (profiles.barbero_id → barberos.id)
+  // para saber cuáles ya tienen login.
+  const { data, error } = await supabase
+    .from('barberos')
+    .select('*, cuentas:profiles(id, email)')
+    .order('nombre')
   if (error) throw new Error(error.message)
   return data
+}
+
+/**
+ * Crea una cuenta de acceso (rol "barbero") vinculada a un barbero.
+ * Solo admin. Usa service role (auth admin) para crear el usuario confirmado.
+ */
+export async function adminCrearCuentaBarbero(formData: FormData) {
+  await requireAdmin()
+  const barberoId = formData.get('barbero_id') as string
+  const email = ((formData.get('email') as string) || '').trim().toLowerCase()
+  const password = (formData.get('password') as string) || ''
+
+  if (!barberoId || !email) return { error: 'Faltan datos.' }
+  if (password.length < 6) return { error: 'La contraseña debe tener al menos 6 caracteres.' }
+
+  const service = createServiceClient()
+
+  const { data: barbero } = await service
+    .from('barberos').select('nombre, apellido').eq('id', barberoId).single()
+  if (!barbero) return { error: 'Barbero no encontrado.' }
+
+  const { data: created, error: createErr } = await service.auth.admin.createUser({
+    email, password, email_confirm: true,
+  })
+  if (createErr || !created?.user) {
+    return { error: createErr?.message || 'No se pudo crear la cuenta (¿el email ya existe?).' }
+  }
+
+  const { error: profErr } = await service.from('profiles').upsert(
+    {
+      id: created.user.id,
+      email,
+      nombre: barbero.nombre,
+      apellido: barbero.apellido || '',
+      role: 'barbero',
+      barbero_id: barberoId,
+    },
+    { onConflict: 'id' }
+  )
+  if (profErr) {
+    // Rollback del usuario auth si falla el profile.
+    await service.auth.admin.deleteUser(created.user.id)
+    return { error: profErr.message }
+  }
+
+  revalidatePath('/admin/barberos')
+  return { success: true }
 }
 
 function parseDias(raw: string | null): string[] {

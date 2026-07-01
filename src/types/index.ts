@@ -1,4 +1,4 @@
-﻿export type Role = 'client' | 'admin'
+﻿export type Role = 'client' | 'admin' | 'barbero'
 
 export type Profile = {
   id: string
@@ -6,6 +6,7 @@ export type Profile = {
   nombre: string
   apellido: string
   role: Role
+  barbero_id: string | null
   created_at: string
 }
 

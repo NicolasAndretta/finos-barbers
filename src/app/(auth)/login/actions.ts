@@ -41,6 +41,8 @@ export async function loginAction(
 
     if (profile?.role === 'admin') {
       redirectPath = '/admin/dashboard'
+    } else if (profile?.role === 'barbero') {
+      redirectPath = '/barbero/calendario'
     } else {
       redirectPath = '/dashboard'
     }
