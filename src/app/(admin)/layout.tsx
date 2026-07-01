@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { requireAdmin } from '@/lib/auth'
 import { LogoutButton } from '@/components/ui/LogoutButton'
 import { Logo } from '@/components/ui/Logo'
+import { AdminNav } from '@/components/admin/AdminNav'
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const profile = await requireAdmin()
@@ -21,18 +22,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           </Link>
         </div>
 
-        <nav className="flex items-center gap-6 text-sm font-semibold text-zinc-400">
-          <Link href="/admin/dashboard" className="hover:text-white transition-colors">Dashboard</Link>
-          <Link href="/admin/servicios" className="hover:text-white transition-colors">Servicios</Link>
-          <Link href="/admin/turnos" className="hover:text-white transition-colors">Turnos</Link>
-          <Link href="/admin/calendario" className="hover:text-white transition-colors">Calendario</Link>
-          <Link href="/admin/productos" className="hover:text-white transition-colors">Productos</Link>
-          <Link href="/admin/categorias" className="hover:text-white transition-colors">Categorías</Link>
-          <Link href="/admin/barberos" className="hover:text-white transition-colors">Barberos</Link>
-          <Link href="/admin/resenas" className="hover:text-white transition-colors">Reseñas</Link>
-          <Link href="/admin/pagos" className="hover:text-white transition-colors">Cobros</Link>
-          <Link href="/admin/finanzas" className="hover:text-white transition-colors">Finanzas</Link>
-        </nav>
+        <AdminNav />
 
         <div className="flex items-center gap-4 w-full sm:w-auto border-t border-zinc-900 sm:border-t-0 pt-4 sm:pt-0">
           <div className="text-right hidden md:block">
