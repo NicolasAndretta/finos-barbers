@@ -32,13 +32,22 @@ function baseFromRequest(req?: Request): string | null {
   return `${proto}://${host}`
 }
 
-function redirectUri(req?: Request) {
+/**
+ * Base pública del sitio para redirects internos (post-callback). Igual criterio
+ * que el redirect_uri: usa el dominio real del request para no depender de que
+ * una env NEXT_PUBLIC_ se haya horneado bien en el build.
+ */
+export function publicBaseUrl(req?: Request): string {
   const base =
     baseFromRequest(req) ||
     process.env.NEXT_PUBLIC_SITE_URL ||
     process.env.NEXT_PUBLIC_APP_URL ||
     'http://localhost:3000'
-  return `${base.replace(/\/$/, '')}/api/mp/oauth/callback`
+  return base.replace(/\/$/, '')
+}
+
+function redirectUri(req?: Request) {
+  return `${publicBaseUrl(req)}/api/mp/oauth/callback`
 }
 
 export function mpOAuthConfigurado() {

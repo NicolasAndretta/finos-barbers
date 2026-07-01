@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { requireAdmin } from '@/lib/auth'
-import { getAuthorizationUrl, mpOAuthConfigurado } from '@/lib/mp-oauth'
+import { getAuthorizationUrl, mpOAuthConfigurado, publicBaseUrl } from '@/lib/mp-oauth'
 
 // Inicia el flujo OAuth: solo admin. Genera un `state` (anti-CSRF) en cookie y
 // redirige al comercio a Mercado Pago para que autorice.
@@ -9,9 +9,7 @@ export async function GET(req: Request) {
   await requireAdmin()
 
   if (!mpOAuthConfigurado()) {
-    return NextResponse.redirect(
-      new URL('/admin/pagos?error=config', process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'),
-    )
+    return NextResponse.redirect(new URL('/admin/pagos?error=config', publicBaseUrl(req)))
   }
 
   const state = crypto.randomUUID()
