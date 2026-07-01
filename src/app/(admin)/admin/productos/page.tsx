@@ -3,6 +3,7 @@
 import React, { useState, useTransition, useCallback, useEffect } from 'react'
 import { adminGetProductos, adminCrearProducto, adminActualizarProducto, adminToggleProducto } from '@/app/actions/tienda'
 import { Spinner } from '@/components/ui/Spinner'
+import { ImageUploadField } from '@/components/ui/ImageUploadField'
 import { formatPrecio } from '@/lib/format'
 import type { Producto, CategoriaProducto } from '@/types'
 
@@ -240,16 +241,11 @@ export default function AdminProductosPage() {
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-zinc-400 mb-1">URL imagen (opcional)</label>
-              <input
-                type="url"
-                value={formData.imagen_url}
-                onChange={e => setFormData({ ...formData, imagen_url: e.target.value })}
-                placeholder="https://..."
-                className="w-full bg-zinc-900 border border-zinc-800 text-white rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
-              />
-            </div>
+            <ImageUploadField
+              label="Imagen del producto"
+              value={formData.imagen_url}
+              onChange={(url) => setFormData({ ...formData, imagen_url: url })}
+            />
 
             <div className="flex gap-3 pt-2">
               <button

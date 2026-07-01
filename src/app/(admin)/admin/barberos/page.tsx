@@ -5,6 +5,7 @@ import {
   adminGetBarberos, adminCrearBarbero, adminActualizarBarbero, adminToggleBarbero,
 } from '@/app/actions/barberos'
 import { Spinner } from '@/components/ui/Spinner'
+import { ImageUploadField } from '@/components/ui/ImageUploadField'
 
 type Barbero = {
   id: string; nombre: string; apellido: string; activo: boolean
@@ -81,8 +82,7 @@ export default function AdminBarberosPage() {
           </div>
           <div><label className="block text-sm text-zinc-400 mb-1">Bio</label>
             <textarea rows={2} value={form.bio} onChange={e => setForm({ ...form, bio: e.target.value })} className={inputCls + ' resize-none'} placeholder="Una línea sobre el barbero..." /></div>
-          <div><label className="block text-sm text-zinc-400 mb-1">URL de foto (opcional)</label>
-            <input type="url" value={form.foto_url} onChange={e => setForm({ ...form, foto_url: e.target.value })} className={inputCls} placeholder="https://..." /></div>
+          <ImageUploadField label="Foto del barbero" value={form.foto_url} onChange={(url) => setForm({ ...form, foto_url: url })} />
           <div className="flex gap-3 pt-1">
             <button type="submit" disabled={isPending} className="bg-amber-500 hover:bg-amber-400 disabled:bg-amber-500/50 text-black text-sm font-bold px-6 py-2.5 rounded-lg flex items-center gap-2 cursor-pointer">
               {isPending && <Spinner className="w-4 h-4 text-black" />}{form.id ? 'Actualizar' : 'Crear'}</button>
