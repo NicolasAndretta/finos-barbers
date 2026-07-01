@@ -65,6 +65,25 @@ gitignoreado). Ya está en la base, respetando el patrón RLS existente (`is_adm
 - **Admin de turnos**: muestra `metodo_pago` + `sena_estado` y permite confirmar la
   seña de transferencias/efectivo a mano (`adminConfirmarSena`).
 
+## ✅ Auth completa (verificado en mobile)
+- **Recuperar contraseña**: `/recuperar` (pide email → mail) + `/restablecer` (setea la
+  nueva), link en el login, banner de éxito. Callback respeta `?next=` (rutas internas).
+- **Confirmación de email**: ya estaba (registro + callback `signup`/`recovery`). Si no
+  llegan los mails, es config de Supabase (Auth → email/SMTP), no del código.
+
+## ✅ Cargar imágenes desde la PC (verificado end-to-end)
+- Bucket público `imagenes` (Supabase Storage, 5 MB, `scripts/crear-bucket.mjs`).
+- Acción `subirImagen` (solo admin, valida tipo/tamaño) + componente reutilizable
+  `ImageUploadField` (subir desde PC **o** pegar URL, con preview) en productos y barberos.
+
+## ✅ Cuentas de barbero con acceso limitado (verificado: no entra al admin)
+- Migración 0004: rol `barbero` + `profiles.barbero_id` (vínculo a su registro).
+- Área `/barbero`: **Mi agenda** (solo sus turnos) + **Clientes** (solo lectura). No ve
+  stock/servicios/cobros/finanzas. `requireBarbero` + redirects por rol + proxy.
+- El admin crea la cuenta de cada barbero desde `/admin/barberos`.
+- **Futuro (Opción 2):** panel donde Leandro habilita permisos extra por barbero.
+
 ## 🧹 Menor (pendiente)
 - Limpiar productos demo viejos inactivos del admin (nombres de prueba). ⚠️ Requiere
   decisión de Nico sobre cuáles borrar (operación destructiva sobre la base).
+- Reemplazar la agenda del barbero por un calendario visual (hoy es lista por día).
