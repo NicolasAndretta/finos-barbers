@@ -69,6 +69,13 @@ export function AuthForm({ type, action }: AuthFormProps) {
           <input id="password" name="password" type="password" autoComplete="current-password" required
             className="w-full rounded-xl bg-zinc-800 border border-zinc-700 px-4 py-3 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-white focus:ring-2 focus:ring-white/10 transition-all"
             placeholder="••••••••" />
+          {type === 'login' && (
+            <div className="text-right pt-1">
+              <Link href="/recuperar" className="text-xs font-semibold text-zinc-400 hover:text-white transition-colors">
+                ¿Olvidaste tu contraseña?
+              </Link>
+            </div>
+          )}
         </div>
 
         <button type="submit" disabled={isPending}

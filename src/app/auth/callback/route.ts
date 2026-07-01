@@ -18,6 +18,10 @@ export async function GET(request: Request) {
   const code = searchParams.get('code')
   const tokenHash = searchParams.get('token_hash')
   const type = searchParams.get('type') as EmailOtpType | null
+  // Destino luego de verificar (ej. recuperación → /restablecer). Solo aceptamos
+  // rutas internas para evitar open-redirects.
+  const nextRaw = searchParams.get('next')
+  const next = nextRaw && nextRaw.startsWith('/') ? nextRaw : null
 
   // Preferimos la URL pública configurada; el origin de la request puede venir
   // mal detrás del proxy de Hostinger.
@@ -35,5 +39,12 @@ export async function GET(request: Request) {
     ok = !error
   }
 
-  return NextResponse.redirect(`${base}/auth/confirmado${ok ? '' : '?error=1'}`)
+  if (ok) {
+    const dest = next || (type === 'recovery' ? '/restablecer' : '/auth/confirmado')
+    return NextResponse.redirect(`${base}${dest}`)
+  }
+
+  // Falló: si venía de recuperación, mandamos a pedir un enlace nuevo.
+  const errorDest = next === '/restablecer' ? '/recuperar?error=1' : '/auth/confirmado?error=1'
+  return NextResponse.redirect(`${base}${errorDest}`)
 }

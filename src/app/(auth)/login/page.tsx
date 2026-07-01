@@ -7,9 +7,18 @@ type SearchParams = Promise<{ [key: string]: string | string[] | undefined }>
 export default async function LoginPage({ searchParams }: { searchParams: SearchParams }) {
   const resolvedSearchParams = await searchParams
   const confirmar = resolvedSearchParams.confirmar === '1'
+  const reset = resolvedSearchParams.reset === '1'
 
   return (
     <div className="flex flex-col items-center w-full">
+      {reset && (
+        <div className="mb-6 w-full max-w-md p-4 rounded-lg bg-emerald-950/30 border border-emerald-800/50 text-emerald-400 text-sm flex items-start gap-2">
+          <svg className="h-5 w-5 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+          </svg>
+          <span>Tu contraseña se actualizó. <strong className="font-semibold text-emerald-300">Iniciá sesión con la nueva.</strong></span>
+        </div>
+      )}
       {confirmar && (
         <div className="mb-6 w-full max-w-md p-4 rounded-lg bg-emerald-950/30 border border-emerald-800/50 text-emerald-400 text-sm flex items-start gap-2">
           <svg className="h-5 w-5 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
