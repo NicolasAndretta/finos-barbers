@@ -17,8 +17,27 @@ import { createServiceClient } from '@/lib/supabase'
 const AUTH_BASE = 'https://auth.mercadopago.com.ar/authorization'
 const TOKEN_URL = 'https://api.mercadopago.com/oauth/token'
 
-function redirectUri() {
-  const base = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+/**
+ * Base pública del sitio tomada del request real (funciona detrás del proxy de
+ * Hostinger vía x-forwarded-*). Es lo más confiable para que el redirect_uri
+ * coincida SIEMPRE con el dominio por el que entró el usuario (y con el que está
+ * registrado en la app de MP), sin depender de que una env NEXT_PUBLIC_ se haya
+ * horneado bien en el build.
+ */
+function baseFromRequest(req?: Request): string | null {
+  if (!req) return null
+  const host = req.headers.get('x-forwarded-host') || req.headers.get('host')
+  if (!host) return null
+  const proto = req.headers.get('x-forwarded-proto') || (host.includes('localhost') ? 'http' : 'https')
+  return `${proto}://${host}`
+}
+
+function redirectUri(req?: Request) {
+  const base =
+    baseFromRequest(req) ||
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    process.env.NEXT_PUBLIC_APP_URL ||
+    'http://localhost:3000'
   return `${base.replace(/\/$/, '')}/api/mp/oauth/callback`
 }
 
@@ -27,12 +46,12 @@ export function mpOAuthConfigurado() {
 }
 
 /** URL a la que mandamos al comercio para que autorice. */
-export function getAuthorizationUrl(state: string) {
+export function getAuthorizationUrl(state: string, req?: Request) {
   const params = new URLSearchParams({
     client_id: process.env.MP_CLIENT_ID || '',
     response_type: 'code',
     platform_id: 'mp',
-    redirect_uri: redirectUri(),
+    redirect_uri: redirectUri(req),
     state,
   })
   return `${AUTH_BASE}?${params.toString()}`
@@ -48,7 +67,7 @@ type TokenResponse = {
 }
 
 /** Cambia el código de autorización por un access token (server-to-server). */
-export async function exchangeCodeForToken(code: string): Promise<TokenResponse> {
+export async function exchangeCodeForToken(code: string, req?: Request): Promise<TokenResponse> {
   const res = await fetch(TOKEN_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
@@ -57,7 +76,7 @@ export async function exchangeCodeForToken(code: string): Promise<TokenResponse>
       client_secret: process.env.MP_CLIENT_SECRET,
       grant_type: 'authorization_code',
       code,
-      redirect_uri: redirectUri(),
+      redirect_uri: redirectUri(req),
     }),
   })
   if (!res.ok) throw new Error(`MP token exchange falló: ${res.status} ${await res.text()}`)

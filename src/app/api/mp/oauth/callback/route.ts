@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const token = await exchangeCodeForToken(code)
+    const token = await exchangeCodeForToken(code, req)
     await guardarConexion(token)
     return NextResponse.redirect(new URL('/admin/pagos?mp=ok', base))
   } catch (err) {

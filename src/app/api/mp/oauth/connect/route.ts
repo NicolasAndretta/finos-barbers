@@ -5,7 +5,7 @@ import { getAuthorizationUrl, mpOAuthConfigurado } from '@/lib/mp-oauth'
 
 // Inicia el flujo OAuth: solo admin. Genera un `state` (anti-CSRF) en cookie y
 // redirige al comercio a Mercado Pago para que autorice.
-export async function GET() {
+export async function GET(req: Request) {
   await requireAdmin()
 
   if (!mpOAuthConfigurado()) {
@@ -24,5 +24,5 @@ export async function GET() {
     path: '/',
   })
 
-  return NextResponse.redirect(getAuthorizationUrl(state))
+  return NextResponse.redirect(getAuthorizationUrl(state, req))
 }
