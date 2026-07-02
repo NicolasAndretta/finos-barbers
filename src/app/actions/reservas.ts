@@ -8,7 +8,8 @@ import { sendConfirmacionTurno, sendCancelacionTurno } from '@/lib/resend'
 import { SITE } from '@/lib/site'
 import { revalidatePath } from 'next/cache'
 
-export type MetodoPago = 'mercadopago' | 'transferencia' | 'efectivo'
+// La seña se paga siempre por adelantado (online), nunca en el local.
+export type MetodoPago = 'mercadopago' | 'transferencia'
 
 // Formatear hora de 'HH:mm:ss' a 'HH:mm'
 function formatHora(horaSql: string) {
@@ -120,12 +121,12 @@ export async function crearReserva(formData: FormData) {
   const servicio_id = formData.get('servicio_id') as string
   const fecha = formData.get('fecha') as string
   const hora = formData.get('hora') as string
-  const metodo_pago = (formData.get('metodo_pago') as MetodoPago) || 'efectivo'
+  const metodo_pago = (formData.get('metodo_pago') as MetodoPago) || 'mercadopago'
 
   if (!barbero_id || !servicio_id || !fecha || !hora) {
     return { error: 'Faltan datos para crear la reserva' }
   }
-  if (!['mercadopago', 'transferencia', 'efectivo'].includes(metodo_pago)) {
+  if (!['mercadopago', 'transferencia'].includes(metodo_pago)) {
     return { error: 'Método de pago inválido' }
   }
 

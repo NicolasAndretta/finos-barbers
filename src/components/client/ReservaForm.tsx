@@ -21,7 +21,7 @@ export function ReservaForm({ servicios, barberos }: { servicios: Servicio[], ba
   const [isPending, startTransition] = useTransition()
   const [isLoadingHorarios, setIsLoadingHorarios] = useState(false)
   const [errorMsg, setErrorMsg] = useState('')
-  const [metodoPago, setMetodoPago] = useState<MetodoPago>('efectivo')
+  const [metodoPago, setMetodoPago] = useState<MetodoPago>('mercadopago')
   const [confirmacion, setConfirmacion] = useState<{ metodo: string; sena: number; alias: string } | null>(null)
 
   /* eslint-disable react-hooks/set-state-in-effect */
@@ -191,10 +191,10 @@ export function ReservaForm({ servicios, barberos }: { servicios: Servicio[], ba
 
           {horaSeleccionada && !confirmacion && (() => {
             const sena = Math.round((servicioSeleccionado.precio * SITE.senaPorcentaje) / 100)
+            // La seña se paga siempre por adelantado — sin opción de pagar en el local.
             const metodos: { value: MetodoPago; label: string; desc: string }[] = [
               { value: 'mercadopago', label: 'Mercado Pago', desc: 'Tarjeta o dinero en cuenta' },
               { value: 'transferencia', label: 'Transferencia', desc: `Alias ${SITE.aliasPago}` },
-              { value: 'efectivo', label: 'Efectivo en el local', desc: 'Seña al llegar' },
             ]
             return (
             <div className="pt-6 border-t border-zinc-900">
@@ -255,17 +255,14 @@ export function ReservaForm({ servicios, barberos }: { servicios: Servicio[], ba
                 </svg>
               </div>
               <h3 className="text-xl font-bold text-white">¡Turno reservado!</h3>
-              {confirmacion.metodo === 'transferencia' ? (
-                <div className="mt-3 text-sm text-zinc-400">
-                  <p>Para confirmarlo, transferí la seña de <span className="text-amber-400 font-bold">{formatPrecio(confirmacion.sena)}</span> al alias:</p>
-                  <p className="mt-2 inline-block bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-2 text-white font-mono">{confirmacion.alias}</p>
-                  <p className="mt-2 text-xs text-zinc-600">Mandanos el comprobante por WhatsApp y listo.</p>
-                </div>
-              ) : (
-                <p className="mt-3 text-sm text-zinc-400">
-                  Dejás la seña de <span className="text-amber-400 font-bold">{formatPrecio(confirmacion.sena)}</span> en efectivo al llegar al local. ¡Te esperamos!
-                </p>
-              )}
+              <div className="mt-3 text-sm text-zinc-400">
+                {confirmacion.metodo === 'mercadopago' && (
+                  <p className="mb-2">No pudimos abrir el pago de Mercado Pago en este momento.</p>
+                )}
+                <p>Para confirmarlo, transferí la seña de <span className="text-amber-400 font-bold">{formatPrecio(confirmacion.sena)}</span> al alias:</p>
+                <p className="mt-2 inline-block bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-2 text-white font-mono">{confirmacion.alias}</p>
+                <p className="mt-2 text-xs text-zinc-600">Mandanos el comprobante por WhatsApp y listo.</p>
+              </div>
               <button onClick={() => router.push('/turnos')}
                 className="mt-6 bg-white hover:bg-zinc-200 text-zinc-950 font-bold px-6 py-3 rounded-xl transition-colors">
                 Ver mis turnos
