@@ -5,7 +5,7 @@
 
 ## Post 1 · El proyecto
 
-- **Archivo:** `social/posts/post-01-proyecto.png`
+- **Archivo:** `social/posts/post-01-proyecto.png` ⚠️ falta
 - **Formato:** Post 1080×1350 (4:5)
 - **Objetivo:** Post de presentación del proyecto. Ideal como primer post del feed.
 - **CTA:** Escribinos por DM
@@ -26,7 +26,7 @@ Es un proyecto desarrollado por andmar.studio y hoy funciona como demo. Si quer�
 
 ## Post 2 · Todo en un sistema
 
-- **Archivo:** `social/posts/post-02-todo-en-uno.png`
+- **Archivo:** `social/posts/post-02-todo-en-uno.png` ⚠️ falta
 - **Formato:** Post 1080×1350 (4:5)
 - **Objetivo:** Resumir el alcance del sistema en una sola imagen. Muy compartible.
 - **CTA:** Escribinos por DM
@@ -47,7 +47,7 @@ Nosotros hacemos una sola cosa que hace todo eso.
 
 ## Post 3 · Turnos
 
-- **Archivo:** `social/posts/post-03-turnos.png`
+- **Archivo:** `social/posts/post-03-turnos.png` ⚠️ falta
 - **Formato:** Post 1080×1350 (4:5)
 - **Objetivo:** Explicar el sistema de turnos con una captura real.
 - **CTA:** Escribinos por DM
@@ -68,7 +68,7 @@ Del proyecto Fino's Barbers, desarrollado por andmar.studio.
 
 ## Post 4 · Panel administrativo
 
-- **Archivo:** `social/posts/post-04-panel.png`
+- **Archivo:** `social/posts/post-04-panel.png` ⚠️ falta
 - **Formato:** Post 1080×1350 (4:5)
 - **Objetivo:** Mostrar el panel: el argumento más fuerte para dueños de negocio.
 - **CTA:** Escribinos por DM
@@ -89,7 +89,7 @@ Del proyecto Fino's Barbers, desarrollado por andmar.studio.
 
 ## Post 5 · Calendario semanal
 
-- **Archivo:** `social/posts/post-05-calendario.png`
+- **Archivo:** `social/posts/post-05-calendario.png` ⚠️ falta
 - **Formato:** Post 1080×1350 (4:5)
 - **Objetivo:** Pieza visual fuerte: el calendario es lo que más impresiona de un vistazo.
 - **CTA:** Escribinos por DM
@@ -110,7 +110,7 @@ Del proyecto Fino's Barbers, desarrollado por andmar.studio.
 
 ## Post 6 · Tienda online
 
-- **Archivo:** `social/posts/post-06-tienda.png`
+- **Archivo:** `social/posts/post-06-tienda.png` ⚠️ falta
 - **Formato:** Post 1080×1350 (4:5)
 - **Objetivo:** Mostrar la parte de ecommerce y abrir la puerta a clientes que venden productos.
 - **CTA:** Escribinos por DM
@@ -131,7 +131,7 @@ Del proyecto Fino's Barbers, desarrollado por andmar.studio.
 
 ## Post 7 · Panel financiero
 
-- **Archivo:** `social/posts/post-07-finanzas.png`
+- **Archivo:** `social/posts/post-07-finanzas.png` ⚠️ falta
 - **Formato:** Post 1080×1350 (4:5)
 - **Objetivo:** Mostrar los gráficos. Pieza muy vendible para cualquier pyme.
 - **CTA:** Escribinos por DM
@@ -154,7 +154,7 @@ Del proyecto Fino's Barbers, desarrollado por andmar.studio.
 
 ## Post 8 · Permisos por rol
 
-- **Archivo:** `social/posts/post-08-roles.png`
+- **Archivo:** `social/posts/post-08-roles.png` ⚠️ falta
 - **Formato:** Post 1080×1350 (4:5)
 - **Objetivo:** Transmitir seriedad técnica y seguridad.
 - **CTA:** Escribinos por DM
@@ -175,7 +175,7 @@ Del proyecto Fino's Barbers, desarrollado por andmar.studio.
 
 ## Post 9 · Qué hacemos
 
-- **Archivo:** `social/posts/post-09-que-hacemos.png`
+- **Archivo:** `social/posts/post-09-que-hacemos.png` ⚠️ falta
 - **Formato:** Post 1080×1350 (4:5)
 - **Objetivo:** Post de servicios del estudio. Fijalo en el perfil.
 - **CTA:** Escribinos por DM
