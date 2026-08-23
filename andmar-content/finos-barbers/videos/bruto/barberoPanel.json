@@ -1,0 +1,14 @@
+{
+  "duracion": 10.4,
+  "fps": 25,
+  "marcas": [
+    {
+      "nombre": "agenda",
+      "t": 0
+    },
+    {
+      "nombre": "clientes",
+      "t": 5.4
+    }
+  ]
+}

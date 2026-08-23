@@ -1,0 +1,22 @@
+{
+  "duracion": 16.52,
+  "fps": 25,
+  "marcas": [
+    {
+      "nombre": "paso1",
+      "t": 0
+    },
+    {
+      "nombre": "paso2",
+      "t": 4.96
+    },
+    {
+      "nombre": "paso3",
+      "t": 7.16
+    },
+    {
+      "nombre": "paso4",
+      "t": 12.4
+    }
+  ]
+}

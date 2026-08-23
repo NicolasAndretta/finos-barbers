@@ -1,0 +1,30 @@
+{
+  "duracion": 26.8,
+  "fps": 25,
+  "marcas": [
+    {
+      "nombre": "hero",
+      "t": 0
+    },
+    {
+      "nombre": "servicios",
+      "t": 4.4
+    },
+    {
+      "nombre": "equipo",
+      "t": 10.4
+    },
+    {
+      "nombre": "pasos",
+      "t": 16.2
+    },
+    {
+      "nombre": "resenas",
+      "t": 22.2
+    },
+    {
+      "nombre": "fin",
+      "t": 26.8
+    }
+  ]
+}

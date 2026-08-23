@@ -1,0 +1,14 @@
+{
+  "duracion": 11.2,
+  "fps": 25,
+  "marcas": [
+    {
+      "nombre": "lista",
+      "t": 0
+    },
+    {
+      "nombre": "calendario",
+      "t": 5.2
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "duracion": 20.44,
+  "fps": 25,
+  "marcas": [
+    {
+      "nombre": "equipo",
+      "t": 5.32
+    },
+    {
+      "nombre": "formulario",
+      "t": 7.24
+    },
+    {
+      "nombre": "alta",
+      "t": 15.44
+    }
+  ]
+}

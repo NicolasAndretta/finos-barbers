@@ -6,7 +6,14 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "demo:dev": "DEMO_MODE=1 next dev --webpack",
+    "demo:grabar": "node tools/demo/capture/escenas.js && node tools/demo/capture/escenas-desktop.js",
+    "demo:capturas": "node tools/demo/capture/capturas.js",
+    "demo:piezas": "node tools/demo/brand/recursos.js && node tools/demo/brand/piezas.js",
+    "demo:reels": "node tools/demo/edicion/reels.js && node tools/demo/edicion/responsive.js",
+    "demo:docs": "node tools/demo/contenido/generar-docs.js",
+    "demo:control": "node tools/demo/control/revisar.js"
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.3",
@@ -23,13 +30,14 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
-    "@types/react": "^19",
+    "@types/node": "20.19.43",
+    "@types/react": "19.2.18",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.7",
     "pg": "^8.22.0",
+    "playwright": "^1.62.1",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "5.9.3"
   }
 }

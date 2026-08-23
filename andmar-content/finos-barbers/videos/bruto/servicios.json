@@ -1,0 +1,30 @@
+{
+  "duracion": 23.68,
+  "fps": 25,
+  "marcas": [
+    {
+      "nombre": "panel",
+      "t": 0
+    },
+    {
+      "nombre": "formulario",
+      "t": 7.32
+    },
+    {
+      "nombre": "creado",
+      "t": 14.08
+    },
+    {
+      "nombre": "corte",
+      "t": 18.48
+    },
+    {
+      "nombre": "reserva",
+      "t": 18.48
+    },
+    {
+      "nombre": "fin",
+      "t": 23.68
+    }
+  ]
+}

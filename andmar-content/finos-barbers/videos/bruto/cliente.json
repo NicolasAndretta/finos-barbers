@@ -1,0 +1,14 @@
+{
+  "duracion": 10.4,
+  "fps": 25,
+  "marcas": [
+    {
+      "nombre": "panel",
+      "t": 0
+    },
+    {
+      "nombre": "misTurnos",
+      "t": 4.8
+    }
+  ]
+}

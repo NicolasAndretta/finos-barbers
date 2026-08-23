@@ -1,0 +1,26 @@
+{
+  "duracion": 23.04,
+  "fps": 25,
+  "marcas": [
+    {
+      "nombre": "dashboard",
+      "t": 0
+    },
+    {
+      "nombre": "turnos",
+      "t": 4.8
+    },
+    {
+      "nombre": "productos",
+      "t": 9.36
+    },
+    {
+      "nombre": "categorias",
+      "t": 13.92
+    },
+    {
+      "nombre": "resenas",
+      "t": 18.48
+    }
+  ]
+}

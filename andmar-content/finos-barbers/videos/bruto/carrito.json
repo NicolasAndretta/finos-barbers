@@ -1,0 +1,18 @@
+{
+  "duracion": 18.32,
+  "fps": 25,
+  "marcas": [
+    {
+      "nombre": "agregar",
+      "t": 1.92
+    },
+    {
+      "nombre": "checkout",
+      "t": 7.44
+    },
+    {
+      "nombre": "entrega",
+      "t": 14.32
+    }
+  ]
+}

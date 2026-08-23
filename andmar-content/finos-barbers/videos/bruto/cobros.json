@@ -1,0 +1,14 @@
+{
+  "duracion": 11,
+  "fps": 25,
+  "marcas": [
+    {
+      "nombre": "cobros",
+      "t": 0
+    },
+    {
+      "nombre": "senas",
+      "t": 5.8
+    }
+  ]
+}

@@ -55,3 +55,14 @@ CONTEXTO-PARA-CONTINUAR.md
 CONTEXTO-NICO.md
 *-checkpoint.md
 *-session*.md
+
+# modo demo (grabaciones)
+.demo-db.json
+
+# Material audiovisual de andmar.studio: no vive en el repo del cliente.
+# Se genera con `npm run demo:*` y se entrega por separado (ver tools/demo/README.md).
+andmar-content/**/*.mp4
+andmar-content/**/*.png
+andmar-content/**/*.jpg
+andmar-content/**/*.webm
+andmar-content/**/*.zip

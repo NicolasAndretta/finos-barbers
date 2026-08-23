@@ -1,0 +1,22 @@
+{
+  "duracion": 15.72,
+  "fps": 25,
+  "marcas": [
+    {
+      "nombre": "kpis",
+      "t": 0
+    },
+    {
+      "nombre": "grafico",
+      "t": 2
+    },
+    {
+      "nombre": "categorias",
+      "t": 6
+    },
+    {
+      "nombre": "transacciones",
+      "t": 9.8
+    }
+  ]
+}

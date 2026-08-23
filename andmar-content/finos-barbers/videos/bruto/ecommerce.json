@@ -1,0 +1,14 @@
+{
+  "duracion": 14.12,
+  "fps": 25,
+  "marcas": [
+    {
+      "nombre": "catalogo",
+      "t": 0
+    },
+    {
+      "nombre": "filtros",
+      "t": 8.6
+    }
+  ]
+}
