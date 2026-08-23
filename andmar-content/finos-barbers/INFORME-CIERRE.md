@@ -1008,15 +1008,39 @@ Están en `tools/demo/seed.json` y **se ven en pantalla**:
 | Dato | Valor |
 |---|---|
 | Rama | `claude/finos-barbers-content-4m9d9v` |
-| Commits | Uno solo, con las herramientas del modo demo y la documentación |
-| Material audiovisual | **No está en el repositorio.** Se entrega aparte, por pedido explícito: el cliente no necesita las fotos ni los videos en su repo mientras el proyecto no esté en producción |
-| Archivos del proyecto original tocados | 4, ninguno de código de aplicación: `next.config.js`, `package.json`, `package-lock.json`, `.gitignore` |
-| Código de la app modificado | **Cero archivos** en `src/`, `supabase/`, `docs/` y `public/` |
+| Commit | `fa56f90f9b0d453155e897482410fef75658a0dc` (corto: `fa56f90`) |
+| Mensaje | "Modo demo para correr el proyecto sin credenciales y grabar la interfaz" |
+| Pusheado | **Sí.** `HEAD` local y `origin/claude/finos-barbers-content-4m9d9v` apuntan al mismo hash |
+| Archivos en el commit | **59** · 0,87 MB en total |
+| Sin commitear | **Nada.** `git status --porcelain` devuelve 0 líneas |
+| Binarios en el historial de la rama | **0.** Verificado con `git log main..HEAD --name-only` filtrando `.mp4/.png/.jpg/.webm` |
 | Pull request | No se abrió ninguno |
 
-Lo que queda en el repositorio es el **modo demo** (`tools/demo/`, 29 archivos, 0,5 MB), que es lo único con valor de ingeniería para el proyecto: permite que cualquiera levante la aplicación entera sin credenciales, con datos de ejemplo. Más la documentación de contenido en texto (`project.md`, `content-index.md`, captions), que pesa unos 40 KB.
+### El material NO está en el repositorio
 
----
+Por pedido explícito, el material audiovisual no vive en el repo del cliente mientras el proyecto no esté en producción. La rama se reescribió en **un solo commit limpio** y se hizo force-push, así que los 107 MB de videos e imágenes **no quedan ni en el historial**. Se agregaron reglas a `.gitignore` para que no vuelvan a entrar por accidente.
+
+### Qué sí quedó versionado (59 archivos, 0,87 MB)
+
+| Grupo | Contenido |
+|---|---|
+| `tools/demo/` (29 archivos) | El modo demo completo: mocks de Supabase, Resend y Mercado Pago, datos de ejemplo, grabador por cuadros con Playwright, montaje con FFmpeg, plantillas gráficas, generador de documentación y control de calidad |
+| `andmar-content/finos-barbers/*.md` (8 archivos) | `project.md`, `INFORME-CIERRE.md`, `social/content-index.md` y los cuatro archivos de captions |
+| `andmar-content/finos-barbers/videos/bruto/*.json` (18 archivos) | Las marcas de tiempo de cada grabación. Son las que permiten volver a montar los reels sin ajustar segundos a mano |
+| Raíz (4 archivos) | `next.config.js`, `package.json`, `package-lock.json`, `.gitignore` |
+
+### Archivos del proyecto original tocados
+
+Cuatro, ninguno de código de aplicación:
+
+| Archivo | Cambio | Riesgo |
+|---|---|---|
+| `next.config.js` | Bloque condicionado a `DEMO_MODE === '1'` con los reemplazos, más `devIndicators` desactivado en ese mismo modo | Nulo sin la variable. Verificado con `next build --webpack`: "✓ Compiled successfully in 18.7s" |
+| `package.json` | `playwright` en devDependencies + 7 scripts `demo:*` | Nulo |
+| `package-lock.json` | Consecuencia de lo anterior | Nulo |
+| `.gitignore` | `.demo-db.json` y las reglas para que el material pesado no entre al repo | Nulo |
+
+`git diff main..HEAD --name-only -- src/ supabase/ docs/ public/` devuelve **0 archivos**. El código de la aplicación quedó intacto.
 
 ## 13. LISTO PARA DRIVE
 
