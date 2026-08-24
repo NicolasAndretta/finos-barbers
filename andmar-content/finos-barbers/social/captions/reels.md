@@ -8,7 +8,7 @@ Copiá y pegá tal cual. Los textos ya respetan las reglas de comunicación del 
 
 ## Reel 1 · Sistema de turnos
 
-- **Archivo:** `social/reels/reel-01-sistema-de-turnos.mp4` ⚠️ falta
+- **Archivo:** `social/reels/reel-01-sistema-de-turnos.mp4`
 - **Formato:** Reel 1080×1920 (9:16)
 - **Objetivo:** Mostrar el flujo de reserva completo. Es la pieza más fuerte: úsala como primer post.
 - **CTA:** Escribinos por DM
@@ -34,7 +34,7 @@ andmar.studio · desarrollo web y sistemas a medida.
 
 ## Reel 2 · El proyecto (hero)
 
-- **Archivo:** `social/reels/reel-02-el-proyecto.mp4` ⚠️ falta
+- **Archivo:** `social/reels/reel-02-el-proyecto.mp4`
 - **Formato:** Reel 1080×1920 (9:16)
 - **Objetivo:** Presentar el proyecto completo y la calidad del diseño. Pieza de portfolio.
 - **CTA:** Escribinos por DM
@@ -63,7 +63,7 @@ Proyecto desarrollado por andmar.studio · desarrollo web y sistemas a medida.
 
 ## Reel 3 · Elección de barbero
 
-- **Archivo:** `social/reels/reel-03-eleccion-de-barbero.mp4` ⚠️ falta
+- **Archivo:** `social/reels/reel-03-eleccion-de-barbero.mp4`
 - **Formato:** Reel 1080×1920 (9:16)
 - **Objetivo:** Destacar la agenda por profesional (diferencial para barberías, peluquerías y estudios).
 - **CTA:** Escribinos por DM
@@ -86,7 +86,7 @@ Del proyecto Fino's Barbers, desarrollado por andmar.studio · desarrollo web y 
 
 ## Reel 4 · Alta de un servicio
 
-- **Archivo:** `social/reels/reel-04-servicios.mp4` ⚠️ falta
+- **Archivo:** `social/reels/reel-04-servicios.mp4`
 - **Formato:** Reel 1080×1920 (9:16)
 - **Objetivo:** Mostrar que el catálogo lo maneja el dueño, sin depender del programador. Se ve el alta completa en cámara.
 - **CTA:** Escribinos por DM
@@ -109,7 +109,7 @@ Del proyecto Fino's Barbers, desarrollado por andmar.studio · desarrollo web y 
 
 ## Reel 5 · Tienda online
 
-- **Archivo:** `social/reels/reel-05-tienda-online.mp4` ⚠️ falta
+- **Archivo:** `social/reels/reel-05-tienda-online.mp4`
 - **Formato:** Reel 1080×1920 (9:16)
 - **Objetivo:** Mostrar la parte de ecommerce: catálogo, buscador, filtros y stock.
 - **CTA:** Escribinos por DM
@@ -132,7 +132,7 @@ Del proyecto Fino's Barbers, desarrollado por andmar.studio · desarrollo web y 
 
 ## Reel 6 · Carrito y checkout
 
-- **Archivo:** `social/reels/reel-06-carrito-y-checkout.mp4` ⚠️ falta
+- **Archivo:** `social/reels/reel-06-carrito-y-checkout.mp4`
 - **Formato:** Reel 1080×1920 (9:16)
 - **Objetivo:** Mostrar la compra completa, incluido el checkout sin registro.
 - **CTA:** Escribinos por DM
@@ -155,7 +155,7 @@ Del proyecto Fino's Barbers, desarrollado por andmar.studio · desarrollo web y 
 
 ## Reel 7 · Panel administrativo
 
-- **Archivo:** `social/reels/reel-07-panel-administrativo.mp4` ⚠️ falta
+- **Archivo:** `social/reels/reel-07-panel-administrativo.mp4`
 - **Formato:** Reel 1080×1920 (9:16)
 - **Objetivo:** Mostrar el alcance del panel: es el argumento de venta más fuerte para negocios.
 - **CTA:** Escribinos por DM
@@ -178,7 +178,7 @@ Del proyecto Fino's Barbers, desarrollado por andmar.studio · desarrollo web y 
 
 ## Reel 8 · Gestión de barberos
 
-- **Archivo:** `social/reels/reel-08-gestion-de-barberos.mp4` ⚠️ falta
+- **Archivo:** `social/reels/reel-08-gestion-de-barberos.mp4`
 - **Formato:** Reel 1080×1920 (9:16)
 - **Objetivo:** Demostrar en vivo lo fácil que es administrar el equipo (alta real en cámara).
 - **CTA:** Escribinos por DM
@@ -201,7 +201,7 @@ Del proyecto Fino's Barbers, desarrollado por andmar.studio · desarrollo web y 
 
 ## Reel 9 · Agenda y calendario
 
-- **Archivo:** `social/reels/reel-09-agenda-y-calendario.mp4` ⚠️ falta
+- **Archivo:** `social/reels/reel-09-agenda-y-calendario.mp4`
 - **Formato:** Reel 1080×1920 (9:16)
 - **Objetivo:** Mostrar el calendario semanal, que visualmente es de lo mejor del sistema.
 - **CTA:** Escribinos por DM
@@ -224,7 +224,7 @@ Del proyecto Fino's Barbers, desarrollado por andmar.studio · desarrollo web y 
 
 ## Reel 10 · Panel financiero
 
-- **Archivo:** `social/reels/reel-10-finanzas.mp4` ⚠️ falta
+- **Archivo:** `social/reels/reel-10-finanzas.mp4`
 - **Formato:** Reel 1080×1920 (9:16)
 - **Objetivo:** Mostrar la parte de gráficos y control financiero. Muy vendible para pymes.
 - **CTA:** Escribinos por DM
@@ -249,7 +249,7 @@ Del proyecto Fino's Barbers, desarrollado por andmar.studio · desarrollo web y 
 
 ## Reel 11 · Experiencia del cliente
 
-- **Archivo:** `social/reels/reel-11-experiencia-del-cliente.mp4` ⚠️ falta
+- **Archivo:** `social/reels/reel-11-experiencia-del-cliente.mp4`
 - **Formato:** Reel 1080×1920 (9:16)
 - **Objetivo:** Mostrar el lado del usuario final: no todo es panel de administración.
 - **CTA:** Escribinos por DM
@@ -272,7 +272,7 @@ Del proyecto Fino's Barbers, desarrollado por andmar.studio · desarrollo web y 
 
 ## Reel 12 · Cobros y seña
 
-- **Archivo:** `social/reels/reel-12-cobros-y-sena.mp4` ⚠️ falta
+- **Archivo:** `social/reels/reel-12-cobros-y-sena.mp4`
 - **Formato:** Reel 1080×1920 (9:16)
 - **Objetivo:** Atacar un dolor concreto (turnos caídos) con una solución concreta.
 - **CTA:** Escribinos por DM
@@ -295,7 +295,7 @@ Del proyecto Fino's Barbers, desarrollado por andmar.studio · desarrollo web y 
 
 ## Reel 13 · Acceso por rol
 
-- **Archivo:** `social/reels/reel-13-acceso-por-rol.mp4` ⚠️ falta
+- **Archivo:** `social/reels/reel-13-acceso-por-rol.mp4`
 - **Formato:** Reel 1080×1920 (9:16)
 - **Objetivo:** Mostrar permisos y seguridad, algo que casi nadie muestra y genera confianza.
 - **CTA:** Escribinos por DM
@@ -318,7 +318,7 @@ Del proyecto Fino's Barbers, desarrollado por andmar.studio · desarrollo web y 
 
 ## Reel 14 · Responsive
 
-- **Archivo:** `social/reels/reel-14-responsive.mp4` ⚠️ falta
+- **Archivo:** `social/reels/reel-14-responsive.mp4`
 - **Formato:** Reel 1080×1920 (9:16)
 - **Objetivo:** Mostrar que funciona en cualquier pantalla y que se instala como app.
 - **CTA:** Escribinos por DM

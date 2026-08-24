@@ -8,7 +8,7 @@ problema → solución → demostración → CTA. Las sueltas se pueden subir cu
 
 ## Historia 1 · Problema — Secuencia A (1/4)
 
-- **Archivo:** `social/historias/historia-01-problema.png` ⚠️ falta
+- **Archivo:** `social/historias/historia-01-problema.png`
 - **Formato:** Historia 1080×1920 (9:16)
 - **Objetivo:** Abrir la secuencia con un dolor reconocible.
 - **CTA:** Deslizá →
@@ -18,7 +18,7 @@ problema → solución → demostración → CTA. Las sueltas se pueden subir cu
 
 ## Historia 2 · Solución — Secuencia A (2/4)
 
-- **Archivo:** `social/historias/historia-02-solucion.png` ⚠️ falta
+- **Archivo:** `social/historias/historia-02-solucion.png`
 - **Formato:** Historia 1080×1920 (9:16)
 - **Objetivo:** Presentar la solución en una línea.
 - **CTA:** Deslizá →
@@ -27,7 +27,7 @@ problema → solución → demostración → CTA. Las sueltas se pueden subir cu
 
 ## Historia 3 · Demostración — Secuencia A (3/4)
 
-- **Archivo:** `social/historias/historia-03-demo.png` ⚠️ falta
+- **Archivo:** `social/historias/historia-03-demo.png`
 - **Formato:** Historia 1080×1920 (9:16)
 - **Objetivo:** Mostrar el producto real funcionando.
 - **CTA:** Deslizá →
@@ -37,7 +37,7 @@ problema → solución → demostración → CTA. Las sueltas se pueden subir cu
 
 ## Historia 4 · CTA — Secuencia A (4/4)
 
-- **Archivo:** `social/historias/historia-04-cta.png` ⚠️ falta
+- **Archivo:** `social/historias/historia-04-cta.png`
 - **Formato:** Historia 1080×1920 (9:16)
 - **Objetivo:** Cerrar pidiendo el mensaje.
 - **CTA:** Escribinos por DM
@@ -47,7 +47,7 @@ problema → solución → demostración → CTA. Las sueltas se pueden subir cu
 
 ## Historia 5 · Panel — Suelta
 
-- **Archivo:** `social/historias/historia-05-panel.png` ⚠️ falta
+- **Archivo:** `social/historias/historia-05-panel.png`
 - **Formato:** Historia 1080×1920 (9:16)
 - **Objetivo:** Reforzar el panel administrativo.
 - **CTA:** Escribinos por DM
@@ -56,7 +56,7 @@ problema → solución → demostración → CTA. Las sueltas se pueden subir cu
 
 ## Historia 6 · Tienda — Suelta
 
-- **Archivo:** `social/historias/historia-06-tienda.png` ⚠️ falta
+- **Archivo:** `social/historias/historia-06-tienda.png`
 - **Formato:** Historia 1080×1920 (9:16)
 - **Objetivo:** Reforzar el ecommerce.
 - **CTA:** Escribinos por DM
@@ -65,7 +65,7 @@ problema → solución → demostración → CTA. Las sueltas se pueden subir cu
 
 ## Historia 7 · Finanzas — Suelta
 
-- **Archivo:** `social/historias/historia-07-finanzas.png` ⚠️ falta
+- **Archivo:** `social/historias/historia-07-finanzas.png`
 - **Formato:** Historia 1080×1920 (9:16)
 - **Objetivo:** Reforzar el panel financiero.
 - **CTA:** Escribinos por DM
@@ -74,7 +74,7 @@ problema → solución → demostración → CTA. Las sueltas se pueden subir cu
 
 ## Historia 8 · Detrás del proyecto — Suelta
 
-- **Archivo:** `social/historias/historia-08-detras.png` ⚠️ falta
+- **Archivo:** `social/historias/historia-08-detras.png`
 - **Formato:** Historia 1080×1920 (9:16)
 - **Objetivo:** Mostrar solidez técnica sin ponerse pesado.
 - **CTA:** Escribinos por DM
