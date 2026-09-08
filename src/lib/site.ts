@@ -1,38 +1,46 @@
 /**
  * Datos del negocio — fuente única para todo el sitio.
- * Sacados del brief de Leandro (Lista para página) y del manual de marca.
  *
- * ⚠️ PENDIENTES de confirmar con Leandro (marcados con TODO):
- *  - WhatsApp / teléfono exacto
- *  - Horarios reales
- *  - Frase/lema final del local
+ * ⚠️ ESTO ES UNA DEMO. "Roble Barbería" es una barbería ficticia, creada para
+ * mostrar el sistema sin usar la marca ni los datos de ningún negocio real.
+ * Nada de lo que hay acá abajo pertenece a nadie: ni el nombre, ni la dirección,
+ * ni los contactos, ni el alias de cobro.
+ *
+ * Para re-marcar la demo entera alcanza con editar este archivo: el nombre sale
+ * de acá, el logo se dibuja solo (`components/ui/Logo.tsx`, SVG con el texto de
+ * `nombreCorto`) y no hay ninguna imagen de marca en `public/`.
+ *
+ * 🔴 LO ÚNICO QUE FALTA COMPLETAR: `whatsapp`. Hoy tiene un número inventado, así
+ * que el botón de WhatsApp abre un chat vacío. Poné ahí el número de Nico para
+ * que en una demo en vivo el mensaje llegue a algún lado.
  */
 
 export const SITE = {
-  nombre: "Fino's Barber's",
-  nombreCorto: "Fino's",
+  nombre: "Roble Barbería",
+  nombreCorto: "Roble",
   lema: "El oficio de la barbería, bien hecho.",
   descripcion:
     "Barbería premium en Buenos Aires. Cortes, barba y afeitado tradicional con navaja, en un ambiente pensado para que la pases bien.",
 
-  direccion: "Av. Rivadavia 10072",
+  // Calle inventada a propósito: no apunta a ningún local que exista.
+  direccion: "Av. del Roble 1420",
   ciudad: "CABA, Buenos Aires",
-  email: "finos_barbers@outlook.com",
+  /** Lo que se le pide al mapa. La calle de arriba no existe, así que el
+   *  embed apunta al barrio: se ve un mapa normal y no un pin en la nada. */
+  mapaQuery: "Palermo, CABA, Buenos Aires",
+  email: "hola@roblebarberia.com.ar",
 
-  // WhatsApp real de Leandro.
-  // OJO: el proyecto todavía NO está cerrado. Mientras sea demo, evitá que el
-  // botón mande mensajes reales a Leandro (mostrar la demo sin tocar "Enviar",
-  // o apuntar temporalmente al número de Nico si se muestra en vivo).
-  whatsapp: "5491133794955",
-  whatsappMostrar: "+54 9 11 3379-4955",
+  // 🔴 Número inventado. Reemplazar por el de Nico antes de mostrar la demo en vivo.
+  whatsapp: "5491100000000",
+  whatsappMostrar: "+54 9 11 0000-0000",
 
-  instagram: "finos_barbers",
-  instagramUrl: "https://instagram.com/finos_barbers",
-  tiktok: "finos.barbers",
-  tiktokUrl: "https://tiktok.com/@finos.barbers",
+  instagram: "roble.barberia",
+  instagramUrl: "https://instagram.com/roble.barberia",
+  tiktok: "roble.barberia",
+  tiktokUrl: "https://tiktok.com/@roble.barberia",
 
   // Pagos
-  aliasPago: "ramon.falcon.leandro",
+  aliasPago: "roble.barberia.mp",
   senaPorcentaje: 40,
   mediosPago: ["Transferencia", "Mercado Pago", "Efectivo", "Tarjetas"],
 
@@ -43,7 +51,7 @@ export const SITE = {
 
   // Mensaje pre-cargado del botón de WhatsApp
   whatsappMensaje:
-    "¡Hola Fino's! Quería hacer una consulta / reservar un turno.",
+    "¡Hola Roble! Quería hacer una consulta / reservar un turno.",
 } as const;
 
 export function whatsappLink(mensaje: string = SITE.whatsappMensaje): string {

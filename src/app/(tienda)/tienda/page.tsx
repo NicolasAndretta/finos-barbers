@@ -1,9 +1,10 @@
 import { getProductos } from '@/app/actions/tienda'
 import { TiendaCatalogo } from '@/components/tienda/TiendaCatalogo'
 import type { Producto } from '@/types'
+import { SITE } from '@/lib/site'
 
 export const metadata = {
-  title: 'Tienda | Finos Barbers',
+  title: `Tienda | ${SITE.nombre}`,
   description: 'Productos para el cuidado de cabello y barba',
 }
 

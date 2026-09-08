@@ -1,4 +1,4 @@
-const CACHE = 'finos-v1'
+const CACHE = 'roble-v1'
 
 // Rutas a pre-cachear en la instalación
 const PRECACHE_URLS = ['/', '/login', '/dashboard', '/turnos']

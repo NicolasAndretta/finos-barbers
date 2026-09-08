@@ -1,5 +1,5 @@
 -- ============================================================================
--- Finos Barbers — Migración 0002: pagos del turno (seña 40% + medios de pago)
+-- Roble Barbería — Migración 0002: pagos del turno (seña 40% + medios de pago)
 -- Aditiva e idempotente.
 -- ============================================================================
 

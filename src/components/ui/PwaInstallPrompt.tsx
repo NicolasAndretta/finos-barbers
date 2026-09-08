@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { SITE } from '@/lib/site'
 
 interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>
@@ -72,7 +73,7 @@ export function PwaInstallPrompt() {
             {/* Texto */}
             <div className="flex-1 min-w-0">
               <p className="text-white font-semibold text-sm leading-tight">
-                Instalar Finos Barbers
+                Instalar {SITE.nombre}
               </p>
               <p className="text-zinc-400 text-xs mt-0.5 leading-snug">
                 Añadí la app a tu pantalla de inicio para acceder más rápido.

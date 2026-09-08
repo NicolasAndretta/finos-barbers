@@ -1,7 +1,7 @@
 /**
  * src/lib/resend.ts
  *
- * Finos Barbers — cliente de Resend y funciones de envío de correo.
+ * Roble Barbería — cliente de Resend y funciones de envío de correo.
  *
  * Este módulo es exclusivamente de servidor (Node.js runtime).
  * NUNCA importarlo en Client Components ("use client") porque expone la API key.
@@ -32,7 +32,9 @@ function checkApiKey() {
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
 /** Dirección del remitente. Reemplazar con el dominio verificado en Resend. */
-const FROM_ADDRESS = 'Finos Barbers <turnos@finosbarbers.com>'
+// Dominio de la demo: no existe, así que los envíos reales necesitan que
+// Nico ponga acá un dominio verificado en Resend.
+const FROM_ADDRESS = 'Roble Barbería <turnos@roblebarberia.com.ar>'
 
 export interface DatosTurno {
   /** Nombre completo del cliente */
@@ -146,7 +148,7 @@ function buildConfirmacionHtml(datos: DatosTurno): string {
           <tr>
             <td style="background:#18181b;padding:32px 40px;text-align:center;">
               <h1 style="margin:0;color:#ffffff;font-size:24px;font-weight:700;letter-spacing:-0.5px;">
-                ✂️ Finos Barbers
+                ✂️ Roble Barbería
               </h1>
             </td>
           </tr>
@@ -181,7 +183,7 @@ function buildConfirmacionHtml(datos: DatosTurno): string {
           <tr>
             <td style="background:#f4f4f5;padding:20px 40px;text-align:center;border-top:1px solid #e4e4e7;">
               <p style="margin:0;color:#a1a1aa;font-size:12px;">
-                © ${new Date().getFullYear()} Finos Barbers · Este correo fue generado automáticamente.
+                © ${new Date().getFullYear()} Roble Barbería · Este correo fue generado automáticamente.
               </p>
             </td>
           </tr>
@@ -214,7 +216,7 @@ function buildCancelacionHtml(datos: DatosTurno): string {
           <tr>
             <td style="background:#18181b;padding:32px 40px;text-align:center;">
               <h1 style="margin:0;color:#ffffff;font-size:24px;font-weight:700;letter-spacing:-0.5px;">
-                ✂️ Finos Barbers
+                ✂️ Roble Barbería
               </h1>
             </td>
           </tr>
@@ -249,7 +251,7 @@ function buildCancelacionHtml(datos: DatosTurno): string {
           <tr>
             <td style="background:#f4f4f5;padding:20px 40px;text-align:center;border-top:1px solid #e4e4e7;">
               <p style="margin:0;color:#a1a1aa;font-size:12px;">
-                © ${new Date().getFullYear()} Finos Barbers · Este correo fue generado automáticamente.
+                © ${new Date().getFullYear()} Roble Barbería · Este correo fue generado automáticamente.
               </p>
             </td>
           </tr>

@@ -3,7 +3,7 @@
  * Lee SUPABASE_DB_URL de .env.local (gitignoreado — el secreto nunca se commitea
  * ni pasa por el chat). Aplica el archivo .sql que se le pase como argumento.
  *
- * Uso:  node scripts/migrate.mjs supabase/migrations/0001_finos_core.sql
+ * Uso:  node scripts/migrate.mjs supabase/migrations/0001_core.sql
  */
 import { readFileSync } from "fs";
 import pg from "pg";

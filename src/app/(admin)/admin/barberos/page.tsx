@@ -96,7 +96,7 @@ export default function AdminBarberosPage() {
           {error && <p className="text-red-400 text-sm bg-red-500/10 border border-red-500/20 rounded-lg px-4 py-2.5">{error}</p>}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div><label className="block text-sm text-zinc-400 mb-1">Nombre</label>
-              <input required value={form.nombre} onChange={e => setForm({ ...form, nombre: e.target.value })} className={inputCls} placeholder="Leandro" /></div>
+              <input required value={form.nombre} onChange={e => setForm({ ...form, nombre: e.target.value })} className={inputCls} placeholder="Tomás" /></div>
             <div><label className="block text-sm text-zinc-400 mb-1">Apellido</label>
               <input value={form.apellido} onChange={e => setForm({ ...form, apellido: e.target.value })} className={inputCls} /></div>
             <div><label className="block text-sm text-zinc-400 mb-1">Especialidad</label>

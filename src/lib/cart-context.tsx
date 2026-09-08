@@ -35,7 +35,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     try {
-      const stored = localStorage.getItem('finos-cart')
+      const stored = localStorage.getItem('roble-cart')
       if (stored) setItems(JSON.parse(stored))
     } catch {}
     setHydrated(true)
@@ -45,7 +45,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   // Persistir en localStorage cuando cambia
   useEffect(() => {
     if (hydrated) {
-      localStorage.setItem('finos-cart', JSON.stringify(items))
+      localStorage.setItem('roble-cart', JSON.stringify(items))
     }
   }, [items, hydrated])
 

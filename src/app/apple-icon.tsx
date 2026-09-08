@@ -31,7 +31,7 @@ export default function AppleIcon() {
           letterSpacing: '-2px',
         }}
       >
-        FB
+        RB
       </span>
       <span
         style={{
@@ -42,7 +42,7 @@ export default function AppleIcon() {
           textTransform: 'uppercase',
         }}
       >
-        BARBERS
+        BARBERÍA
       </span>
     </div>,
     { width: dim, height: dim }

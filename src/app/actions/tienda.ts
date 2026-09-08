@@ -4,6 +4,17 @@ import { createClient } from '@/lib/supabase'
 import { requireAdmin } from '@/lib/auth'
 import { revalidatePath } from 'next/cache'
 
+/**
+ * Catálogo público de la tienda.
+ *
+ * Si la base no responde devuelve una lista vacía en lugar de tirar: la página
+ * ya tiene programado el estado "la tienda está en construcción" y eso es mucho
+ * mejor que una pantalla de error 500 mientras se está mostrando la demo.
+ * El error igual queda en el log del servidor.
+ *
+ * ⚠️ El panel usa `adminGetProductos`, que SÍ tira: ahí un fallo tiene que
+ * verse, porque significa que no se puede administrar el catálogo.
+ */
 export async function getProductos() {
   const supabase = await createClient()
   const { data, error } = await supabase
@@ -12,8 +23,11 @@ export async function getProductos() {
     .eq('activo', true)
     .order('nombre')
 
-  if (error) throw new Error(error.message)
-  return data
+  if (error) {
+    console.error('[tienda] no se pudo leer el catálogo:', error.message)
+    return []
+  }
+  return data ?? []
 }
 
 export async function adminGetProductos() {

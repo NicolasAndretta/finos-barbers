@@ -1,9 +1,10 @@
+import { SITE } from '@/lib/site'
 import type { MetadataRoute } from 'next'
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'Finos Barbers',
-    short_name: 'Finos',
+    name: SITE.nombre,
+    short_name: SITE.nombreCorto,
     description: 'Agenda tu turno y gestioná tu barbería desde cualquier dispositivo.',
     start_url: '/',
     display: 'standalone',

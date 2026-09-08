@@ -1,7 +1,7 @@
 /**
  * Mercado Pago Connect (OAuth) — SOLO SERVIDOR.
  *
- * Permite que el comercio (Leandro) conecte su propia cuenta de Mercado Pago con
+ * Permite que el comercio conecte su propia cuenta de Mercado Pago con
  * un clic, sin compartir credenciales. El token se guarda en `mp_conexion` y se
  * usa para crear los pagos en nombre del comercio (la plata cae en su cuenta).
  *
@@ -107,7 +107,7 @@ async function refreshAccessToken(refreshToken: string): Promise<TokenResponse> 
   return res.json()
 }
 
-/** Guarda (reemplaza) la conexión del comercio. Finos = un solo comercio. */
+/** Guarda (reemplaza) la conexión del comercio. Acá = un solo comercio. */
 export async function guardarConexion(t: TokenResponse) {
   const supabase = createServiceClient()
   const expiresAt = t.expires_in

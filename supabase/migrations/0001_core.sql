@@ -1,5 +1,5 @@
 -- ============================================================================
--- Finos Barbers — Migración 0001: núcleo funcional
+-- Roble Barbería — Migración 0001: núcleo funcional
 -- Aditiva e idempotente. Respeta el patrón RLS existente (is_admin()).
 -- ============================================================================
 

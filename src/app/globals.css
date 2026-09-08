@@ -123,15 +123,32 @@ body {
   --tw-ring-color: rgba(199, 156, 100, 0.3);
 }
 
-/* ── Logo en blanco (sobre fondo oscuro) ─────────────────────────── */
-/* El logo de origen es negro; lo renderizamos blanco con filtro para
-   fondos oscuros, manteniendo nitidez sin necesidad de un segundo asset. */
-.logo-white {
-  filter: brightness(0) invert(1);
+/* ── Bastón de barbero, muy tenue ────────────────────────────────── */
+/* Fondo del hero. Diagonales apenas visibles que evocan el poste de
+   barbería sin necesidad de una fotografía del local. */
+.bg-barber-pole {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    rgba(199, 156, 100, 0.11) 0px,
+    rgba(199, 156, 100, 0.11) 16px,
+    transparent 16px,
+    transparent 32px,
+    rgba(244, 241, 236, 0.06) 32px,
+    rgba(244, 241, 236, 0.06) 48px,
+    transparent 48px,
+    transparent 64px
+  );
+  mask-image: radial-gradient(75% 60% at 50% 40%, #000 0%, transparent 75%);
+  -webkit-mask-image: radial-gradient(75% 60% at 50% 40%, #000 0%, transparent 75%);
 }
-.logo-wood {
-  filter: brightness(0) saturate(100%) invert(72%) sepia(28%) saturate(540%)
-    hue-rotate(354deg) brightness(89%) contrast(86%);
+
+/* Halo cálido detrás del isologo, para que el hero no quede plano. */
+.bg-hero-glow {
+  background-image: radial-gradient(
+    55% 45% at 50% 38%,
+    rgba(199, 156, 100, 0.14),
+    transparent 70%
+  );
 }
 
 /* ── Animaciones ─────────────────────────────────────────────────── */

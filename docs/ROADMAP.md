@@ -1,16 +1,16 @@
-# ROADMAP — Finos Barbers
+# ROADMAP — Roble Barbería
 
-Estado al 29/06/2026. Proyecto que pasa de demo a **cliente real (Leandro)**.
+Estado al 29/06/2026. Demo comercial de andmar.studio. La barbería es ficticia: no hay cliente real detrás.
 
 ## ✅ Hecho (rebrand visual + contenido)
-- Identidad de marca aplicada: **B&N + acento madera/cobre**, fiel al manual de Fino's.
+- Identidad de marca aplicada: **B&N + acento madera/cobre**, fiel al manual de marca.
   - Tokens en `globals.css` (remapeo de `amber-*` → madera), fuentes **Bevan** (display)
     + **Montserrat** (body), textura de madera sutil.
 - **Home premium** reconstruida con contenido real: hero con foto del local, servicios,
   barberos, "cómo funciona", reseñas, galería, ubicación + mapa, WhatsApp flotante.
 - **Logo** transparente (blanco/negro) en home, paneles (cliente/admin) y auth.
 - Datos del negocio centralizados en `src/lib/site.ts` (dirección, IG, TikTok, seña 40%,
-  alias de pago, medios de pago). ⚠️ Faltan: WhatsApp real y horarios reales (TODO Leandro).
+  alias de pago, medios de pago). Son datos ficticios de la demo.
 - **5 productos reales Fighters** cargados en la tienda con sus fotos.
 - Responsive verificado (mobile/tablet/desktop). Build + lint OK.
 - Los 2 bugs del viejo `BUGS.md` ya estaban resueltos en el código.
@@ -35,7 +35,7 @@ gitignoreado). Ya está en la base, respetando el patrón RLS existente (`is_adm
 ## ✅ Pagos del turno (migración 0002 + flujo, verificado en UI)
 - Al reservar, **seña del 40%** (`SITE.senaPorcentaje`) calculada sobre el precio.
 - **3 medios**: Mercado Pago (redirige y confirma al volver), Transferencia (muestra
-  alias `ramon.falcon.leandro` + comprobante por WhatsApp), Efectivo en el local.
+  alias de la demo + comprobante por WhatsApp), Efectivo en el local.
 - Campos en `turnos`: `metodo_pago`, `sena_monto`, `sena_estado`, `mp_*`.
 - Credenciales por env (MP), nunca hardcodeadas. Falta **probar un pago MP real** end-to-end.
 
@@ -50,7 +50,7 @@ gitignoreado). Ya está en la base, respetando el patrón RLS existente (`is_adm
 - Checkout y seña de turnos usan el token del comercio conectado.
 
 **Falta para activarlo (lo hace Nico):**
-1. Crear la **app de Mercado Pago** (panel developers de Andretta Studio) → `MP_CLIENT_ID`
+1. Crear la **app de Mercado Pago** (panel developers de andmar.studio) → `MP_CLIENT_ID`
    + `MP_CLIENT_SECRET` en `.env.local` / env del hosting. Redirect URI:
    `https://firebrick-giraffe-301726.hostingersite.com/api/mp/oauth/callback`.
 2. **Deploy a Hostinger** (el callback necesita estar online).
@@ -81,7 +81,7 @@ gitignoreado). Ya está en la base, respetando el patrón RLS existente (`is_adm
 - Área `/barbero`: **Mi agenda** (solo sus turnos) + **Clientes** (solo lectura). No ve
   stock/servicios/cobros/finanzas. `requireBarbero` + redirects por rol + proxy.
 - El admin crea la cuenta de cada barbero desde `/admin/barberos`.
-- **Futuro (Opción 2):** panel donde Leandro habilita permisos extra por barbero.
+- **Futuro (Opción 2):** panel donde el dueño habilita permisos extra por barbero.
 
 ## 🧹 Menor (pendiente)
 - Limpiar productos demo viejos inactivos del admin (nombres de prueba). ⚠️ Requiere
