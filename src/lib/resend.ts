@@ -20,13 +20,19 @@ const RESEND_API_KEY = process.env.RESEND_API_KEY
 // Evitar inicializar con error a nivel de módulo para no romper el build estático
 export const resend = new Resend(RESEND_API_KEY || 'dummy_key_for_build')
 
-function checkApiKey() {
+/**
+ * Devuelve el motivo por el que no se puede enviar, o null si se puede.
+ *
+ * ⚠️ NO lanza. Estas funciones documentan que devuelven { ok, error }, y el
+ * envío del mail ocurre SIEMPRE despues de haber tocado la base: si tirara,
+ * se caeria una reserva ya confirmada por no poder avisar de ella.
+ */
+function motivoParaNoEnviar(): string | null {
   if (!process.env.RESEND_API_KEY) {
-    throw new Error(
-      'Falta la variable de entorno RESEND_API_KEY.\n' +
-        'Añádela a .env.local con el valor obtenido en https://resend.com/api-keys'
-    )
+    return 'Falta la variable de entorno RESEND_API_KEY. Cargala en .env.local ' +
+      'con el valor de https://resend.com/api-keys'
   }
+  return null
 }
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
@@ -88,7 +94,9 @@ export type ResultadoEnvio = EnvioExitoso | EnvioFallido
  * if (!resultado.ok) console.error(resultado.error)
  */
 export async function sendConfirmacionTurno(datos: DatosTurno): Promise<ResultadoEnvio> {
-  checkApiKey()
+  const motivo = motivoParaNoEnviar()
+  if (motivo) return { ok: false, error: motivo }
+
   const { data, error } = await resend.emails.send({
     from: FROM_ADDRESS,
     to: datos.emailCliente,
@@ -110,7 +118,9 @@ export async function sendConfirmacionTurno(datos: DatosTurno): Promise<Resultad
  * @returns ResultadoEnvio — union discriminada para manejo seguro de errores
  */
 export async function sendCancelacionTurno(datos: DatosTurno): Promise<ResultadoEnvio> {
-  checkApiKey()
+  const motivo = motivoParaNoEnviar()
+  if (motivo) return { ok: false, error: motivo }
+
   const { data, error } = await resend.emails.send({
     from: FROM_ADDRESS,
     to: datos.emailCliente,

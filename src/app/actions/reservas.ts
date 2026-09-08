@@ -189,7 +189,10 @@ export async function crearReserva(formData: FormData) {
     const [year, month, day] = fecha.split('-')
     const fechaLegible = `${day}/${month}/${year}`
     
-    await sendConfirmacionTurno({
+    // El turno YA está guardado. Si el mail falla (falta la API key, el dominio
+    // no está verificado, Resend caído) se registra y se sigue: perder el aviso
+    // es molesto, perder la reserva confirmada es inaceptable.
+    const envio = await sendConfirmacionTurno({
       nombreCliente: `${profile.nombre} ${profile.apellido}`,
       emailCliente: profile.email,
       nombreBarbero: `${barbero.nombre} ${barbero.apellido}`,
@@ -197,6 +200,7 @@ export async function crearReserva(formData: FormData) {
       fecha: fechaLegible,
       hora
     })
+    if (!envio.ok) console.error('[reservas] no se pudo enviar la confirmación:', envio.error)
   }
 
   // 4. Revalidar rutas
@@ -335,7 +339,9 @@ export async function cancelarTurno(turnoId: string) {
   const barbero = (Array.isArray(turno.barberos) ? turno.barberos[0] : turno.barberos) as { nombre: string; apellido: string }
   const servicio = (Array.isArray(turno.servicios) ? turno.servicios[0] : turno.servicios) as { nombre: string }
 
-  await sendCancelacionTurno({
+  // Mismo criterio que en la confirmación: el turno ya se canceló en la base,
+  // así que un fallo del mail no puede tirar abajo la operación.
+  const envio = await sendCancelacionTurno({
     nombreCliente: `${profile.nombre} ${profile.apellido}`,
     emailCliente: profile.email,
     nombreBarbero: `${barbero.nombre} ${barbero.apellido}`,
@@ -343,6 +349,7 @@ export async function cancelarTurno(turnoId: string) {
     fecha: fechaLegible,
     hora: formatHora(turno.hora)
   })
+  if (!envio.ok) console.error('[reservas] no se pudo enviar la cancelación:', envio.error)
 
   revalidatePath('/turnos')
   revalidatePath('/admin/turnos')
