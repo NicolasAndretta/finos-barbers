@@ -216,7 +216,7 @@ export async function crearReserva(formData: FormData) {
         body: {
           items: [{
             id: data.id,
-            title: `Seña ${SITE.senaPorcentaje}% — ${servicio?.nombre ?? 'Turno'} (Fino's)`,
+            title: `Seña ${SITE.senaPorcentaje}% — ${servicio?.nombre ?? 'Turno'} (${SITE.nombreCorto})`,
             quantity: 1,
             unit_price: senaMonto,
             currency_id: 'ARS',

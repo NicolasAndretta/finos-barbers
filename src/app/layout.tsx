@@ -1,9 +1,10 @@
 import type { Metadata, Viewport } from "next";
 import { Montserrat, Bevan } from "next/font/google";
 import { PwaInstallPrompt } from "@/components/ui/PwaInstallPrompt";
+import { SITE } from "@/lib/site";
 import "./globals.css";
 
-// Tipografía secundaria de marca (manual Fino's): Montserrat.
+// Tipografía secundaria de marca: Montserrat.
 const montserrat = Montserrat({
   variable: "--font-body",
   subsets: ["latin"],
@@ -27,12 +28,12 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "Fino's Barber's | Barbería premium en Buenos Aires",
+  title: `${SITE.nombre} | Barbería premium en Buenos Aires`,
   description:
-    "Cortes, barba y afeitado tradicional. Reservá tu turno online y conocé nuestra tienda de productos. Ramón L. Falcón 4955.",
+    "Cortes, barba y afeitado tradicional. Reservá tu turno online y conocé nuestra tienda de productos.",
   appleWebApp: {
     capable: true,
-    title: "Fino's Barber's",
+    title: SITE.nombre,
     statusBarStyle: "black-translucent",
   },
   formatDetection: {

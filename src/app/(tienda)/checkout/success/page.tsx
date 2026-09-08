@@ -1,8 +1,9 @@
 import Link from 'next/link'
 import { actualizarEstadoPedido } from '@/app/actions/checkout'
 import { SuccessContent } from '@/components/checkout/SuccessContent'
+import { SITE } from '@/lib/site'
 
-export const metadata = { title: 'Pago exitoso | Finos Barbers' }
+export const metadata = { title: `Pago exitoso | ${SITE.nombre}` }
 
 type SearchParams = Promise<{
   payment_id?: string

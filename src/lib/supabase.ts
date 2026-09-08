@@ -1,7 +1,7 @@
 /**
  * src/lib/supabase.ts
  *
- * Finos Barbers — clientes de Supabase para App Router (Next.js 15 / Next.js 16)
+ * Roble Barbería — clientes de Supabase para App Router (Next.js 15 / Next.js 16)
  *
  * REGLAS DE USO:
  *  - createClient()        → Server Components, Route Handlers, Server Actions

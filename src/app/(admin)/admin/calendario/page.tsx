@@ -1,7 +1,8 @@
 import { CalendarioSemanal } from '@/components/admin/CalendarioSemanal'
+import { SITE } from '@/lib/site'
 
 export const metadata = {
-  title: 'Calendario | Finos Barbers',
+  title: `Calendario | ${SITE.nombre}`,
 }
 
 export default function CalendarioPage() {

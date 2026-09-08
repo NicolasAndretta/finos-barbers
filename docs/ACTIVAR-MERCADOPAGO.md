@@ -8,9 +8,9 @@
 ---
 
 ## Conceptos en 30 segundos
-- **Tu aplicación de Mercado Pago** (de Andretta Studio): se crea **una sola vez** y sirve
+- **Tu aplicación de Mercado Pago** (de andmar.studio): se crea **una sola vez** y sirve
   para **todos** tus clientes. De ahí salen el `Client ID` y el `Client Secret`.
-- **La cuenta del cliente** (Leandro): él la conecta solo, con un clic, desde `/admin/pagos`.
+- **La cuenta del cliente**: lo conecta el dueño solo, con un clic, desde `/admin/pagos`.
   No te pasa usuario ni contraseña ni token. Eso es lo "serio/sin datos sensibles".
 - **TEST vs PROD:** primero probás con credenciales de **TEST** (plata falsa). Cuando
   funciona, pasás a **producción**.
@@ -19,9 +19,9 @@
 
 ## Paso 1 — Crear la aplicación de Mercado Pago (una vez)
 1. Entrá a **https://www.mercadopago.com.ar/developers/panel/app** con **tu** cuenta
-   (la de Andretta Studio, no la de Leandro).
+   (la de andmar.studio, no la del cliente).
 2. **Crear aplicación**.
-   - Nombre: `Andretta Studio` (o `Finos Barbers`, da igual).
+   - Nombre: `andmar.studio` (o `Roble Barbería`, da igual).
    - Tipo de solución / producto: **Pagos online** → **Checkout Pro** (o "Pagos por
      Internet"). Si pregunta "¿usás una plataforma de e-commerce?": **No**.
    - Modelo de integración: si aparece la opción **Marketplace / Mercado Pago Connect**,
@@ -81,7 +81,7 @@ Mercado Pago te da **usuarios de prueba** y **tarjetas de test**:
 - Conectás `/admin/pagos` con el **vendedor de prueba** y pagás con una **tarjeta de
   prueba** (ej. Mastercard `5031 7557 3453 0604`, venc. `11/30`, CVV `123`, nombre
   `APRO` para aprobar). Lista completa en la doc de MP ("Tarjetas de prueba").
-- Cuando todo cierra, conectás la cuenta **real** de Leandro y listo.
+- Cuando todo cierra, conectás la cuenta **real** del cliente y listo.
 
 ---
 
@@ -99,5 +99,5 @@ Mercado Pago te da **usuarios de prueba** y **tarjetas de test**:
 | Quién | Qué |
 |-------|-----|
 | **Vos (una vez)** | Crear la app de MP, poner la Redirect URI, cargar `MP_CLIENT_ID`/`MP_CLIENT_SECRET` en env, deploy. |
-| **El cliente (Leandro)** | Entrar a `/admin/pagos`, clic en "Conectar", autorizar. Nada más. |
+| **El cliente (el dueño)** | Entrar a `/admin/pagos`, clic en "Conectar", autorizar. Nada más. |
 | **El sistema** | Guarda el token cifrado, lo refresca solo y cobra en nombre del cliente. |

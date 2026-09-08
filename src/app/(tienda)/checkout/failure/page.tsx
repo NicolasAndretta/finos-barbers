@@ -1,6 +1,7 @@
 import Link from 'next/link'
+import { SITE } from '@/lib/site'
 
-export const metadata = { title: 'Pago fallido | Finos Barbers' }
+export const metadata = { title: `Pago fallido | ${SITE.nombre}` }
 
 export default function FailurePage() {
   return (

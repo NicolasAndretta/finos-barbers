@@ -1,6 +1,7 @@
 ﻿import React from 'react'
 import Link from 'next/link'
 import { requireClient } from '@/lib/auth'
+import { SITE } from '@/lib/site'
 
 export default async function ClientDashboardPage() {
   const profile = await requireClient()
@@ -12,7 +13,7 @@ export default async function ClientDashboardPage() {
           Bienvenido, <span className="text-zinc-300">{profile.nombre}</span>!
         </h1>
         <p className="text-zinc-400 mt-3 text-base leading-relaxed">
-          Desde aquí podés gestionar tus reservas en Finos Barbers.
+          Desde aquí podés gestionar tus reservas en {SITE.nombre}.
         </p>
       </div>
 

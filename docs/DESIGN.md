@@ -1,4 +1,4 @@
-﻿# DESIGN SYSTEM — Finos Barbers
+﻿# DESIGN SYSTEM — Roble Barbería
 
 ## Identidad visual
 - Estética: barbería premium, oscura, masculina, sofisticada

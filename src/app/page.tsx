@@ -1,6 +1,5 @@
 import React from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { getProfile } from "@/lib/auth";
 import { getBarberos } from "@/app/actions/barberos";
 import { getResenasVisibles } from "@/app/actions/resenas";
@@ -63,7 +62,7 @@ export default async function HomePage() {
           bio: b.bio || "",
         }))
       : [
-          { nombre: "Leandro", rol: "Master Barber · Fundador", bio: "Más de una década detrás de la silla. Especialista en cortes clásicos y diseño de barba." },
+          { nombre: "Tomás", rol: "Master Barber · Fundador", bio: "Más de una década detrás de la silla. Especialista en cortes clásicos y diseño de barba." },
           { nombre: "Facundo", rol: "Barber · Sábados", bio: "Fades, texturizados y tendencias modernas. Atiende los sábados con turnos limitados." },
         ];
 
@@ -81,7 +80,7 @@ export default async function HomePage() {
       {/* ── Header ─────────────────────────────────────────────── */}
       <header className="border-b border-white/5 bg-zinc-950/70 backdrop-blur-md sticky top-0 z-50">
         <div className="mx-auto max-w-6xl px-5 sm:px-6 h-16 flex items-center justify-between">
-          <Link href="/" aria-label="Fino's Barber's — inicio">
+          <Link href="/" aria-label={`${SITE.nombre} — inicio`}>
             <Logo size={34} priority />
           </Link>
 
@@ -136,15 +135,12 @@ export default async function HomePage() {
       <main className="flex-1 flex flex-col items-center">
         {/* ── Hero ─────────────────────────────────────────────── */}
         <section className="w-full relative min-h-[88vh] flex items-center justify-center texture-grain overflow-hidden">
-          <div className="absolute inset-0">
-            <Image
-              src="/images/demo/interior-1.jpg"
-              alt="Interior de Fino's Barber's"
-              fill
-              className="object-cover"
-              priority
-            />
-            <div className="absolute inset-0 bg-gradient-to-b from-zinc-950/80 via-zinc-950/70 to-zinc-950" />
+          {/* Fondo compuesto: vetas de madera + bastón de barbero muy tenue.
+              Es CSS puro a propósito — la demo no depende de ninguna foto. */}
+          <div className="absolute inset-0 bg-wood-texture">
+            <div className="absolute inset-0 bg-barber-pole" />
+            <div className="absolute inset-0 bg-hero-glow" />
+            <div className="absolute inset-0 bg-gradient-to-b from-zinc-950/70 via-zinc-950/60 to-zinc-950" />
           </div>
 
           <div className="relative z-10 w-full max-w-3xl mx-auto px-6 py-24 text-center flex flex-col items-center gap-7">
@@ -372,7 +368,9 @@ export default async function HomePage() {
           </div>
         </section>
 
-        {/* ── Nuestro espacio ──────────────────────────────────── */}
+        {/* ── Nuestro espacio ──────────────────────────────────
+            Sin fotos a propósito: la demo no muestra ningún local real.
+            Cuando haya fotos propias, esta grilla es el lugar donde entran. */}
         <section className="w-full max-w-6xl px-6 py-20">
           <div className="text-center mb-12">
             <p className="text-amber-400 text-xs font-semibold tracking-[0.2em] uppercase mb-3">
@@ -381,27 +379,74 @@ export default async function HomePage() {
             <h2 className="font-display text-3xl sm:text-4xl text-white">
               Nuestro espacio
             </h2>
+            <p className="text-zinc-400 mt-4 max-w-xl mx-auto leading-relaxed">
+              Cuatro sillones, música a buen volumen y el tiempo que hace falta
+              para cada cliente. Nadie sale apurado de acá.
+            </p>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {[
-              "interior-2.jpg",
-              "interior-3.jpg",
-              "interior-4.jpg",
-              "interior-5.jpg",
-              "interior-1.jpg",
-            ].map((img, i) => (
+              {
+                titulo: "Toalla caliente",
+                texto: "El ritual completo antes de la navaja. No se saltea nunca.",
+                // Vapor subiendo
+                d: "M8 21c0-2 1.5-2.5 1.5-4.5S8 13 8 11M12 21c0-2 1.5-2.5 1.5-4.5S12 13 12 11M16 21c0-2 1.5-2.5 1.5-4.5S16 13 16 11M4 7h16",
+              },
+              {
+                titulo: "Turno respetado",
+                texto: "Si reservaste a las 16, entrás a las 16. Sin sala de espera eterna.",
+                // Reloj
+                d: "M12 21a9 9 0 100-18 9 9 0 000 18zM12 7v5l3.5 2",
+              },
+              {
+                titulo: "Café de la casa",
+                texto: "Mientras esperás tu turno, o mientras te atienden. Va incluido.",
+                // Taza
+                d: "M4 9h12v6a4 4 0 01-4 4H8a4 4 0 01-4-4V9zM16 11h2a2 2 0 010 4h-2M7 5V3M11 5V3",
+              },
+              {
+                titulo: "Producto de línea",
+                texto: "Trabajamos con pomadas y ceras que después podés comprar acá.",
+                // Pote de pomada
+                d: "M5 9h14v9a2 2 0 01-2 2H7a2 2 0 01-2-2V9zM6 9V7a2 2 0 012-2h8a2 2 0 012 2v2M10 14h4",
+              },
+              {
+                titulo: "Tijera y navaja",
+                texto: "Corte a tijera donde hace falta. Máquina donde conviene.",
+                // Tijera
+                d: "M6.5 8a2.5 2.5 0 100-5 2.5 2.5 0 000 5zM6.5 21a2.5 2.5 0 100-5 2.5 2.5 0 000 5zM8.6 9.6L19 20M19 4L8.6 14.4",
+              },
+              {
+                titulo: "Reserva online",
+                texto: "Elegís barbero, día y hora desde el celular. Un minuto.",
+                // Celular
+                d: "M7 2h10a1 1 0 011 1v18a1 1 0 01-1 1H7a1 1 0 01-1-1V3a1 1 0 011-1zM11 18h2",
+              },
+            ].map((item) => (
               <div
-                key={img}
-                className={`relative aspect-square rounded-2xl overflow-hidden border border-white/5 ${
-                  i === 0 ? "col-span-2 row-span-2 aspect-auto" : ""
-                }`}
+                key={item.titulo}
+                className="group rounded-2xl border border-white/8 bg-white/[0.02] p-6 transition-colors hover:border-amber-400/25 hover:bg-white/[0.04]"
               >
-                <Image
-                  src={`/images/demo/${img}`}
-                  alt="Fino's Barber's"
-                  fill
-                  className="object-cover hover:scale-105 transition-transform duration-500"
-                />
+                <div className="mb-4 h-10 w-10 rounded-lg border border-amber-400/25 bg-amber-400/5 flex items-center justify-center">
+                  <svg
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                    className="h-5 w-5 stroke-amber-400"
+                    fill="none"
+                    strokeWidth="1.6"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d={item.d} />
+                  </svg>
+                </div>
+                <h3 className="font-display text-lg text-white mb-2">
+                  {item.titulo}
+                </h3>
+                <p className="text-sm text-zinc-400 leading-relaxed">
+                  {item.texto}
+                </p>
               </div>
             ))}
           </div>
@@ -469,9 +514,9 @@ export default async function HomePage() {
             </div>
             <div className="relative aspect-[4/3] rounded-2xl overflow-hidden border border-white/10">
               <iframe
-                title="Ubicación de Fino's Barber's"
+                title={`Ubicación de ${SITE.nombre}`}
                 src={`https://www.google.com/maps?q=${encodeURIComponent(
-                  SITE.direccion + ", " + SITE.ciudad,
+                  SITE.mapaQuery,
                 )}&output=embed`}
                 className="absolute inset-0 w-full h-full grayscale"
                 loading="lazy"

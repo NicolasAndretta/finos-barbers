@@ -1,5 +1,5 @@
 -- ============================================================================
--- Finos Barbers — Migración 0003: conexión OAuth con Mercado Pago (MP Connect)
+-- Roble Barbería — Migración 0003: conexión OAuth con Mercado Pago (MP Connect)
 -- Guarda el token del comercio conectado. Los tokens NUNCA se exponen por la
 -- API pública: RLS activo sin políticas → solo el server (service role) accede.
 -- ============================================================================

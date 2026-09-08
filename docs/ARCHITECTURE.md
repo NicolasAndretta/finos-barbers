@@ -1,4 +1,4 @@
-﻿# Arquitectura — Finos Barbers
+﻿# Arquitectura — Roble Barbería
 
 ## Decisiones técnicas
 - App Router de Next.js para layouts separados por rol

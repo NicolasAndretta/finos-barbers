@@ -27,7 +27,7 @@ export default function Icon() {
           letterSpacing: '-4px',
         }}
       >
-        FB
+        RB
       </span>
       <span
         style={{
@@ -38,7 +38,7 @@ export default function Icon() {
           textTransform: 'uppercase',
         }}
       >
-        BARBERS
+        BARBERÍA
       </span>
     </div>,
     { width: 512, height: 512 }

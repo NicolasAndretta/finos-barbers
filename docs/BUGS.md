@@ -1,4 +1,4 @@
-# BUGS — Finos Barbers
+# BUGS — Roble Barbería
 
 ## ✅ Bug 1 — Selector de fecha sin límite (RESUELTO)
 Archivo: src/components/client/ReservaForm.tsx

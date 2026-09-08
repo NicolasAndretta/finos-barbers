@@ -1,8 +1,9 @@
 import { CheckoutForm } from '@/components/checkout/CheckoutForm'
 import { getProfile } from '@/lib/auth'
+import { SITE } from '@/lib/site'
 
 export const metadata = {
-  title: 'Checkout | Finos Barbers',
+  title: `Checkout | ${SITE.nombre}`,
 }
 
 export default async function CheckoutPage() {

@@ -1,6 +1,17 @@
-# Finos Barbers
+# Roble Barbería — demo de andmar.studio
 
 Sistema de gestión integral para barbería desarrollado como proyecto portfolio full-stack. Cubre el ciclo completo de operaciones: reservas online, agenda visual, tienda con pagos reales y panel financiero con gráficos.
+
+> **Es una demo, y la barbería no existe.** "Roble Barbería" es una marca ficticia
+> creada para mostrar el sistema sin usar la identidad de ningún negocio real: el
+> nombre, la dirección, los contactos y el alias de cobro son inventados, el logo se
+> dibuja por código y no hay ni una fotografía de un local.
+>
+> **Toda la marca sale de `src/lib/site.ts`.** Cambiar el nombre ahí re-marca el sitio
+> entero — no hay ningún archivo de imagen que reemplazar.
+>
+> ⚠️ El repositorio sigue llamándose `finos-barbers`: es infraestructura y renombrarlo
+> rompe el remoto sin que nadie lo note hasta que falla.
 
 ![Next.js](https://img.shields.io/badge/Next.js-15-black?style=flat-square&logo=nextdotjs)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?style=flat-square&logo=typescript)
