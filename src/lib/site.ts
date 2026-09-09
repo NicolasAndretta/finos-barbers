@@ -11,8 +11,10 @@
  * de acá, el logo se dibuja solo (`components/ui/Logo.tsx`, SVG con el texto de
  * `nombreCorto`) y no hay ninguna imagen de marca en `public/`.
  *
- * El WhatsApp es el de Nico, a propósito: la barbería no existe, así que el
- * botón tiene que llegar a alguien de verdad cuando se muestra la demo en vivo.
+ * El WhatsApp es el de andmar.studio, a propósito: la barbería no existe, así
+ * que el botón tiene que llegar a alguien de verdad cuando se muestra la demo
+ * en vivo. Va el de la empresa y no uno personal, para que quien escriba vea
+ * el perfil de WhatsApp Business.
  */
 
 export const SITE = {
@@ -30,9 +32,11 @@ export const SITE = {
   mapaQuery: "Palermo, CABA, Buenos Aires",
   email: "hola@roblebarberia.com.ar",
 
-  // El de Nico: la barbería es ficticia, pero el botón tiene que llegar a alguien.
-  whatsapp: "5491127397061",
-  whatsappMostrar: "+54 9 11 2739-7061",
+  // El de andmar.studio (WhatsApp Business): la barbería es ficticia, pero el
+  // botón tiene que llegar a alguien. Es el mismo que figura como oficial en
+  // el repo de contenido (Andmar-content, "00 Empezar aca/Contacto.md").
+  whatsapp: "5491157641147",
+  whatsappMostrar: "+54 9 11 5764-1147",
 
   instagram: "roble.barberia",
   instagramUrl: "https://instagram.com/roble.barberia",
