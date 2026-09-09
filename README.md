@@ -4,8 +4,10 @@ Sistema de gestión integral para barbería desarrollado como proyecto portfolio
 
 > **Es una demo, y la barbería no existe.** "Roble Barbería" es una marca ficticia
 > creada para mostrar el sistema sin usar la identidad de ningún negocio real: el
-> nombre, la dirección, los contactos y el alias de cobro son inventados, el logo se
-> dibuja por código y no hay ni una fotografía de un local.
+> nombre, la dirección, el mail, las redes y el alias de cobro son inventados, el logo
+> se dibuja por código y no hay ni una fotografía de un local. Lo único real es el
+> WhatsApp, que apunta a Nico: la barbería no existe, pero el botón tiene que llegar
+> a alguien cuando se muestra la demo en vivo.
 >
 > **Toda la marca sale de `src/lib/site.ts`.** Cambiar el nombre ahí re-marca el sitio
 > entero — no hay ningún archivo de imagen que reemplazar.

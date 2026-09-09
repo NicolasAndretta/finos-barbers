@@ -3,16 +3,16 @@
  *
  * ⚠️ ESTO ES UNA DEMO. "Roble Barbería" es una barbería ficticia, creada para
  * mostrar el sistema sin usar la marca ni los datos de ningún negocio real.
- * Nada de lo que hay acá abajo pertenece a nadie: ni el nombre, ni la dirección,
- * ni los contactos, ni el alias de cobro.
+ * Nada de lo que hay acá abajo pertenece a ningún negocio real: ni el nombre, ni
+ * la dirección, ni el mail, ni las redes, ni el alias de cobro. La única
+ * excepción es el WhatsApp, que es el de Nico (ver más abajo).
  *
  * Para re-marcar la demo entera alcanza con editar este archivo: el nombre sale
  * de acá, el logo se dibuja solo (`components/ui/Logo.tsx`, SVG con el texto de
  * `nombreCorto`) y no hay ninguna imagen de marca en `public/`.
  *
- * 🔴 LO ÚNICO QUE FALTA COMPLETAR: `whatsapp`. Hoy tiene un número inventado, así
- * que el botón de WhatsApp abre un chat vacío. Poné ahí el número de Nico para
- * que en una demo en vivo el mensaje llegue a algún lado.
+ * El WhatsApp es el de Nico, a propósito: la barbería no existe, así que el
+ * botón tiene que llegar a alguien de verdad cuando se muestra la demo en vivo.
  */
 
 export const SITE = {
@@ -30,9 +30,9 @@ export const SITE = {
   mapaQuery: "Palermo, CABA, Buenos Aires",
   email: "hola@roblebarberia.com.ar",
 
-  // 🔴 Número inventado. Reemplazar por el de Nico antes de mostrar la demo en vivo.
-  whatsapp: "5491100000000",
-  whatsappMostrar: "+54 9 11 0000-0000",
+  // El de Nico: la barbería es ficticia, pero el botón tiene que llegar a alguien.
+  whatsapp: "5491127397061",
+  whatsappMostrar: "+54 9 11 2739-7061",
 
   instagram: "roble.barberia",
   instagramUrl: "https://instagram.com/roble.barberia",
