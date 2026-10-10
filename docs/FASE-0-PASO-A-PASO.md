@@ -114,7 +114,11 @@ Necesitás Windows 10 u 11, **8 GB de RAM o más** (con 16 GB anda cómodo) y un
 **10 GB libres** en el disco. Si no llegás, avisame antes de instalar nada:
 hay un plan B.
 
-### 3.2 Instalar Docker Desktop (una sola vez)
+### 3.2 Abrir Docker Desktop
+**Si ya lo tenés instalado:** abrilo y esperá a que abajo a la izquierda diga
+**Engine running**. Si te ofrece actualizarse, aceptá. Saltá al paso 3.3.
+
+**Si no lo tenés** (una sola vez):
 1. Entrá a **docker.com** → **Docker Desktop** → **Download for Windows**.
 2. Instalalo con las opciones que vienen marcadas (usa algo llamado WSL 2). Si te
    pide actualizar WSL o reiniciar, aceptá.
