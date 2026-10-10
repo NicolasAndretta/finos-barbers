@@ -1,11 +1,12 @@
 # Fase 0 — Paso a paso para Nico
 
-> Objetivo: que la estructura real de la base (tablas, reglas, funciones) quede
-> guardada en el repo, y tener un proyecto de Supabase **de desarrollo** para
-> probar todo sin tocar la demo.
+> Objetivo: guardar en el repo la estructura real de la base de la demo actual
+> (tablas, reglas, funciones), que es el punto de partida de la base nueva del
+> producto, y tener un proyecto de Supabase **de desarrollo** para construir y
+> probar todo.
 >
-> **Nada de esto toca la demo.** El único comando que se conecta a producción es
-> el del paso 2.3, y es de **solo lectura**: Postgres rechaza cualquier escritura
+> **Nada de esto toca la demo.** El único comando que se conecta a ella es el
+> del paso 2.3, y es de **solo lectura**: Postgres rechaza cualquier escritura
 > mientras dura esa conexión. Las variables de Hostinger no se tocan.
 
 **Tiempo:** ~10 minutos desde el celu + ~20 minutos en la PC.
@@ -17,7 +18,9 @@
 ### 1.1 Crear el proyecto de desarrollo
 1. Entrá a **supabase.com** → **New project**.
 2. Organización: la misma de la demo.
-3. Nombre: `roble-desarrollo`.
+3. Nombre: `barberias-desarrollo` (neutro, porque el producto todavía no tiene
+   nombre; se puede renombrar después sin romper nada: la URL no cambia).
+   Si ya lo creaste como `roble-desarrollo`, dejalo así.
 4. **Database password:** tocá *Generate a password* y guardala en tu gestor de
    contraseñas. La vas a necesitar en la PC.
    (Si la inventás vos, usá solo letras y números: los símbolos rompen la URL de conexión.)
@@ -28,7 +31,7 @@
 > alternativas antes de pagar nada.
 
 ### 1.2 Configurar el login del proyecto nuevo
-En el proyecto **roble-desarrollo**:
+En el proyecto de desarrollo:
 1. **Authentication → URL Configuration**
    - *Site URL:* `http://localhost:3000`
    - *Redirect URLs* → **Add URL:** `http://localhost:3000/**`
@@ -37,7 +40,7 @@ En el proyecto **roble-desarrollo**:
    desarrollo; en la demo no se toca.
 
 ### 1.3 (Opcional, 2 minutos) Salir de la duda del posible agujero
-En el proyecto de **la demo** (producción) → **SQL Editor** → **New query** →
+En el proyecto de **la demo actual** → **SQL Editor** → **New query** →
 pegá esto y tocá **Run**. Es una consulta de solo lectura: no cambia nada.
 
 ```sql
@@ -68,26 +71,26 @@ npm install
 ```
 Si `git` dice que tenés cambios sin guardar, frená y avisame antes de seguir.
 
-### 2.2 Separar las credenciales de producción
-Hoy tu `.env.local` apunta a la demo. Lo copiamos a un archivo propio de
-producción (git ya lo ignora, nunca se sube):
+### 2.2 Separar las credenciales de la demo actual
+Hoy tu `.env.local` apunta a la demo. Lo copiamos a un archivo propio de la
+demo (git ya lo ignora, nunca se sube):
 
 ```bash
-cp .env.local .env.produccion.local
+cp .env.local .env.demo-actual.local
 ```
 
-Abrí `.env.produccion.local` (por ejemplo con `code .env.produccion.local`) y:
+Abrí `.env.demo-actual.local` (por ejemplo con `code .env.demo-actual.local`) y:
 1. Agregá al final esta línea:
    ```
-   SUPABASE_ENTORNO=produccion
+   SUPABASE_ENTORNO=demo-actual
    ```
 2. Fijate que tenga `SUPABASE_DB_URL` (la que usabas para las migraciones). Si no
    la tiene: proyecto de la demo → botón **Connect** → **Session pooler** →
    copiá la URI y reemplazá `[YOUR-PASSWORD]` por la contraseña de la base de la demo.
 
-### 2.3 Sacar la foto de producción (solo lectura)
+### 2.3 Sacar la foto de la demo actual (solo lectura)
 ```bash
-node scripts/exportar-esquema.mjs --env .env.produccion.local
+node scripts/exportar-esquema.mjs --env .env.demo-actual.local
 ```
 
 Tiene que terminar con algo así:
@@ -106,14 +109,14 @@ que hay en la base, con las alertas de seguridad arriba de todo.
 ### 2.4 Subir la foto
 ```bash
 git add supabase
-git commit -m "Fase 0: foto del esquema de producción"
+git commit -m "Fase 0: foto del esquema de la demo actual"
 git push
 ```
 👉 **Avisame "foto subida".** Con eso ya puedo revisar el esquema real mientras
 vos seguís con lo que sigue.
 
 ### 2.5 Apuntar `.env.local` al proyecto de desarrollo
-Abrí `.env.local` y cambiá estos valores por los de **roble-desarrollo**:
+Abrí `.env.local` y cambiá estos valores por los del **proyecto de desarrollo**:
 
 | Variable | Dónde está en Supabase (proyecto de desarrollo) |
 |---|---|
@@ -150,7 +153,7 @@ Tiene que mostrar:
 ✓ Usuario admin listo: ...
 ```
 
-### 2.7 Comprobar que quedó igual a producción
+### 2.7 Comprobar que quedó igual a la foto
 ```bash
 node scripts/exportar-esquema.mjs --comparar supabase/migrations/0000_base.sql
 ```
