@@ -38,4 +38,10 @@ node scripts/migrate.mjs --env .env.produccion.local --produccion supabase/migra
 
 # Comparar una base contra la foto
 node scripts/exportar-esquema.mjs --comparar supabase/migrations/0000_base.sql
+
+# Copia de seguridad de producción (solo lectura; queda en respaldos/, que no se sube)
+node scripts/respaldar-base.mjs --env .env.produccion.local
 ```
+
+La copia de seguridad se hace antes de cada cambio en producción: el plan
+gratis de Supabase no hace copias solo.

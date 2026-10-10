@@ -82,9 +82,9 @@ vivir ahí también: lo que hay hoy pasa a ser Roble, el local de demostración.
   Como la foto incluye todo, la copia local también tiene lo de 369: se puede
   comprobar que no se rompe antes de tocar producción.
 - **Cada cambio en producción:** primero probado en desarrollo, con copia de
-  seguridad justo antes (el plan gratis no hace backups solo: se hacen con un
-  script), en un horario tranquilo, y revisando enseguida la demo y la galería
-  de 369.
+  seguridad justo antes (el plan gratis no hace backups solo: se hacen con
+  `scripts/respaldar-base.mjs`), en un horario tranquilo, y revisando enseguida
+  la demo y la galería de 369.
 - **Cuándo pagar:** cuando entre la primera barbería que pague, el proyecto pasa
   al plan Pro (copias de seguridad diarias, no se pausa). Lo cubre el abono y
   beneficia también a la demo y a 369. En ese momento vemos cómo ordenar los
@@ -342,6 +342,17 @@ y un comentario de lint sobrante). No hacen fallar el lint.
   foto ahora desactiva la validación de funciones para toda la conexión (y la
   vuelve a activar al final), así funciona igual con `migrate.mjs` y con el
   Supabase local, que aplica las migraciones solo al levantarse.
+
+### Copia de seguridad (10/10/2026)
+
+`scripts/respaldar-base.mjs` guarda en la PC, en modo solo lectura, una copia
+de la base: la estructura (`esquema.sql`) y todas las filas (`datos.json`) de
+las tablas de `public`, la lista de archivos de Storage (no los archivos) y las
+cuentas sin contraseñas ni códigos de acceso. Queda en `respaldos/`, que git
+ignora. Si le falta permiso para leer alguna tabla, avisa y guarda el resto.
+Probado: descarta los secretos de las cuentas, no escribe en la base, sigue
+adelante con permisos limitados, y los datos guardados se pueden volver a
+cargar en una base vacía.
 
 **Pendiente para cerrar la Fase 0:**
 1. Nico sigue [`FASE-0-PASO-A-PASO.md`](./FASE-0-PASO-A-PASO.md) (partes 1 a 3).

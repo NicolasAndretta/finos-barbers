@@ -7,9 +7,10 @@
 > **Producción no es solo la demo.** En `finos-barbers` también vive la web de
 > 369 (369detail.com.ar), que está en producción. Por eso nada se prueba ahí.
 >
-> **Nada de esto escribe en producción.** El único comando que se conecta a ella
-> es el del paso 2.3, y es de **solo lectura**: Postgres rechaza cualquier
-> escritura mientras dura esa conexión. Las variables de Hostinger no se tocan.
+> **Nada de esto escribe en producción.** Los únicos comandos que se conectan a
+> ella son los de los pasos 2.3 y 2.4, y son de **solo lectura**: Postgres
+> rechaza cualquier escritura mientras dura la conexión. Las variables de
+> Hostinger no se tocan.
 >
 > **Costo: cero.** No hace falta crear proyectos nuevos ni pagar nada.
 
@@ -39,7 +40,7 @@ Podés pegarme el resultado en el chat: es código, no tiene secretos.
 
 ---
 
-## Parte 2 — En la PC: sacar la foto (10 minutos)
+## Parte 2 — En la PC: copia de seguridad y foto (10 minutos)
 
 Abrí una terminal en la carpeta del proyecto. Los comandos funcionan igual en
 PowerShell que en la terminal de VS Code.
@@ -70,7 +71,24 @@ Abrí `.env.produccion.local` (por ejemplo con `code .env.produccion.local`) y:
    la tiene: proyecto **finos-barbers** → botón **Connect** → **Session pooler** →
    copiá la URI y reemplazá `[YOUR-PASSWORD]` por la contraseña de la base.
 
-### 2.3 Sacar la foto (solo lectura)
+### 2.3 Copia de seguridad (1 minuto, solo lectura)
+Hoy ni la demo ni la web de 369 tienen copia de seguridad: el plan gratis no las
+hace. Esto guarda en tu PC todos los datos de la base:
+
+```bash
+node scripts/respaldar-base.mjs --env .env.produccion.local
+```
+
+Tiene que terminar con `✓ Copia de seguridad lista en respaldos/...` y la
+cantidad de filas de cada tabla.
+
+- Queda en la carpeta `respaldos/`, que nunca se sube a git.
+- Tiene datos personales y los tokens de Mercado Pago: no la compartas ni la
+  subas a ningún lado. Si querés más seguridad, copiala a un pendrive.
+- Guarda los datos y la lista de archivos, no las fotos en sí.
+- Se repite antes de cada cambio en producción.
+
+### 2.4 Sacar la foto (solo lectura)
 ```bash
 node scripts/exportar-esquema.mjs --env .env.produccion.local
 ```
@@ -90,7 +108,7 @@ en la base, con las alertas de seguridad arriba. Ahí también van a aparecer la
 tablas y el bucket de la galería de 369: es justo lo que necesito para dejarlos
 marcados como intocables.
 
-### 2.4 Subir la foto
+### 2.5 Subir la foto
 ```bash
 git add supabase
 git commit -m "Fase 0: foto del esquema de producción"
@@ -227,7 +245,8 @@ Copiame el mensaje tal cual y lo vemos.
 |---|---|---|
 | `password authentication failed` | La contraseña dentro de `SUPABASE_DB_URL` está mal | Revisá que hayas reemplazado `[YOUR-PASSWORD]` (sin los corchetes) |
 | `getaddrinfo ENOTFOUND db.xxxx.supabase.co` | Copiaste la conexión *directa*, que en muchas redes no anda | Usá la del **Session pooler** |
-| `Ya existe supabase/migrations/0000_base.sql` | La foto ya está sacada | No hace falta repetir el 2.3 |
+| `Ya existe supabase/migrations/0000_base.sql` | La foto ya está sacada | No hace falta repetir el 2.4 |
+| `⚠️ No pude leer ...` en la copia de seguridad | Faltó permiso para leer esa tabla; el resto se guardó | Pegámelo y lo vemos |
 | `Cannot connect to the Docker daemon` | Docker Desktop no está abierto | Abrilo y esperá a que diga *Engine running* |
 | `supabase start` falla en `0001_core.sql` | Falta la foto | Hacé primero la Parte 2 |
 | `port is already allocated` | Otro programa usa ese puerto | `npx supabase stop` y probá de nuevo; si sigue, avisame |

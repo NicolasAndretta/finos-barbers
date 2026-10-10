@@ -466,7 +466,13 @@ const SQL_OTROS_ESQUEMAS = `
  */
 export async function leerEsquema(q) {
   const [{ server_version: version }] = await q('show server_version')
-  const [{ hay: hayStorage }] = await q("select to_regclass('storage.buckets') is not null as hay")
+  // ¿Existe storage.buckets y se puede leer? Se pregunta al catálogo con
+  // has_*_privilege, que no falla aunque falte el permiso (to_regclass sí).
+  const [{ existe: existeStorage, legible: hayStorage }] = await q(`
+    select count(*) > 0 as existe,
+           coalesce(bool_or(has_schema_privilege(n.oid, 'USAGE') and has_table_privilege(c.oid, 'SELECT')), false) as legible
+      from pg_class c join pg_namespace n on n.oid = c.relnamespace
+     where n.nspname = 'storage' and c.relname = 'buckets'`)
   return {
     version,
     extensiones: await q(SQL_EXTENSIONES),
@@ -487,6 +493,7 @@ export async function leerEsquema(q) {
     buckets: hayStorage
       ? (await q('select to_jsonb(b) as fila from storage.buckets as b order by b.id')).map((r) => r.fila)
       : [],
+    bucketsSinPermiso: existeStorage && !hayStorage,
     otrosEsquemas: (await q(SQL_OTROS_ESQUEMAS)).map((r) => r.nombre),
   }
 }
@@ -1026,6 +1033,7 @@ export function calcularAlertas(e) {
   for (const t of e.tablas) if (t.clase === 'p' || t.es_particion) alertas.push(['🟠', `La tabla \`${t.nombre}\` es particionada: no se exporta sola.`])
   for (const f of e.funciones) if (f.clase !== 'f' && f.clase !== 'p') alertas.push(['🟠', `\`${f.firma}\` (agregado o de ventana) no se exporta sola.`])
   for (const n of e.otrosEsquemas) alertas.push(['🟠', `Existe el esquema \`${n}\`, que la foto no incluye. Revisar qué tiene.`])
+  if (e.bucketsSinPermiso) alertas.push(['🟠', 'No se pudo leer `storage.buckets` (falta permiso): los buckets no están en la foto.'])
 
   const orden = { '🔴': 0, '🟠': 1, 'ℹ️': 2 }
   return alertas.sort((a, b) => orden[a[0]] - orden[b[0]])
