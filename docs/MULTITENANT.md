@@ -3,8 +3,10 @@
 > Documento vivo del proyecto. Explica el plan, las decisiones tomadas y qué se
 > hizo en cada fase, en lenguaje simple, para poder estudiarlo.
 > Se trabaja en la rama `ccr-21a597dc-01874p`. La demo de Roble publicada en
-> Hostinger sale de `main` y de su propia base: **no se toca**. El producto
-> nace con una base nueva (ver decisión 3).
+> Hostinger sale de `main` y del proyecto de Supabase `finos-barbers`, que
+> también usa la web de 369 (en producción). Ese proyecto es **producción**:
+> nada se prueba ahí. El producto va a vivir en ese mismo proyecto (ver
+> decisión 3).
 >
 > El producto todavía no tiene nombre (ver decisión 7). Roble es la barbería
 > ficticia que se usa para mostrarlo.
@@ -58,31 +60,39 @@ base aplica siempre.
 - Consecuencia de tener una sola base: **un mail = una cuenta** en toda la
   plataforma. Cada local solo ve lo que esa persona hizo con él.
 
-### 3. Base nueva para el producto (la demo actual queda congelada)
-El producto no transforma la base de la demo: nace con **su propia base**,
-limpia, armada con las migraciones del repo.
+### 3. El producto vive en el proyecto `finos-barbers`, sin pagar hasta vender
+El plan gratis de Supabase permite 2 proyectos y los dos están ocupados:
+`codigo-rojo` (la tienda de tu prima, por salir) y `finos-barbers`. En
+`finos-barbers` hoy conviven la demo de Roble y la web de 369
+(369detail.com.ar, en producción, con su galería de fotos). El producto va a
+vivir ahí también: lo que hay hoy pasa a ser Roble, el local de demostración.
 
-| Proyecto de Supabase | Para qué | Cuándo |
+| Base | Dónde | Para qué |
 |---|---|---|
-| Demo actual (Roble) | La que se muestra hoy. No se toca: solo se lee una vez, para sacar la foto de la Fase 0 | Sigue hasta el lanzamiento |
-| Desarrollo | Donde se construye y se prueba todo | Desde la Fase 0 |
-| Producción del producto | Donde van a vivir las barberías que paguen | Al final, con las migraciones ya probadas |
+| **Producción** | Proyecto `finos-barbers` (archivo `.env.produccion.local`) | La demo, la web de 369 y, más adelante, el producto. Solo recibe migraciones ya probadas. |
+| **Desarrollo** | Supabase local en la PC, con Docker (archivo `.env.local`) | Donde se construye y se prueba todo. Gratis, y no toca internet. |
 
-- **Por qué:** la demo no se toca nunca (en el plan anterior había que
-  transformar la base viva que se muestra a clientes: era el momento más
-  riesgoso de todo el proyecto). Además no hay nada que rescatar (Roble es
-  ficticia: sin clientes ni turnos reales), el producto arranca sin cuentas de
-  prueba ni datos viejos, y la base nueva tiene las reglas definitivas desde el
-  primer día.
-- **Al lanzar:** se crea la base de producción del producto, se carga Roble como
-  local de demostración, se suman las barberías reales y el sitio pasa a usar la
-  base nueva. Apagar la demo vieja es una decisión aparte (es destructiva) y
-  antes hay que copiar las fotos subidas desde su panel.
-- **Costo a prever:** la base de producción del producto conviene que vaya en el
-  plan pago de Supabase (Pro): tiene copias de seguridad diarias y no se pausa
-  por falta de uso. El plan gratis no sirve para datos de clientes que pagan.
-- Los scripts que escriben en la base se niegan a tocar cualquier base que no
-  sea de desarrollo salvo que se lo pidas a propósito con `--produccion`.
+- **Por qué:** se evaluó una base nueva solo para el producto (más prolija), pero
+  obligaba a pagar un tercer proyecto antes de tener un solo cliente. El uso
+  actual es mínimo (base: 28 de 500 MB; archivos: 0,03 de 1 GB), así que el plan
+  gratis alcanza de sobra para las demos.
+- **Regla de oro: nada de 369 se toca.** La foto de la Fase 0 muestra qué tablas,
+  bucket y reglas usa la galería de 369 (y si depende de algo compartido, como
+  `is_admin()`); quedan anotados como intocables y ninguna migración los cambia.
+  Como la foto incluye todo, la copia local también tiene lo de 369: se puede
+  comprobar que no se rompe antes de tocar producción.
+- **Cada cambio en producción:** primero probado en desarrollo, con copia de
+  seguridad justo antes (el plan gratis no hace backups solo: se hacen con un
+  script), en un horario tranquilo, y revisando enseguida la demo y la galería
+  de 369.
+- **Cuándo pagar:** cuando entre la primera barbería que pague, el proyecto pasa
+  al plan Pro (copias de seguridad diarias, no se pausa). Lo cubre el abono y
+  beneficia también a la demo y a 369. En ese momento vemos cómo ordenar los
+  proyectos para pagar lo mínimo, y si conviene darle a 369 su propio proyecto.
+- **Límites compartidos:** la galería de 369 y las barberías comparten el espacio
+  del plan gratis. Las imágenes nuevas se van a comprimir al subirlas.
+- Los scripts que escriben en la base se niegan a tocar producción salvo que se
+  lo pidas a propósito con `--produccion`.
 
 ### 4. `/` sola lleva a `/roble`
 Mientras no exista la página pública del producto (fuera de alcance por ahora),
@@ -118,7 +128,7 @@ muestran la marca de la barbería, no la del producto.
 | # | Qué cambia | Estado |
 |---|---|---|
 | 0 | Esquema base versionado + proyecto de desarrollo | 🟡 Parte 1 hecha; falta el paso a paso de Nico |
-| 1 | Tabla `locales` y `local_id` obligatorio en todas las tablas; el catálogo de ejemplo pasa a ser Roble, el local de demostración | ⏳ |
+| 1 | Tabla `locales` y columna `local_id` en todas las tablas de la barbería; lo que existe hoy pasa a ser Roble, el local de demostración (sin cortar la demo ni tocar lo de 369) | ⏳ |
 | 2 | Membresías y RLS por local (reemplaza `is_admin()`), con prueba de aislamiento | ⏳ |
 | 3 | El sitio elige el local por la dirección; `SITE` pasa a ser datos del local | ⏳ |
 | 4 | Llamadas con permisos totales filtradas por local; Mercado Pago e imágenes por local | ⏳ |
@@ -126,8 +136,9 @@ muestran la marca de la barbería, no la del producto.
 | 6 | Alta de barberías desde el panel (demo → activo), ver la sección de abajo | ⏳ |
 | 7 | Interruptores de plan: turnos, tienda, finanzas | ⏳ |
 
-Al final se crea la base de producción del producto con las mismas migraciones,
-ya probadas. La demo actual sigue intacta hasta ese momento.
+Cada fase se prueba en desarrollo. A producción van todas juntas después de la
+Fase 5: con copia de seguridad, en un horario tranquilo, y revisando la demo y
+la galería de 369 enseguida. Hasta ese momento producción sigue igual que hoy.
 
 ---
 
@@ -207,7 +218,8 @@ después quieren saber quién vendió qué.
 - Los secretos van en archivos `.env*` (git los ignora). Nunca en el chat ni en el código.
 - La foto `0000_base.sql` no se edita: los cambios van en migraciones nuevas
   (`0005`, `0006`...).
-- La base de la demo actual queda congelada: solo se lee.
+- En producción conviven la demo y la web de 369: nada de 369 se toca, y antes
+  de cada cambio en producción se hace una copia de seguridad.
 - Toda migración se prueba primero en desarrollo.
 - Antes de dar algo por terminado: `npm run lint` y `npm run build` en verde.
 
@@ -312,24 +324,29 @@ código que no era de esta fase. Se corrigieron sin cambiar nada visible:
 Quedan 6 advertencias que ya existían (uso de `<img>` en lugar de `next/image`
 y un comentario de lint sobrante). No hacen fallar el lint.
 
-### Decisiones nuevas (10/10/2026, después de la Parte 1)
+### Decisiones del 10/10/2026 (después de la Parte 1)
 
-- **Base nueva para el producto** (decisión 3): la demo actual queda congelada y
-  el producto nace con su propia base. Lo hecho en la Parte 1 sirve igual: la
-  foto de la demo es el punto de partida de la base nueva.
 - **Roble queda como local de demostración** (decisión 6).
 - **El producto necesita nombre propio**, a definir antes de la Fase 3 (decisión 7).
-- **Ajuste en los scripts:** la demo de hoy se lee con `.env.demo-actual.local`
-  (solo lectura) y `.env.produccion.local` queda reservado para la base del
-  producto. Los scripts de escritura protegen las dos: si `.env.local` apunta a
-  cualquiera de ellas, frenan.
 - **Propuesta de alta de barberías** (sección "Cómo se da de alta una
   barbería"): pendiente de confirmar los permisos de Delfina y qué pasa con las
   demos que no se venden.
+- **Dónde vive el producto** (decisión 3). Primero se decidió una base nueva solo
+  para el producto. Después se cambió: el plan gratis ya tiene sus 2 proyectos
+  ocupados (`codigo-rojo` y `finos-barbers`) y una base nueva obligaba a pagar
+  antes de vender. Quedó así: producción es `finos-barbers` (compartido con la
+  demo y con la web de 369) y desarrollo corre en la PC con Supabase local
+  (Docker), gratis.
+- **Ajuste en los scripts:** `.env.produccion.local` es `finos-barbers`, la base
+  protegida: si `.env.local` apunta ahí, los scripts de escritura frenan. La
+  foto ahora desactiva la validación de funciones para toda la conexión (y la
+  vuelve a activar al final), así funciona igual con `migrate.mjs` y con el
+  Supabase local, que aplica las migraciones solo al levantarse.
 
 **Pendiente para cerrar la Fase 0:**
-1. Nico sigue [`FASE-0-PASO-A-PASO.md`](./FASE-0-PASO-A-PASO.md).
-2. Con la foto real en el repo: revisar las alertas del reporte y confirmar si
-   existe el agujero del registro (el rol copiado del formulario). En el producto
-   se resuelve de raíz en la Fase 2; arreglarlo también en la demo vieja es una
-   decisión aparte, porque implica escribir en su base.
+1. Nico sigue [`FASE-0-PASO-A-PASO.md`](./FASE-0-PASO-A-PASO.md) (partes 1 a 3).
+2. Con la foto real en el repo: identificar lo que es de 369 y anotarlo como
+   intocable, revisar las alertas del reporte y confirmar si existe el agujero
+   del registro (el rol copiado del formulario). Si existe, también puede afectar
+   a la galería de 369: el arreglo es chico y va a producción con aprobación. En
+   el producto, los permisos se rediseñan de raíz en la Fase 2.
