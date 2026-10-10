@@ -471,6 +471,11 @@ crear un turno con la seña ya "pagada" y crear un turno con un pago inventado.
 - **La foto no guarda disparadores de eventos.** Producción tiene `ensure_rls`
   (ver "Lo que es de 369"). Por eso toda migración que crea una tabla activa
   RLS a mano.
+- **Los datos de ejemplo se editaron a mano.** La exportación traía 3 productos
+  de prueba inactivos, cargados en junio para probar el panel. Se sacaron de
+  `seed-desarrollo.sql` (quedan 5). Siguen en producción: si el archivo se
+  vuelve a generar, reaparecen hasta que se borren de ahí. Por eso el reporte
+  dice 8 productos y el archivo tiene 5.
 - **La rama `seguridad/pedidos-user-update`** existe solo en la PC de Nico.
   Trae una `0005_pedidos_quitar_update_de_usuario.sql` que ya está aplicada en
   producción y, por eso, incluida en la foto. No hay que traerla a esta rama:
