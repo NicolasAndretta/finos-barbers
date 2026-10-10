@@ -2,6 +2,11 @@
 
 Estado al 29/06/2026. Demo comercial de andmar.studio. La barbería es ficticia: no hay cliente real detrás.
 
+## 🚧 En curso (desde el 10/10/2026): multi-tenant
+Convertir la demo en un producto donde conviven muchos locales en un solo sitio y
+una sola base. Plan, decisiones y bitácora en [`MULTITENANT.md`](./MULTITENANT.md).
+Fase actual: **0** — ver [`FASE-0-PASO-A-PASO.md`](./FASE-0-PASO-A-PASO.md).
+
 ## ✅ Hecho (rebrand visual + contenido)
 - Identidad de marca aplicada: **B&N + acento madera/cobre**, fiel al manual de marca.
   - Tokens en `globals.css` (remapeo de `amber-*` → madera), fuentes **Bevan** (display)
