@@ -7,9 +7,9 @@
  *
  * ─── Uso ─────────────────────────────────────────────────────────────────────
  *
- *   1) Sacar la foto de la demo actual (una sola vez, en la Fase 0). Es el
- *      punto de partida de la base nueva del producto:
- *        node scripts/exportar-esquema.mjs --env .env.demo-actual.local
+ *   1) Sacar la foto de producción (una sola vez, en la Fase 0). Es el punto
+ *      de partida: las migraciones 0005 en adelante la convierten en multi-local.
+ *        node scripts/exportar-esquema.mjs --env .env.produccion.local
  *
  *      Escribe tres archivos:
  *        supabase/migrations/0000_base.sql  → la foto: el SQL que rearma la base

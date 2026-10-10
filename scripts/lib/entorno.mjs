@@ -11,12 +11,12 @@
  *   4. Frenar a tiempo si un script que ESCRIBE en la base apunta a una base
  *      que no es de desarrollo.
  *
- * Por qué hace falta el punto 4: el producto usa varios proyectos de Supabase.
- *   - demo actual: la base de la demo de Roble publicada hoy en Hostinger.
- *     Queda congelada: solo se lee una vez, para sacar la foto de la Fase 0.
- *   - desarrollo: donde se construye y se prueba todo.
- *   - producción: la base nueva del producto, donde van a vivir las barberías
- *     que paguen. Se crea al final, con las migraciones ya probadas.
+ * Por qué hace falta el punto 4: hay dos bases.
+ *   - producción: el proyecto de Supabase "Finos". Lo comparten la demo de
+ *     Roble y la web de 369 (que está en producción), y ahí va a vivir el
+ *     producto. No se puede romper.
+ *   - desarrollo: una copia que corre en la PC (Supabase local, con Docker),
+ *     donde se construye y se prueba todo.
  * Cada archivo .env dice a cuál apunta con la variable SUPABASE_ENTORNO.
  * Si un script de escritura no ve "SUPABASE_ENTORNO=desarrollo", se niega a
  * correr salvo que le agregues --produccion a propósito.
@@ -28,7 +28,7 @@ import { existsSync, readFileSync } from 'fs'
  * ignora, nunca se suben). Si .env.local apunta al mismo proyecto que alguno
  * de estos, los scripts de escritura frenan aunque diga "desarrollo".
  */
-export const ARCHIVOS_PROTEGIDOS = ['.env.demo-actual.local', '.env.produccion.local']
+export const ARCHIVOS_PROTEGIDOS = ['.env.produccion.local']
 
 /**
  * Lee un archivo .env y devuelve sus variables como objeto { NOMBRE: 'valor' }.

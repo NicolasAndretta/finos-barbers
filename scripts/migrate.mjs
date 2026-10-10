@@ -11,15 +11,15 @@
  *     node scripts/migrate.mjs supabase/migrations/0005_locales.sql
  *     node scripts/migrate.mjs supabase/migrations/0005_x.sql supabase/migrations/0006_y.sql
  *
- *   En la base de producción del producto (a propósito, cuando ya está probada):
+ *   En producción (a propósito, cuando ya está probada y con copia de seguridad):
  *     node scripts/migrate.mjs --env .env.produccion.local --produccion supabase/migrations/0005_x.sql
  *
  * ─── Guardia ─────────────────────────────────────────────────────────────────
  * Si el archivo de credenciales no dice SUPABASE_ENTORNO=desarrollo, el script
  * se niega a correr salvo que agregues --produccion. Así una migración nueva
- * nunca llega por un descuido a una base que no se puede romper (la demo
- * publicada o la producción del producto): primero se prueba en desarrollo y
- * recién después se aplica donde corresponda, a conciencia.
+ * nunca llega por un descuido a producción (donde están la demo y la web de
+ * 369): primero se prueba en desarrollo y recién después se aplica en
+ * producción, a conciencia.
  */
 import { existsSync } from 'fs'
 import { describirDestino, exigirDesarrollo, leerArgumentos, leerEnv } from './lib/entorno.mjs'

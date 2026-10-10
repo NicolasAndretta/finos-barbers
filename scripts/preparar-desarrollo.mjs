@@ -1,14 +1,15 @@
 /**
  * scripts/preparar-desarrollo.mjs
  *
- * Deja listo el proyecto de Supabase de DESARROLLO con un solo comando:
+ * Deja lista la base de DESARROLLO (el Supabase local de la PC) con un solo
+ * comando:
  *
  *   node scripts/preparar-desarrollo.mjs
  *
  * Qué hace, en orden:
  *   1. Controla que .env.local apunte a desarrollo (SUPABASE_ENTORNO=desarrollo)
- *      y que NO sea ninguna de las bases protegidas (la demo actual o la
- *      producción del producto). Si algo no cierra, frena sin tocar nada.
+ *      y que NO sea la base de producción. Si algo no cierra, frena sin tocar
+ *      nada.
  *   2. Aplica todas las migraciones de supabase/migrations, en orden (0000,
  *      0001, 0002...). Cada una en su transacción: si una falla, se deshace y
  *      el script se detiene.
@@ -50,7 +51,7 @@ if (desdeUrl && desdeDb && !desdeDb.startsWith('local:') && desdeUrl !== desdeDb
 
 if (!existsSync(path.join(CARPETA_MIGRACIONES, '0000_base.sql'))) {
   console.error('✗ Falta supabase/migrations/0000_base.sql.')
-  console.error('  Primero hay que sacar la foto de la demo actual: node scripts/exportar-esquema.mjs --env .env.demo-actual.local')
+  console.error('  Primero hay que sacar la foto de producción: node scripts/exportar-esquema.mjs --env .env.produccion.local')
   process.exit(1)
 }
 

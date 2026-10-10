@@ -770,39 +770,40 @@ export function generarSQL(e, meta) {
   // ── Armado final ──
   const partes = [
     '-- ============================================================================',
-    '-- Migración 0000: esquema base (foto de la base de la demo actual)',
+    '-- Migración 0000: esquema base (foto de la base de producción)',
     '--',
     `-- Generado por scripts/exportar-esquema.mjs el ${meta.fecha}`,
     `-- desde ${meta.origen} (Postgres ${meta.version}).`,
     '--',
-    '-- QUÉ ES: la estructura completa que tenía la base de la demo en ese momento',
-    '-- (tablas, reglas, funciones, disparadores, políticas RLS y permisos),',
-    '-- escrita como instrucciones SQL. Antes vivía solo en Supabase; ahora queda',
-    '-- versionada.',
+    '-- QUÉ ES: la estructura completa que tenía la base de producción en ese',
+    '-- momento (tablas, reglas, funciones, disparadores, políticas RLS y',
+    '-- permisos), escrita como instrucciones SQL. Antes vivía solo en Supabase;',
+    '-- ahora queda versionada.',
     '--',
-    '-- PARA QUÉ SIRVE: es el punto de partida de la base nueva del producto.',
-    '-- Corrida sobre un proyecto de Supabase vacío da una copia con la misma',
-    '-- estructura. Después se corren 0001 a 0004, que sobre esta foto no cambian',
-    '-- nada porque ya están incluidas (están escritas para poder correrse dos',
-    '-- veces), y de la 0005 en adelante, los cambios para muchos locales.',
+    '-- PARA QUÉ SIRVE: corrida sobre una base de Supabase vacía (la de',
+    '-- desarrollo) da una copia con la misma estructura. Después se corren 0001',
+    '-- a 0004, que sobre esta foto no cambian nada porque ya están incluidas',
+    '-- (están escritas para poder correrse dos veces), y de la 0005 en adelante,',
+    '-- los cambios para muchos locales.',
     '--',
     '-- REGLA: este archivo no se edita para arreglar cosas. Si algo está mal, el',
     '-- arreglo va en una migración nueva (0005, 0006...). Esta foto tiene que',
-    '-- coincidir siempre con la base de la demo el día que se sacó.',
+    '-- coincidir siempre con la base de producción el día que se sacó.',
     '--',
     '-- Se aplica con: node scripts/migrate.mjs (que la envuelve en una transacción:',
     '-- o entra completa o no entra nada).',
     '-- ============================================================================',
     '',
     '-- Permite crear funciones que mencionan tablas o funciones que todavía no',
-    '-- existen en este punto del archivo. Vale solo durante esta transacción.',
-    'set local check_function_bodies = false;',
+    '-- existen en este punto del archivo. Se vuelve a activar al final.',
+    'set check_function_bodies = false;',
     '',
   ]
   for (const s of SECCIONES) {
     partes.push(LINEA, marcaSeccion(s.n, s.titulo), ...s.explicacion.map((l) => `-- ${l}`), LINEA, '')
     partes.push(sec[s.n].length ? sec[s.n].join('\n\n') : '-- (nada en esta sección)', '')
   }
+  partes.push(LINEA, '-- Fin de la foto: se vuelve a validar el código de las funciones al crearlas.', 'reset check_function_bodies;', '')
   return partes.join('\n')
 }
 
