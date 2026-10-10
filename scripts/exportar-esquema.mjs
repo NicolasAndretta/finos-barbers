@@ -7,8 +7,9 @@
  *
  * ─── Uso ─────────────────────────────────────────────────────────────────────
  *
- *   1) Exportar producción (se hace una sola vez, en la Fase 0):
- *        node scripts/exportar-esquema.mjs --env .env.produccion.local
+ *   1) Sacar la foto de la demo actual (una sola vez, en la Fase 0). Es el
+ *      punto de partida de la base nueva del producto:
+ *        node scripts/exportar-esquema.mjs --env .env.demo-actual.local
  *
  *      Escribe tres archivos:
  *        supabase/migrations/0000_base.sql  → la foto: el SQL que rearma la base

@@ -7,8 +7,8 @@
  *
  * Qué hace, en orden:
  *   1. Controla que .env.local apunte a desarrollo (SUPABASE_ENTORNO=desarrollo)
- *      y que NO sea el mismo proyecto que producción. Si algo no cierra, frena
- *      sin tocar nada.
+ *      y que NO sea ninguna de las bases protegidas (la demo actual o la
+ *      producción del producto). Si algo no cierra, frena sin tocar nada.
  *   2. Aplica todas las migraciones de supabase/migrations, en orden (0000,
  *      0001, 0002...). Cada una en su transacción: si una falla, se deshace y
  *      el script se detiene.
@@ -36,7 +36,7 @@ const { opciones } = leerArgumentos(['env'])
 const env = leerEnv(opciones.env || '.env.local')
 
 // ── 1. Controles ────────────────────────────────────────────────────────────
-// Este script NUNCA corre sobre producción: no acepta --produccion.
+// Este script NUNCA corre fuera de desarrollo: no acepta --produccion.
 exigirDesarrollo(env)
 
 // La URL pública y la conexión a la base tienen que ser del mismo proyecto.
@@ -50,7 +50,7 @@ if (desdeUrl && desdeDb && !desdeDb.startsWith('local:') && desdeUrl !== desdeDb
 
 if (!existsSync(path.join(CARPETA_MIGRACIONES, '0000_base.sql'))) {
   console.error('✗ Falta supabase/migrations/0000_base.sql.')
-  console.error('  Primero hay que exportar producción: node scripts/exportar-esquema.mjs --env .env.produccion.local')
+  console.error('  Primero hay que sacar la foto de la demo actual: node scripts/exportar-esquema.mjs --env .env.demo-actual.local')
   process.exit(1)
 }
 
@@ -82,7 +82,7 @@ try {
 }
 
 console.log('\nListo. Próximos pasos:')
-console.log('  - Comprobar que quedó igual a producción:')
+console.log('  - Comprobar que quedó igual a la foto:')
 console.log('      node scripts/exportar-esquema.mjs --comparar supabase/migrations/0000_base.sql')
 console.log('  - Levantar la app contra desarrollo: npm run dev  →  http://localhost:3000')
 

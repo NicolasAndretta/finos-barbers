@@ -20,7 +20,7 @@
  *                       un resumen legible con alertas de seguridad.
  *
  * Además, compararSQL() pone dos fotos una al lado de la otra y dice en qué
- * se diferencian (sirve para comprobar que desarrollo quedó igual a producción).
+ * se diferencian (sirve para comprobar que desarrollo quedó igual a la foto).
  *
  * ─── Qué entra en la foto ────────────────────────────────────────────────────
  * Entra: todo lo del esquema "public" (lo nuestro), los disparadores que las
@@ -770,23 +770,25 @@ export function generarSQL(e, meta) {
   // ── Armado final ──
   const partes = [
     '-- ============================================================================',
-    '-- Roble Barbería — Migración 0000: esquema base (foto de producción)',
+    '-- Migración 0000: esquema base (foto de la base de la demo actual)',
     '--',
     `-- Generado por scripts/exportar-esquema.mjs el ${meta.fecha}`,
     `-- desde ${meta.origen} (Postgres ${meta.version}).`,
     '--',
-    '-- QUÉ ES: la estructura completa que tenía la base en ese momento (tablas,',
-    '-- reglas, funciones, disparadores, políticas RLS y permisos), escrita como',
-    '-- instrucciones SQL. Antes vivía solo en Supabase; ahora queda versionada.',
+    '-- QUÉ ES: la estructura completa que tenía la base de la demo en ese momento',
+    '-- (tablas, reglas, funciones, disparadores, políticas RLS y permisos),',
+    '-- escrita como instrucciones SQL. Antes vivía solo en Supabase; ahora queda',
+    '-- versionada.',
     '--',
-    '-- PARA QUÉ SIRVE: correrla sobre un proyecto de Supabase vacío (el de',
-    '-- desarrollo) y obtener una copia con la misma estructura que producción.',
-    '-- Después se corren 0001 a 0004, que sobre esta foto no cambian nada porque',
-    '-- ya están incluidas (están escritas para poder correrse dos veces).',
+    '-- PARA QUÉ SIRVE: es el punto de partida de la base nueva del producto.',
+    '-- Corrida sobre un proyecto de Supabase vacío da una copia con la misma',
+    '-- estructura. Después se corren 0001 a 0004, que sobre esta foto no cambian',
+    '-- nada porque ya están incluidas (están escritas para poder correrse dos',
+    '-- veces), y de la 0005 en adelante, los cambios para muchos locales.',
     '--',
     '-- REGLA: este archivo no se edita para arreglar cosas. Si algo está mal, el',
     '-- arreglo va en una migración nueva (0005, 0006...). Esta foto tiene que',
-    '-- coincidir siempre con lo que había en producción.',
+    '-- coincidir siempre con la base de la demo el día que se sacó.',
     '--',
     '-- Se aplica con: node scripts/migrate.mjs (que la envuelve en una transacción:',
     '-- o entra completa o no entra nada).',
@@ -952,7 +954,7 @@ export async function generarSeed(q, e, meta) {
     `-- Generado por scripts/exportar-esquema.mjs el ${meta.fecha}`,
     `-- desde ${meta.origen}.`,
     '--',
-    `-- Copia el catálogo del local (${TABLAS_SEED.join(', ')}):`,
+    `-- Copia el catálogo de Roble, el local de demostración (${TABLAS_SEED.join(', ')}):`,
     '-- lo mismo que ya muestra la web pública. NO incluye cuentas, turnos, pedidos,',
     '-- movimientos de caja ni tokens de Mercado Pago.',
     '--',

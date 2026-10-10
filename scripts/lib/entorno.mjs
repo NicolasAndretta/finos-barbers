@@ -8,19 +8,27 @@
  *   1. Leer un archivo de variables (.env.local por defecto) sin instalar nada.
  *   2. Leer las opciones que le pasás a un script (--env, --produccion, ...).
  *   3. Averiguar a qué proyecto de Supabase apunta cada archivo.
- *   4. Frenar a tiempo si un script que ESCRIBE en la base apunta a producción.
+ *   4. Frenar a tiempo si un script que ESCRIBE en la base apunta a una base
+ *      que no es de desarrollo.
  *
- * Por qué hace falta el punto 4: desde la Fase 0 hay DOS proyectos de Supabase.
- *   - producción: la base de la demo publicada en Hostinger (no se puede romper).
- *   - desarrollo: una copia donde se prueba todo antes.
+ * Por qué hace falta el punto 4: el producto usa varios proyectos de Supabase.
+ *   - demo actual: la base de la demo de Roble publicada hoy en Hostinger.
+ *     Queda congelada: solo se lee una vez, para sacar la foto de la Fase 0.
+ *   - desarrollo: donde se construye y se prueba todo.
+ *   - producción: la base nueva del producto, donde van a vivir las barberías
+ *     que paguen. Se crea al final, con las migraciones ya probadas.
  * Cada archivo .env dice a cuál apunta con la variable SUPABASE_ENTORNO.
  * Si un script de escritura no ve "SUPABASE_ENTORNO=desarrollo", se niega a
  * correr salvo que le agregues --produccion a propósito.
  */
 import { existsSync, readFileSync } from 'fs'
 
-/** Archivo donde se guardan las credenciales de producción (nunca se sube a git). */
-export const ARCHIVO_PRODUCCION = '.env.produccion.local'
+/**
+ * Archivos con las credenciales de las bases que no se pueden romper (git los
+ * ignora, nunca se suben). Si .env.local apunta al mismo proyecto que alguno
+ * de estos, los scripts de escritura frenan aunque diga "desarrollo".
+ */
+export const ARCHIVOS_PROTEGIDOS = ['.env.demo-actual.local', '.env.produccion.local']
 
 /**
  * Lee un archivo .env y devuelve sus variables como objeto { NOMBRE: 'valor' }.
@@ -130,9 +138,9 @@ export function describirDestino(env) {
  *
  * Deja pasar solo si:
  *   - el archivo dice SUPABASE_ENTORNO=desarrollo, y
- *   - ese proyecto NO es el mismo que figura en .env.produccion.local
- *     (por si alguien copió las credenciales equivocadas y le puso la
- *     etiqueta de desarrollo a la base de producción).
+ *   - ese proyecto NO es el mismo que figura en alguno de los
+ *     ARCHIVOS_PROTEGIDOS (por si alguien copió las credenciales equivocadas
+ *     y le puso la etiqueta de desarrollo a una base que no se puede tocar).
  *
  * Si `permitirProduccion` es true (el usuario escribió --produccion),
  * avisa en grande y deja seguir: es una decisión consciente.
@@ -143,12 +151,12 @@ export function exigirDesarrollo(env, { permitirProduccion = false } = {}) {
   const ref = desdeDb || desdeUrl
 
   if (entorno === 'desarrollo') {
-    if (existsSync(ARCHIVO_PRODUCCION)) {
-      const prod = refsDelProyecto(leerEnv(ARCHIVO_PRODUCCION))
-      const refProd = prod.desdeDb || prod.desdeUrl
-      if (ref && refProd && ref === refProd) {
+    for (const archivo of ARCHIVOS_PROTEGIDOS.filter((a) => existsSync(a))) {
+      const protegido = refsDelProyecto(leerEnv(archivo))
+      const refProtegido = protegido.desdeDb || protegido.desdeUrl
+      if (ref && refProtegido && ref === refProtegido) {
         console.error('✗ ¡Frená! Este archivo dice "desarrollo" pero apunta al MISMO proyecto que')
-        console.error(`  ${ARCHIVO_PRODUCCION} (producción). Revisá las credenciales de .env.local.`)
+        console.error(`  ${archivo}, que es una base protegida. Revisá las credenciales de .env.local.`)
         process.exit(1)
       }
     }
@@ -164,6 +172,6 @@ export function exigirDesarrollo(env, { permitirProduccion = false } = {}) {
   console.error(`✗ Este script escribe en la base y el destino no está marcado como desarrollo`)
   console.error(`  (${describirDestino(env)}).`)
   console.error('  - Si es tu proyecto de desarrollo: agregá SUPABASE_ENTORNO=desarrollo al .env.')
-  console.error('  - Si de verdad querés tocar producción: repetí el comando agregando --produccion.')
+  console.error('  - Si de verdad querés tocar esa base: repetí el comando agregando --produccion.')
   process.exit(1)
 }
