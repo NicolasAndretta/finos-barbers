@@ -174,6 +174,7 @@ en `.env.produccion.local`). Abrilo y cambiá estos valores:
 | `SUPABASE_SERVICE_ROLE_KEY` | la *service_role key* (o *Secret key*) de esa lista |
 | `SUPABASE_DB_URL` | `postgresql://postgres:postgres@127.0.0.1:54322/postgres` |
 | `NEXT_PUBLIC_APP_URL` | `http://127.0.0.1:3000` |
+| `NEXT_PUBLIC_SITE_URL` | `http://127.0.0.1:3000` (si quedara la dirección de la demo, el link de "recuperar contraseña" saldría apuntando a la demo publicada) |
 
 Agregá estas tres líneas:
 ```
@@ -213,7 +214,8 @@ Supabase local) y fijate que:
 - [ ] `/tienda` muestra los mismos productos.
 - [ ] Entrás con `DEV_ADMIN_EMAIL` y llegás al panel de admin.
 - [ ] Creás una cuenta de cliente nueva en `/register`, reservás un turno
-      pagando en **efectivo** y lo ves en el panel de admin.
+      eligiendo **transferencia** (no cobra nada: muestra el alias) y lo ves en
+      el panel de admin.
 
 Dos extras útiles:
 - **http://127.0.0.1:54323** es el panel de Supabase de tu copia local (como el

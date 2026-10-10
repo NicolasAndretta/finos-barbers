@@ -123,11 +123,67 @@ muestran la marca de la barbería, no la del producto.
 
 ---
 
+## Lo que es de 369: intocable
+
+> Sale de la foto del 10/10/2026 y del código de la web de 369 (repo
+> `369-detail-studio`). Si esa web cambia, esta lista se revisa.
+
+La web de 369 y la barbería comparten el proyecto de Supabase, pero adentro casi
+no se cruzan. 369 usa **tres tablas y un bucket**, y entra siempre desde su
+servidor con la llave maestra (service role). Su panel tiene una clave propia:
+no usa las cuentas de Supabase.
+
+| Es de 369 | Qué guarda |
+|---|---|
+| Tabla `trabajos` | Cada trabajo de la galería |
+| Tabla `fotos` | Las fotos de cada trabajo, antes y después (apunta a `trabajos`) |
+| Tabla `videos` | Los videos de Instagram y TikTok |
+| Bucket `galeria` | Los archivos de las fotos: 78 archivos, 25,5 MB, todos en la carpeta `trabajos/` |
+
+Las tres tablas tienen RLS activado y **ninguna política**: desde un navegador
+no se ven ni se tocan; solo entra el servidor de 369. Así tienen que quedar.
+
+**No es de 369** (era la duda antes de tener la foto): `profiles`, `is_admin()`,
+`handle_new_user()`, las cuentas de usuario y los mails de Supabase (confirmar
+cuenta, recuperar contraseña). Todo eso lo usa solo la barbería: la Fase 2 lo
+puede rediseñar sin afectar a 369.
+
+### Reglas
+1. Ninguna migración nombra `trabajos`, `fotos`, `videos` ni `galeria`: ni para
+   cambiarlas, ni para ordenarlas, ni para sumarles `local_id` o políticas.
+2. Son nombres ocupados. Si una barbería necesita su propia galería, sus tablas
+   y su bucket se llaman de otra forma.
+3. Storage hoy no tiene ninguna política: los archivos se suben siempre desde
+   un servidor. Si alguna vez hace falta una, tiene que decir
+   `bucket_id = 'imagenes'`, para no abrir `galeria`.
+4. La llave maestra es la misma para los dos sitios. Si se cambia, se cambia en
+   los dos a la vez.
+5. El espacio es compartido (1 GB de archivos, 500 MB de base). Hoy todo lo que
+   hay en Storage es de 369: el bucket `imagenes` de la barbería está vacío.
+6. La web de 369 tiene un chequeo, `/api/health`, que lee `trabajos`. Con un
+   monitor llamándolo cada pocos minutos, el proyecto no se pausa por falta de
+   uso. Otro motivo para no tocar esa tabla.
+
+### Algo de todo el proyecto que la foto no muestra
+Producción tiene un *disparador de eventos* llamado `ensure_rls`: cada vez que
+se crea una tabla en `public`, le activa RLS solo. La foto guarda la función
+que usa (`rls_auto_enable()`) pero no el disparador, así que **en desarrollo no
+existe**. Regla: toda migración que crea una tabla activa RLS a mano
+(`alter table ... enable row level security`). Así las dos bases se comportan
+igual.
+
+### Cómo comprobar que 369 sigue bien
+Después de cada cambio en producción:
+- `https://369detail.com.ar` → la home y la galería muestran las fotos.
+- `https://369detail.com.ar/api/health` → responde `{"ok":true,"db":"ok"}`.
+
+---
+
 ## Fases
 
 | # | Qué cambia | Estado |
 |---|---|---|
-| 0 | Esquema base versionado + proyecto de desarrollo | 🟡 Parte 1 hecha; falta el paso a paso de Nico |
+| 0 | Esquema base versionado + proyecto de desarrollo | 🟡 Hecha el 10/10/2026; falta el OK de Nico y decidir cuándo va la `0005` a producción |
 | 1 | Tabla `locales` y columna `local_id` en todas las tablas de la barbería; lo que existe hoy pasa a ser Roble, el local de demostración (sin cortar la demo ni tocar lo de 369) | ⏳ |
 | 2 | Membresías y RLS por local (reemplaza `is_admin()`), con prueba de aislamiento | ⏳ |
 | 3 | El sitio elige el local por la dirección; `SITE` pasa a ser datos del local | ⏳ |
@@ -354,10 +410,84 @@ Probado: descarta los secretos de las cuentas, no escribe en la base, sigue
 adelante con permisos limitados, y los datos guardados se pueden volver a
 cargar en una base vacía.
 
+### Fase 0 — Partes 2 y 3, y revisión de la foto (10/10/2026)
+
+**Qué se hizo**
+- Credenciales separadas: `.env.produccion.local` (producción, etiquetada) y
+  `.env.local` (el Supabase local de la PC).
+- **Primera copia de seguridad** de producción, en `respaldos/` (no se sube).
+- **La foto:** 14 tablas, 24 políticas, 3 funciones, 1 disparador y 2 buckets.
+  Quedó en `supabase/migrations/0000_base.sql`, con su reporte.
+- **Desarrollo en la PC:** Supabase local con Docker (Postgres 17, igual que
+  producción). La comparación contra la foto dio ✓ en las 18 secciones.
+- **La app contra la copia local:** responden la home, la tienda (muestra los
+  productos activos y esconde los inactivos), el login y el registro; el admin
+  de prueba entra al panel; un cliente nuevo ve `/reservar` con los servicios
+  de la base; y un cliente que pide el panel de admin o de barbero es devuelto
+  a su lugar.
+- Qué es de 369 quedó escrito arriba, en "Lo que es de 369: intocable".
+
+**Las alertas del reporte, una por una**
+
+| Alerta | Qué resultó |
+|---|---|
+| 🔴 `handle_new_user()` lee `raw_user_meta_data` y menciona `role` | **Falsa alarma.** Del formulario toma solo nombre y apellido; el rol lo escribe fijo: `'client'`. Probado: registrarse pidiendo ser admin deja la cuenta como cliente. |
+| 🟠 `profiles` deja a cada usuario editar su fila | **Está bien.** La política exige que después del cambio `role` siga siendo `'client'`. Probado: no puede pasarse a admin ni a barbero. |
+| ℹ️ `fotos`, `trabajos` y `videos` sin políticas | A propósito: son de 369 y solo entra su servidor. |
+| ℹ️ `mp_conexion` sin políticas | A propósito: guarda los tokens de Mercado Pago. |
+
+El agujero del registro que se temía **no existe**.
+
+**Lo que el reporte no detecta y apareció leyendo la foto a mano**
+
+Se probó con una cuenta de cliente de verdad contra la copia local, hablándole
+a la base sin pasar por la app. Cuatro escrituras pasaban y no deberían:
+crear un pedido propio ya "pagado", agregarle renglones a un pedido propio,
+crear un turno con la seña ya "pagada" y crear un turno con un pago inventado.
+
+- **Arreglo:** `supabase/migrations/0005_cerrar_escrituras_directas.sql`. Borra
+  dos políticas de alta que la app nunca usó (los pedidos los crea el servidor)
+  y endurece la de alta de turnos. No toca nada de 369 ni borra datos.
+- **Probado en desarrollo:** las cuatro quedan bloqueadas, y la reserva normal y
+  la cancelación siguen andando. Contra la foto cambia solo la sección 14
+  (políticas), en esas tres.
+- **Producción: pendiente.** Va sola (no espera a la Fase 5), con el OK de Nico
+  y copia de seguridad justo antes.
+
+**Anotado para la Fase 2** (no se toca ahora: ahí se rediseñan los permisos)
+- `profiles`: el cliente puede cambiar el `email` y el `barbero_id` de su propio
+  perfil. No gana permisos (lo que manda es `role`), pero ese mail es el que
+  usa la app para los avisos. Tendría que poder cambiar solo nombre y apellido.
+- `turnos`: al cancelar, la política controla que el turno quede cancelado pero
+  no impide cambiar otras columnas en el mismo paso.
+- Hay 5 cuentas con rol `admin`. Hay que decidir cuáles pasan al equipo de la
+  plataforma y cuáles quedan como dueñas de Roble.
+
+**Otros hallazgos**
+- **Un error que no es de seguridad** (para la Fase 4): después de crear el
+  turno, `reservas.ts` guarda el `mp_preference_id` con la sesión del cliente y
+  la base lo rechaza en silencio, porque al cliente solo le deja cancelar. No
+  afecta el cobro: la confirmación llega por otro camino.
+- **La foto no guarda disparadores de eventos.** Producción tiene `ensure_rls`
+  (ver "Lo que es de 369"). Por eso toda migración que crea una tabla activa
+  RLS a mano.
+- **La rama `seguridad/pedidos-user-update`** existe solo en la PC de Nico.
+  Trae una `0005_pedidos_quitar_update_de_usuario.sql` que ya está aplicada en
+  producción y, por eso, incluida en la foto. No hay que traerla a esta rama:
+  su número choca con la `0005` nueva y su efecto ya está.
+
+**Lo que falló y cómo se resolvió**
+- `preparar-desarrollo.mjs` se caía al crear el admin de prueba: la librería de
+  Supabase necesita WebSocket y Node 20 (el de `.nvmrc`) no lo trae. Ahora hace
+  esa única llamada con `fetch`. La app no tenía el problema.
+- `supabase start`: se apagó *analytics* en `config.toml`. En Windows pide
+  abrir un puerto de Docker sin protección y, si no, hace fallar el arranque.
+- Si se corta `npm run dev` de golpe, puede quedar a medio escribir un archivo
+  en `.next/dev` y el build falla con `Cannot find name 'AppRoutes'`. Se
+  arregla borrando la carpeta `.next/dev` (se rehace sola).
+- El paso a paso pedía reservar "en efectivo", que el cliente ya no puede
+  elegir, y no mencionaba `NEXT_PUBLIC_SITE_URL`. Corregido.
+
 **Pendiente para cerrar la Fase 0:**
-1. Nico sigue [`FASE-0-PASO-A-PASO.md`](./FASE-0-PASO-A-PASO.md) (partes 1 a 3).
-2. Con la foto real en el repo: identificar lo que es de 369 y anotarlo como
-   intocable, revisar las alertas del reporte y confirmar si existe el agujero
-   del registro (el rol copiado del formulario). Si existe, también puede afectar
-   a la galería de 369: el arreglo es chico y va a producción con aprobación. En
-   el producto, los permisos se rediseñan de raíz en la Fase 2.
+1. OK de Nico a lo hecho.
+2. Decidir cuándo va la `0005` a producción.
