@@ -26,7 +26,6 @@
  */
 import { existsSync, readdirSync } from 'fs'
 import path from 'path'
-import { createClient } from '@supabase/supabase-js'
 import { describirDestino, exigirDesarrollo, leerArgumentos, leerEnv, refsDelProyecto } from './lib/entorno.mjs'
 import { aplicarArchivo, conectar } from './lib/postgres.mjs'
 
@@ -85,7 +84,8 @@ try {
 console.log('\nListo. Próximos pasos:')
 console.log('  - Comprobar que quedó igual a la foto:')
 console.log('      node scripts/exportar-esquema.mjs --comparar supabase/migrations/0000_base.sql')
-console.log('  - Levantar la app contra desarrollo: npm run dev  →  http://localhost:3000')
+// Con números y no "localhost": así coincide con la dirección del Supabase local.
+console.log('  - Levantar la app contra desarrollo: npm run dev  →  http://127.0.0.1:3000')
 
 /**
  * Crea (si no existe) la cuenta DEV_ADMIN_EMAIL y le da rol admin.
@@ -94,6 +94,11 @@ console.log('  - Levantar la app contra desarrollo: npm run dev  →  http://loc
  * usa el panel para crear cuentas de barbero), porque las contraseñas se
  * guardan cifradas y no conviene escribirlas a mano en la base. El rol se
  * asigna después, directamente en la tabla profiles.
+ *
+ * Por qué se llama a esa API con fetch y no con la librería de Supabase: la
+ * librería, al crearse, prepara también su parte de "tiempo real", que
+ * necesita WebSocket. Node 20 (el de .nvmrc) no lo trae y el script se caía
+ * antes de hacer nada. Acá hace falta una sola llamada, y fetch viene con Node.
  */
 async function asegurarAdmin() {
   const email = (env.DEV_ADMIN_EMAIL || '').trim().toLowerCase()
@@ -118,23 +123,41 @@ async function asegurarAdmin() {
       process.exitCode = 1
       return
     }
-    const supabase = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
-      auth: { persistSession: false, autoRefreshToken: false },
-    })
-    // Mismos datos que manda el formulario de registro de la app, para que el
-    // disparador que crea el perfil reciba lo que espera.
-    const { data, error } = await supabase.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true,
-      user_metadata: { nombre: 'Admin', apellido: 'Desarrollo', role: 'client' },
-    })
-    if (error || !data?.user) {
-      console.error(`✗ No pude crear el usuario admin: ${error?.message || 'sin detalle'}`)
+    // La llave maestra (service role) va en los dos encabezados que pide
+    // Supabase. Nunca se muestra en pantalla.
+    let respuesta
+    try {
+      respuesta = await fetch(`${env.NEXT_PUBLIC_SUPABASE_URL.replace(/\/+$/, '')}/auth/v1/admin/users`, {
+        method: 'POST',
+        headers: {
+          apikey: env.SUPABASE_SERVICE_ROLE_KEY,
+          Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        // Mismos datos que manda el formulario de registro de la app, para que
+        // el disparador que crea el perfil reciba lo que espera.
+        body: JSON.stringify({
+          email,
+          password,
+          email_confirm: true, // ya confirmada: no hace falta abrir ningún mail
+          user_metadata: { nombre: 'Admin', apellido: 'Desarrollo', role: 'client' },
+        }),
+      })
+    } catch (e) {
+      console.error(`✗ No pude hablar con Supabase para crear el usuario admin: ${e.message}`)
+      console.error('  ¿Está levantado? Probá con: npx supabase status')
       process.exitCode = 1
       return
     }
-    id = data.user.id
+    // Si sale bien, la respuesta es la cuenta creada (con su id).
+    const cuenta = await respuesta.json().catch(() => ({}))
+    if (!respuesta.ok || !cuenta.id) {
+      const motivo = cuenta.msg || cuenta.message || cuenta.error_description || `respuesta ${respuesta.status}`
+      console.error(`✗ No pude crear el usuario admin: ${motivo}`)
+      process.exitCode = 1
+      return
+    }
+    id = cuenta.id
   }
 
   // Rol admin: si el perfil ya existe se actualiza; si no, se crea.
