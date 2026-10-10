@@ -68,7 +68,7 @@ export default async function AdminPagosPage({ searchParams }: { searchParams: S
 
         <div className="mt-6 pt-6 border-t border-zinc-900 text-sm text-zinc-400 space-y-2">
           <p className="text-zinc-300 font-semibold">Cómo funciona</p>
-          <p>Tocás "Conectar", entrás a <strong>tu</strong> Mercado Pago y autorizás. Listo: los pagos caen directo en tu cuenta. Nunca compartís usuario ni contraseña, y podés desconectar cuando quieras.</p>
+          <p>Tocás &quot;Conectar&quot;, entrás a <strong>tu</strong> Mercado Pago y autorizás. Listo: los pagos caen directo en tu cuenta. Nunca compartís usuario ni contraseña, y podés desconectar cuando quieras.</p>
           <p className="text-zinc-500">Además seguís cobrando por transferencia (alias <span className="text-zinc-300">{SITE.aliasPago}</span>) y efectivo, sin comisión.</p>
         </div>
       </div>

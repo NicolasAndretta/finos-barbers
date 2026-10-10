@@ -1,8 +1,11 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useSyncExternalStore } from 'react'
 import { createPortal } from 'react-dom'
 import Link from 'next/link'
+
+// Suscripción vacía: "estar en el navegador" no cambia nunca, no hay nada que escuchar.
+const sinSuscripcion = () => () => {}
 
 type NavLink = { href: string; label: string }
 
@@ -21,10 +24,9 @@ export function MobileMenu({
   panelLabel: string
 }) {
   const [open, setOpen] = useState(false)
-  const [mounted, setMounted] = useState(false)
-
-  // Solo portamos al body tras montar (evita desajustes con SSR).
-  useEffect(() => setMounted(true), [])
+  // Solo portamos al body en el navegador (evita desajustes con SSR): en el
+  // servidor y durante la hidratación da false, y enseguida pasa a true.
+  const mounted = useSyncExternalStore(sinSuscripcion, () => true, () => false)
 
   // Bloquea el scroll del body mientras el menú está abierto.
   useEffect(() => {

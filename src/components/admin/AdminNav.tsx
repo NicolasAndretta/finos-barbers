@@ -1,9 +1,12 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useSyncExternalStore } from 'react'
 import { createPortal } from 'react-dom'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+
+// Suscripción vacía: "estar en el navegador" no cambia nunca, no hay nada que escuchar.
+const sinSuscripcion = () => () => {}
 
 const LINKS = [
   { href: '/admin/dashboard', label: 'Dashboard' },
@@ -21,9 +24,10 @@ const LINKS = [
 export function AdminNav() {
   const pathname = usePathname()
   const [open, setOpen] = useState(false)
-  const [mounted, setMounted] = useState(false)
+  // true solo en el navegador (en el servidor y durante la hidratación da false):
+  // el drawer se porta a document.body recién cuando existe document.
+  const mounted = useSyncExternalStore(sinSuscripcion, () => true, () => false)
 
-  useEffect(() => setMounted(true), [])
   useEffect(() => {
     document.body.style.overflow = open ? 'hidden' : ''
     return () => { document.body.style.overflow = '' }
