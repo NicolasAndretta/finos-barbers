@@ -183,8 +183,8 @@ Después de cada cambio en producción:
 
 | # | Qué cambia | Estado |
 |---|---|---|
-| 0 | Esquema base versionado + proyecto de desarrollo | 🟡 Hecha el 10/10/2026; falta el OK de Nico y decidir cuándo va la `0005` a producción |
-| 1 | Tabla `locales` y columna `local_id` en todas las tablas de la barbería; lo que existe hoy pasa a ser Roble, el local de demostración (sin cortar la demo ni tocar lo de 369) | ⏳ |
+| 0 | Esquema base versionado + proyecto de desarrollo | ✅ 10/10/2026. Queda un pendiente: aplicar la `0005` en producción |
+| 1 | Tabla `locales` y columna `local_id` en todas las tablas de la barbería; lo que existe hoy pasa a ser Roble, el local de demostración (sin cortar la demo ni tocar lo de 369) | 🟡 Hecha en desarrollo el 10/10/2026; falta el OK de Nico |
 | 2 | Membresías y RLS por local (reemplaza `is_admin()`), con prueba de aislamiento | ⏳ |
 | 3 | El sitio elige el local por la dirección; `SITE` pasa a ser datos del local | ⏳ |
 | 4 | Llamadas con permisos totales filtradas por local; Mercado Pago e imágenes por local | ⏳ |
@@ -274,6 +274,15 @@ después quieren saber quién vendió qué.
 - Los secretos van en archivos `.env*` (git los ignora). Nunca en el chat ni en el código.
 - La foto `0000_base.sql` no se edita: los cambios van en migraciones nuevas
   (`0005`, `0006`...).
+- Toda migración se puede correr dos veces, y además tiene que convivir con la
+  foto: `preparar-desarrollo.mjs` vuelve a pasar **todas** las migraciones cada
+  vez, empezando por la foto. Por eso, si una migración cambia una regla que ya
+  estaba en la foto, **le conserva el nombre**: la foto solo crea una regla si
+  no encuentra ninguna con ese nombre.
+- Toda migración que crea una tabla le activa RLS a mano y la anota en
+  `scripts/verificar-locales.mjs` (lleva local, no lleva, o es de 369).
+- La foto nunca se corre contra producción: volvería a crear políticas que las
+  migraciones posteriores cerraron.
 - En producción conviven la demo y la web de 369: nada de 369 se toca, y antes
   de cada cambio en producción se hace una copia de seguridad.
 - Toda migración se prueba primero en desarrollo.
@@ -322,6 +331,19 @@ para que nadie la engañe.
 
 **search_path** — La lista de esquemas donde Postgres busca un nombre cuando no
 le decís cuál. Con search_path vacío hay que escribir `public.turnos` completo.
+
+**Clave foránea (vínculo)** — Una regla que dice "esta columna apunta a una fila
+que existe en otra tabla": un turno apunta a un barbero. Si el barbero no
+existe, la base rechaza el turno.
+
+**Candado doble (clave foránea compuesta)** — Un vínculo que apunta con dos
+columnas a la vez: `(local_id, barbero_id)`. Ya no alcanza con que el barbero
+exista: tiene que existir **en el mismo local** que el turno. Es lo que impide
+que los datos de dos barberías se mezclen aunque el código se equivoque.
+
+**Valor por defecto** — Lo que la base escribe en una columna cuando nadie le
+dice qué poner. `local_id` tiene uno temporal (Roble) para que la app siga
+andando mientras todavía no manda el local. Se quita en la Fase 4.
 
 **Seed** — Datos de ejemplo para cargar en una base vacía.
 
@@ -493,6 +515,77 @@ crear un turno con la seña ya "pagada" y crear un turno con un pago inventado.
 - El paso a paso pedía reservar "en efectivo", que el cliente ya no puede
   elegir, y no mencionaba `NEXT_PUBLIC_SITE_URL`. Corregido.
 
-**Pendiente para cerrar la Fase 0:**
-1. OK de Nico a lo hecho.
-2. Decidir cuándo va la `0005` a producción.
+**Cierre de la Fase 0:** Nico dio el OK el 10/10/2026. Queda un pendiente:
+aplicar la `0005` en producción. Lo corre Nico desde su terminal (el entorno de
+trabajo del asistente bloquea los cambios en producción):
+
+```bash
+node scripts/respaldar-base.mjs --env .env.produccion.local
+node scripts/migrate.mjs --env .env.produccion.local --produccion supabase/migrations/0005_cerrar_escrituras_directas.sql
+```
+
+Enseguida se revisan la demo y 369 (ver "Cómo comprobar que 369 sigue bien").
+Hasta que eso pase no se sube la rama: el repo es público y la `0005` explica
+un agujero que en producción sigue abierto.
+
+### Fase 1 — Locales (10/10/2026)
+
+**Problema:** la base no sabía que existen "locales". Todas las filas eran,
+sin decirlo, de la única barbería.
+
+**Qué se hizo:** una migración, `supabase/migrations/0006_locales.sql`. Solo
+base de datos: no se tocó ni una línea de la app y no cambió nada visible.
+
+| Cambio | En simple |
+|---|---|
+| Tabla `locales` | Una fila por barbería: su dirección (`slug`), nombre, estado (demo, activo, suspendido, archivado) y los datos que hoy están fijos en `site.ts`. Un dato vacío quiere decir "falta cargar". |
+| Roble | Cargado como local de demostración, en estado `demo`, con los datos actuales. |
+| `local_id` en 10 tablas | `barberos`, `categorias`, `servicios`, `productos`, `resenas`, `turnos`, `pedidos`, `items_pedido`, `transacciones` y `mp_conexion`. Todo lo que existía quedó marcado como de Roble. |
+| Valor por defecto temporal | Si la app crea una fila sin decir el local, cae en Roble. Es lo que permite no tocar la app todavía. Se quita en la Fase 4. |
+| Candado doble | 9 vínculos entre tablas pasaron de "apunta a algo que existe" a "apunta a algo que existe en su mismo local". |
+| Categorías | El nombre es único dentro de cada local, no en toda la base. |
+
+**Decisiones de diseño**
+- **`profiles` no lleva local.** Una cuenta es de toda la plataforma. A qué
+  local pertenece cada persona lo va a decir la membresía (Fase 2).
+- **El candado doble reemplaza los vínculos viejos, no agrega otros.** La app
+  pide "el turno con su barbero" sin decir por qué vínculo; con dos vínculos
+  entre las mismas tablas la base no sabría cuál usar y daría error.
+- **`locales` la ven solo el admin y el servidor.** Qué datos del local son
+  públicos se decide en la Fase 3, cuando el sitio empiece a leerlos.
+- **No se guardan datos calculados** (el link de Instagram, el WhatsApp con
+  formato): los arma el código en la Fase 3.
+- **Nadie borra un local desde la app,** y la base no deja borrar uno que tenga
+  datos. Un local que no sigue se archiva.
+
+**Dos scripts nuevos** (los dos corren solo en desarrollo)
+
+| Script | Para qué sirve |
+|---|---|
+| `scripts/verificar-locales.mjs` | Controla que toda tabla esté clasificada (lleva local, no lleva, o es de 369), que no haya filas sin local, que los vínculos sean dobles, que lo de 369 esté igual que en la foto, y prueba el candado: crea un local de mentira, intenta las mezclas y deshace todo. Una tabla nueva sin clasificar lo hace fallar. |
+| `scripts/probar-seguridad.mjs` | Le habla a la base como alguien que no usa la app: intenta registrarse como admin, cambiarse el rol, tocar lo de 369, ver los locales, crear pedidos pagados y turnos con la seña paga. Es la base de la prueba de aislamiento de las Fases 2 y 5. |
+
+**Cómo se verificó**
+- La migración corre dos veces sin cambios, y la cadena entera (foto + `0001`
+  a `0006` + datos de ejemplo) también.
+- `verificar-locales.mjs`: todo ✓. La base rechazó las 7 mezclas entre locales
+  que se intentaron y aceptó lo que tenía que aceptar.
+- `probar-seguridad.mjs`: todo ✓.
+- Contra la foto cambian solo las secciones esperadas (tablas, reglas,
+  vínculos, índices y lo propio de `locales`). Ninguna línea que cambia nombra
+  algo de 369.
+- La app compilada contra la base migrada: home, tienda, login, registro, panel
+  del admin y `/reservar` del cliente responden igual que antes.
+- `npm run lint` y `npm run build` en verde.
+
+**Queda anotado para más adelante**
+- **Fase 2:** al volver a pasar la foto en desarrollo reaparecen las políticas
+  viejas hasta que corre la migración que las reemplaza. Esa migración tiene
+  que borrar las viejas por nombre cada vez.
+- **Fase 3:** hay direcciones que un local no puede usar como `slug`, porque
+  son páginas del sitio (`admin`, `tienda`, `login`...). Hoy la base solo
+  controla el formato. También ahí se define qué datos de `locales` son públicos.
+- **Fase 4:** quitar el valor por defecto de `local_id`, y que `mp_conexion`
+  tenga una sola conexión por local.
+- **A producción** va con el resto, después de la Fase 5. Es compatible con el
+  código publicado hoy (por el valor por defecto), así que no corta la demo.

@@ -7,7 +7,8 @@ Todo lo que describe la base de datos vive acá, versionado junto con el código
 | `migrations/0000_base.sql` | **La foto**: la estructura completa de la base de producción (tablas, reglas, funciones, disparadores, políticas RLS, permisos). La genera `scripts/exportar-esquema.mjs`. No se edita a mano. |
 | `migrations/0001` a `0004` | Los cambios que se hicieron antes de tener la foto. Ya están incluidos en ella; sobre la foto no cambian nada (son idempotentes). |
 | `migrations/0005_cerrar_escrituras_directas.sql` | Arreglo de seguridad que salió de revisar la foto: cierra escrituras que un cliente podía hacer sin pasar por la app. Probado en desarrollo. |
-| `migrations/0006` en adelante | Los cambios nuevos (muchos locales). Cada uno se prueba primero en desarrollo. |
+| `migrations/0006_locales.sql` | Fase 1: la tabla `locales`, Roble como local de demostración, `local_id` en las 10 tablas de la barbería y el candado doble. |
+| `migrations/0007` en adelante | Los cambios que siguen (muchos locales). Cada uno se prueba primero en desarrollo. |
 | `seed-desarrollo.sql` | Datos de ejemplo: el catálogo de Roble, el local de demostración (servicios, barberos, productos, categorías, reseñas). Sin cuentas, turnos, pedidos ni tokens. |
 | `esquema-reporte.md` | Resumen legible de la foto, con alertas de seguridad. Se regenera con cada exportación. |
 | `config.toml` | Configuración del Supabase local (desarrollo). La crea `npx supabase init`. |
@@ -39,6 +40,13 @@ node scripts/migrate.mjs --env .env.produccion.local --produccion supabase/migra
 
 # Comparar una base contra la foto
 node scripts/exportar-esquema.mjs --comparar supabase/migrations/0000_base.sql
+
+# Comprobar que la base está bien armada por local y que lo de 369 no cambió
+# (solo desarrollo)
+node scripts/verificar-locales.mjs
+
+# Probar la base como alguien que no usa la app (solo desarrollo)
+node scripts/probar-seguridad.mjs
 
 # Copia de seguridad de producción (solo lectura; queda en respaldos/, que no se sube)
 node scripts/respaldar-base.mjs --env .env.produccion.local
