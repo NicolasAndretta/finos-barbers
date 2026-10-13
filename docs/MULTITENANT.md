@@ -183,7 +183,7 @@ Después de cada cambio en producción:
 
 | # | Qué cambia | Estado |
 |---|---|---|
-| 0 | Esquema base versionado + proyecto de desarrollo | ✅ 10/10/2026. Queda un pendiente: aplicar la `0005` en producción |
+| 0 | Esquema base versionado + proyecto de desarrollo | ✅ 10/10/2026 (la `0005`, verificada en producción el 13/10) |
 | 1 | Tabla `locales` y columna `local_id` en todas las tablas de la barbería; lo que existe hoy pasa a ser Roble, el local de demostración (sin cortar la demo ni tocar lo de 369) | 🟡 Hecha en desarrollo el 10/10/2026; falta el OK de Nico |
 | 2 | Membresías y RLS por local (reemplaza `is_admin()`), con prueba de aislamiento | ⏳ |
 | 3 | El sitio elige el local por la dirección; `SITE` pasa a ser datos del local | ⏳ |
@@ -473,8 +473,9 @@ crear un turno con la seña ya "pagada" y crear un turno con un pago inventado.
 - **Probado en desarrollo:** las cuatro quedan bloqueadas, y la reserva normal y
   la cancelación siguen andando. Contra la foto cambia solo la sección 14
   (políticas), en esas tres.
-- **Producción: pendiente.** Va sola (no espera a la Fase 5), con el OK de Nico
-  y copia de seguridad justo antes.
+- **Producción: aplicada.** Fue sola, sin esperar a la Fase 5, con el OK de
+  Nico y copia de seguridad antes. Verificada el 13/10/2026 (ver "Cierre de la
+  Fase 0").
 
 **Anotado para la Fase 2** (no se toca ahora: ahí se rediseñan los permisos)
 - `profiles`: el cliente puede cambiar el `email` y el `barbero_id` de su propio
@@ -515,18 +516,27 @@ crear un turno con la seña ya "pagada" y crear un turno con un pago inventado.
 - El paso a paso pedía reservar "en efectivo", que el cliente ya no puede
   elegir, y no mencionaba `NEXT_PUBLIC_SITE_URL`. Corregido.
 
-**Cierre de la Fase 0:** Nico dio el OK el 10/10/2026. Queda un pendiente:
-aplicar la `0005` en producción. Lo corre Nico desde su terminal (el entorno de
-trabajo del asistente bloquea los cambios en producción):
+**Cierre de la Fase 0:** Nico dio el OK el 10/10/2026 y aplicó la `0005` en
+producción desde su terminal. El entorno de trabajo del asistente bloquea los
+cambios en producción, así que de ahora en más esos pasos los corre Nico.
+Copia de seguridad el 10/10/2026 a las 22:06, y después:
 
 ```bash
-node scripts/respaldar-base.mjs --env .env.produccion.local
+# Parado en la carpeta del proyecto (en Git Bash, con / y no con \)
+cd "C:/Users/Usuario/Desktop/ANDRETTA-UNIVERSO/desarrollo-web/finos-barbers"
 node scripts/migrate.mjs --env .env.produccion.local --produccion supabase/migrations/0005_cerrar_escrituras_directas.sql
 ```
 
-Enseguida se revisan la demo y 369 (ver "Cómo comprobar que 369 sigue bien").
-Hasta que eso pase no se sube la rama: el repo es público y la `0005` explica
-un agujero que en producción sigue abierto.
+Verificado el 13/10/2026, todo en solo lectura:
+- Producción contra la foto: cambia solo la sección 14 (políticas), en las
+  tres que toca la `0005`, igual que en desarrollo. Lo de 369, idéntico.
+- La demo: home, barberos, reseñas, tienda, login y panel protegido, bien.
+- 369: home, galería, fotos del bucket y `/api/health`, bien.
+- Copia de seguridad de después (13/10/2026, 20:18) contra la de antes: las 17
+  tablas idénticas fila por fila. El cambio tocó solo permisos, no datos.
+
+Recién con el agujero cerrado en producción se subió la rama: el repo es
+público y la `0005` explica lo que cerraba.
 
 ### Fase 1 — Locales (10/10/2026)
 
