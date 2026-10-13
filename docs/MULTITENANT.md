@@ -54,9 +54,9 @@ base aplica siempre.
 - El dueño también puede ser barbero (tener su agenda): es lo normal en una
   barbería de barrio.
 - Equipo de la plataforma, en una tabla aparte: Nico (administrador, ve todo) y
-  Delfina (crea y activa barberías; sus permisos exactos están a definir, ver
-  "Cómo se da de alta una barbería"). Va aparte a propósito: nadie puede
-  volverse parte del equipo tocando un dato de un local.
+  Delfina (rol **comercial**, decidido el 13/10/2026: ver "Cómo se da de alta
+  una barbería"). Va aparte a propósito: nadie puede volverse parte del equipo
+  tocando un dato de un local.
 - Consecuencia de tener una sola base: **un mail = una cuenta** en toda la
   plataforma. Cada local solo ve lo que esa persona hizo con él.
 
@@ -253,11 +253,12 @@ qué pedirle al dueño al activarla.
 no se vendió). El sistema anota quién creó y quién activó cada una, por si
 después quieren saber quién vendió qué.
 
+### Decidido: los permisos de Delfina (13/10/2026)
+Rol **comercial**. Crea, edita y activa barberías, pero no ve los datos
+privados de las barberías ya activas (sus clientes, su caja) ni puede borrar.
+Nico sigue siendo el único administrador total. Se construye en la Fase 2.
+
 ### A decidir
-- **Permisos de Delfina.** Propuesta: rol "comercial" que crea, edita y activa
-  barberías, pero no ve los datos privados de las barberías ya activas (sus
-  clientes, su caja) ni puede borrar. Nico sigue siendo el único administrador
-  total. Alternativa: los mismos permisos que Nico.
 - **Demos que no se venden.** Propuesta: se archivan solas a los 30 días (el link
   muestra "esta muestra terminó"), se pueden revivir con un botón y nunca se
   borran solas.
