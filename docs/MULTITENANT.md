@@ -185,7 +185,7 @@ Después de cada cambio en producción:
 |---|---|---|
 | 0 | Esquema base versionado + proyecto de desarrollo | ✅ 10/10/2026 (la `0005`, verificada en producción el 13/10) |
 | 1 | Tabla `locales` y columna `local_id` en todas las tablas de la barbería; lo que existe hoy pasa a ser Roble, el local de demostración (sin cortar la demo ni tocar lo de 369) | ✅ Hecha en desarrollo el 10/10/2026; OK de Nico el 14/10 (va a producción con el resto, después de la Fase 5) |
-| 2 | Membresías y RLS por local (reemplaza `is_admin()`), con prueba de aislamiento | ⏳ |
+| 2 | Membresías y RLS por local (reemplaza `is_admin()`), con prueba de aislamiento | 🟡 Plan aprobado el 14/10/2026 (ver bitácora); falta construirla |
 | 3 | El sitio elige el local por la dirección; `SITE` pasa a ser datos del local | ⏳ |
 | 4 | Llamadas con permisos totales filtradas por local; Mercado Pago e imágenes por local | ⏳ |
 | 5 | Prueba automática de aislamiento completa | ⏳ |
@@ -600,3 +600,63 @@ base de datos: no se tocó ni una línea de la app y no cambió nada visible.
   tenga una sola conexión por local.
 - **A producción** va con el resto, después de la Fase 5. Es compatible con el
   código publicado hoy (por el valor por defecto), así que no corta la demo.
+
+### Fase 2 — Plan aprobado (14/10/2026)
+
+> Todavía no se construyó. Esto es lo que Nico aprobó, para retomarlo desde
+> cualquier sesión.
+
+**Qué cambia** (solo base de datos; la app no se toca)
+1. Tabla `membresias`: persona + local + rol (`dueño`, `barbero`, `cliente`).
+   Una persona puede tener roles distintos en locales distintos.
+2. Tabla del equipo de la plataforma, aparte: **solo dos cuentas, Nico
+   (admin) y Delfina (comercial)**. Quién es del equipo se carga con un
+   comando: nunca se escribe en el repo (es público).
+3. Todas las políticas se reescriben: de "es admin o no" a "qué sos en este
+   local". El cuadro aprobado:
+
+| | Visitante | Cliente | Barbero | Dueño | Delfina (comercial) | Nico (admin) |
+|---|---|---|---|---|---|---|
+| Catálogo (servicios, barberos, productos, reseñas) | ve | ve | ve | ve y edita | ve y edita | todo |
+| Turnos | — | los suyos | los de su agenda | los de su local | solo de demos | todo |
+| Pedidos de la tienda | — | los suyos | — | los de su local | solo de demos | todo |
+| Caja | — | — | — | la de su local | — | todo |
+| Datos de clientes | — | el suyo | los de sus turnos | los de su local | solo de demos | todo |
+| Datos del local | — | — | — | edita el suyo | crea, edita y activa | todo |
+| Borrar un local | nadie | nadie | nadie | nadie | nadie | nadie (se archiva) |
+
+4. De paso: el cliente solo puede cambiar nombre y apellido de su perfil, y al
+   cancelar un turno solo puede cambiar el estado.
+
+**Cómo sigue andando la app sin tocarla:** las cuentas de hoy se convierten en
+membresías de Roble, y un mecanismo temporal las mantiene al día cuando se
+crea una cuenta o un barbero (se quita cuando el código maneje membresías).
+
+**Decisiones del 14/10/2026**
+- **El equipo son dos cuentas: Nico y Delfina.** Las otras cuentas que hoy son
+  `admin` (hay 5 en producción) dejan de serlo: pasan a ser cuentas comunes,
+  sin panel. No se borran (borrar es irreversible y no suma seguridad). La
+  lista se revisa con Nico al pasar a producción, después de la Fase 5. Si
+  Delfina no tiene cuenta, se crea ese día. Roble no necesita dueño: lo
+  manejan el equipo.
+- **Delfina ve turnos, pedidos y clientes de los locales en estado demo** (son
+  datos de prueba). De los activos, nada privado.
+- **El catálogo público solo se ve si el local está en demo o activo.**
+
+**Riesgo: medio-alto.** El panel del admin habla con la base con la sesión del
+usuario, así que depende por completo de estas políticas. Dos formas de
+fallar: que el panel pierda acceso (se ve enseguida) o que un local vea datos
+de otro (no se ve: lo tiene que encontrar la prueba).
+
+**Cómo se verifica**
+- Prueba de aislamiento: dos locales en desarrollo, una cuenta de cada tipo,
+  cada una intenta ver y tocar lo de la otra; se compara contra el cuadro.
+  Crece a partir de `scripts/probar-seguridad.mjs`.
+- Recorrido con Playwright de los tres paneles (admin, barbero, cliente), como
+  el de la Fase 1.
+- 369 sin cambios (`scripts/verificar-locales.mjs`), lint y build en verde.
+
+**Para construirla hace falta la PC** (Docker con el Supabase local): las
+pruebas usan cuentas reales y el navegador. Desde la nube se puede escribir la
+migración y probarla contra un Postgres que imite a Supabase, como en la Fase
+0, pero no cerrarla.
