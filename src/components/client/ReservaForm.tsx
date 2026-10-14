@@ -1,6 +1,6 @@
 ﻿'use client'
 
-import React, { useState, useTransition, useEffect } from 'react'
+import React, { useState, useTransition, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { getHorariosDisponibles, crearReserva, type MetodoPago } from '@/app/actions/reservas'
 import { Spinner } from '@/components/ui/Spinner'
@@ -23,6 +23,13 @@ export function ReservaForm({ servicios, barberos }: { servicios: Servicio[], ba
   const [errorMsg, setErrorMsg] = useState('')
   const [metodoPago, setMetodoPago] = useState<MetodoPago>('mercadopago')
   const [confirmacion, setConfirmacion] = useState<{ metodo: string; sena: number; alias: string } | null>(null)
+  const avisoRef = useRef<HTMLDivElement>(null)
+
+  // El aviso de error está arriba del formulario y el botón de confirmar
+  // abajo: en el celu quedaba fuera de la vista. Se lo trae al centro.
+  useEffect(() => {
+    if (errorMsg) avisoRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }, [errorMsg])
 
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
@@ -48,6 +55,14 @@ export function ReservaForm({ servicios, barberos }: { servicios: Servicio[], ba
       const res = await crearReserva(formData)
       if ('error' in res && res.error) {
         setErrorMsg(res.error)
+        // Si otro ocupó el horario mientras el cliente decidía, se vuelve a
+        // pedir la lista para que elija entre los que de verdad quedan libres.
+        if ('horarioOcupado' in res && barberoSeleccionado && servicioSeleccionado) {
+          setHoraSeleccionada('')
+          getHorariosDisponibles(barberoSeleccionado.id, fecha, servicioSeleccionado.id)
+            .then((h) => setHorarios(h))
+            .catch(() => setHorarios([]))
+        }
         return
       }
       if ('mp' in res && res.mp && res.url_checkout) {
@@ -82,7 +97,7 @@ export function ReservaForm({ servicios, barberos }: { servicios: Servicio[], ba
       </div>
 
       {errorMsg && (
-        <div className="mb-6 p-4 rounded-lg bg-red-950/30 border border-red-800/50 text-red-400 text-sm">
+        <div ref={avisoRef} className="mb-6 p-4 rounded-lg bg-red-950/30 border border-red-800/50 text-red-400 text-sm">
           {errorMsg}
         </div>
       )}

@@ -3,7 +3,7 @@
 import { MercadoPagoConfig, Preference, Payment } from 'mercadopago'
 import { createClient, createServiceClient } from '@/lib/supabase'
 import { getAccessTokenComercio } from '@/lib/mp-oauth'
-import { requireClient } from '@/lib/auth'
+import { getUser, requireClient } from '@/lib/auth'
 import { sendConfirmacionTurno, sendCancelacionTurno } from '@/lib/resend'
 import { SITE } from '@/lib/site'
 import { revalidatePath } from 'next/cache'
@@ -51,9 +51,19 @@ export async function getBarberos() {
   return data
 }
 
+// ¿Tiene forma de id (uuid) o de fecha (AAAA-MM-DD)? Se revisa antes de
+// consultar, porque una Server Action se puede llamar sin pasar por la pantalla.
+const esId = (v: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v)
+const esFecha = (v: string) => /^\d{4}-\d{2}-\d{2}$/.test(v)
+
 export async function getHorariosDisponibles(barberoId: string, fecha: string, servicioId: string) {
+  // Solo con sesión iniciada y con datos que tengan forma válida: la pantalla
+  // de reserva ya lo exige, pero esta función también se puede llamar directo.
+  if (!(await getUser())) return []
+  if (!esId(barberoId) || !esId(servicioId) || !esFecha(fecha)) return []
+
   const supabase = await createClient()
-  
+
   // 1. Obtener la duración del servicio solicitado
   const { data: servicio, error: sErr } = await supabase
     .from('servicios')
@@ -65,7 +75,13 @@ export async function getHorariosDisponibles(barberoId: string, fecha: string, s
   const duracionSolicitada = servicio.duracion_minutos
 
   // 2. Obtener turnos existentes del barbero en la fecha
-  const { data: turnos, error: tErr } = await supabase
+  //    Con la llave del servidor: con la sesión del cliente, la base solo le
+  //    muestra SUS turnos, y los que ocuparon otros aparecían libres (se podían
+  //    reservar dos turnos que se pisan). Se leen solo la hora y la duración, y
+  //    de acá sale únicamente la lista de horarios libres: ningún dato de otros
+  //    clientes. El barbero es de un solo local, así que no mezcla locales.
+  const servidor = createServiceClient()
+  const { data: turnos, error: tErr } = await servidor
     .from('turnos')
     .select(`
       hora,
@@ -148,6 +164,21 @@ export async function crearReserva(formData: FormData) {
     return { error: 'La fecha no puede ser mayor a 60 días desde hoy' }
   }
 
+  // El horario se vuelve a revisar al guardar, no solo al mostrar la lista:
+  // entre que el cliente la vio y apretó el botón, otro pudo reservar un
+  // horario que se pisa con este. La base solo frena dos turnos que EMPIEZAN
+  // a la misma hora; uno a las 10:00 y otro a las 10:15 con el mismo barbero
+  // pasaban los dos.
+  let libres: string[]
+  try {
+    libres = await getHorariosDisponibles(barbero_id, fecha, servicio_id)
+  } catch {
+    return { error: 'No pudimos revisar el horario. Probá de nuevo en un momento.' }
+  }
+  if (!libres.includes(hora)) {
+    return { error: 'El horario que elegiste ya no está libre. Elegí otro de la lista.', horarioOcupado: true }
+  }
+
   const supabase = await createClient()
 
   // 1. Obtener detalles para el email y el precio (para la seña)
@@ -177,8 +208,9 @@ export async function crearReserva(formData: FormData) {
 
   if (error) {
     // Manejo específico para el índice único que previene solapamiento exacto
+    // (queda por si dos clientes confirman la misma hora en el mismo instante)
     if (error.message.includes('turnos_no_overlap_idx')) {
-      return { error: 'El horario seleccionado ya no está disponible. Por favor, elige otro.' }
+      return { error: 'El horario que elegiste ya no está libre. Elegí otro de la lista.', horarioOcupado: true }
     }
     return { error: error.message }
   }

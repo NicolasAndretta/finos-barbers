@@ -737,6 +737,7 @@ el mismo barbero.**
   barbero ya es de un solo local, así que es seguro con muchos locales.
 - **Está en la demo publicada** (sale de `main`). Arreglarlo ahí es decisión de
   Nico: `main` no se toca sin su OK.
+- **Arreglado en desarrollo el 14/10 a la noche** (ver la entrada siguiente).
 
 **Queda anotado para más adelante**
 - **Fase 3/4:** el código todavía elige el panel con `profiles.role`. Un dueño
@@ -751,3 +752,44 @@ el mismo barbero.**
 - En la copia local quedaron cuentas y turnos de los recorridos (datos de
   prueba). Se borran con `npx supabase db reset` + `preparar-desarrollo.mjs`,
   si hace falta.
+
+### Arreglo: turnos que se pisan (14/10/2026, de noche)
+
+Nico autorizó arreglarlo ("arreglá en lo que haga falta"). Eran **dos huecos**
+y se cerraron los dos, en `src/app/actions/reservas.ts` y
+`src/components/client/ReservaForm.tsx`. La base no se tocó.
+
+| Hueco | Qué pasaba | Arreglo |
+|---|---|---|
+| La lista | Mostraba libres los horarios que ocuparon otros clientes. | Los turnos ocupados se consultan con la llave del servidor. Solo se leen hora y duración, y lo único que sale es la lista de horarios libres. |
+| Al guardar | La base solo frena dos turnos que **empiezan** a la misma hora. Si otro reservaba 10:15 mientras el cliente miraba la lista, el turno de las 10:00 se guardaba igual. | Antes de guardar se vuelve a calcular la lista y la hora tiene que estar en ella. Si no está: "El horario que elegiste ya no está libre. Elegí otro de la lista.", y la lista se actualiza sola. |
+
+**Además**
+- La lista de horarios exige sesión iniciada y datos con forma válida (una
+  Server Action se puede llamar sin pasar por la pantalla).
+- En el celu, el aviso de error quedaba arriba, fuera de la vista de quien
+  apretó el botón de abajo. Ahora la pantalla lo trae al centro.
+- El aviso que ya existía pasó a voseo ("elegí", no "elige").
+
+**Cómo se verificó (con pruebas de navegador, antes y después)**
+- Lista: turno de otra persona de 10:00 a 10:45. Antes ofrecía 09:45, 10:00,
+  10:15 y 10:30 ✗. Después no ofrece ninguno, y sí 09:30 y 10:45 ✓.
+- Al guardar: el cliente elige 10:00, otra persona reserva 10:15 y el cliente
+  confirma. Antes se guardaba encima ✗. Después no se guarda, avisa y la lista
+  nueva ofrece 09:45 y 11:00 pero no 10:00 a 10:45 ✓ (en compu y en celu).
+- En el celu el aviso queda a la vista y sin que lo tape el menú. Antes no ✗,
+  después ✓.
+- Una reserva normal en el celu se sigue guardando ✓.
+- `npm run lint` (0 errores, las 6 advertencias viejas) y `npm run build` en
+  verde; `verificar-locales`, `probar-seguridad` y `probar-aislamiento` en verde.
+
+**Queda abierto**
+- Si dos clientes confirman horarios que se pisan **en el mismo instante**,
+  los dos pasan la revisión. Es muy poco probable con el tráfico de una
+  barbería. Se cierra del todo con una regla en la base que no deje guardar
+  dos turnos superpuestos del mismo barbero (una migración: se propone a Nico,
+  no se aplica sola).
+- **La demo publicada todavía tiene el error.** El mismo arreglo está listo en
+  la rama `arreglo/turnos-que-se-pisan`, que sale de `main` y no está unida a
+  `main`. Se publica con Nico presente, verificando enseguida `/api/health`,
+  la demo y 369.
