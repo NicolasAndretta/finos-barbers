@@ -808,8 +808,8 @@ y se cerraron los dos, en `src/app/actions/reservas.ts` y
    con su galería.
 4. Nico entra con su cuenta, va a "Reservar turno" y ve la lista de horarios.
    Si aparece vacía, falta la llave del servidor en el hPanel.
-5. Volver atrás: `git push origin bfb2400:main --force-with-lease` deja `main`
-   como estaba (solo con el OK de Nico).
+5. Volver atrás: un `git revert` del commit del arreglo en `main` (un commit
+   nuevo que lo deshace, sin reescribir la historia), con el OK de Nico.
 
 Nota: `main` tiene 4 errores de lint viejos (en `pagos`, `AdminNav` y
 `MobileMenu`) que la rama de trabajo ya corrigió. No se pasaron a esta rama,
