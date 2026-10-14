@@ -797,3 +797,20 @@ y se cerraron los dos, en `src/app/actions/reservas.ts` y
   la rama `arreglo/turnos-que-se-pisan`, que sale de `main` y no está unida a
   `main`. Se publica con Nico presente, verificando enseguida el chequeo de la demo,
   la reserva con una cuenta real y 369.
+
+**Cómo se publica en la demo (con Nico, unos 10 minutos)**
+1. La base no cambia: no hace falta copia de seguridad.
+2. `git push origin arreglo/turnos-que-se-pisan:main`. La rama sale del último
+   commit de `main`, así que `main` solo avanza, sin un commit de unión. Si
+   alguien hubiera tocado `main`, git rechaza el push y no pasa nada.
+3. Hostinger publica solo. Cuando cambia el build: la home de Roble muestra
+   los barberos (prueba que las variables siguen), la tienda, el login, y 369
+   con su galería.
+4. Nico entra con su cuenta, va a "Reservar turno" y ve la lista de horarios.
+   Si aparece vacía, falta la llave del servidor en el hPanel.
+5. Volver atrás: `git push origin bfb2400:main --force-with-lease` deja `main`
+   como estaba (solo con el OK de Nico).
+
+Nota: `main` tiene 4 errores de lint viejos (en `pagos`, `AdminNav` y
+`MobileMenu`) que la rama de trabajo ya corrigió. No se pasaron a esta rama,
+para que lo que se publica sea solo el arreglo. El build no los mira.
