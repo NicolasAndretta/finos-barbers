@@ -638,7 +638,7 @@ crea una cuenta o un barbero (se quita cuando el código maneje membresías).
   sin panel. No se borran (borrar es irreversible y no suma seguridad). La
   lista se revisa con Nico al pasar a producción, después de la Fase 5. Si
   Delfina no tiene cuenta, se crea ese día. Roble no necesita dueño: lo
-  manejan el equipo.
+  maneja el equipo.
 - **Delfina ve turnos, pedidos y clientes de los locales en estado demo** (son
   datos de prueba). De los activos, nada privado.
 - **El catálogo público solo se ve si el local está en demo o activo.**
