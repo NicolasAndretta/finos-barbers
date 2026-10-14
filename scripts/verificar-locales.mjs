@@ -39,12 +39,14 @@ import { abrirSoloLectura, conectar, consultor } from './lib/postgres.mjs'
 const CON_LOCAL = [
   'barberos', 'categorias', 'servicios', 'productos', 'resenas',
   'turnos', 'pedidos', 'items_pedido', 'transacciones', 'mp_conexion',
+  'membresias', // Fase 2: qué es cada persona en cada local
 ]
 
 /** Tablas de la plataforma, que no pertenecen a un local (y por qué). */
 const SIN_LOCAL = {
   locales: 'es la lista de locales',
-  profiles: 'una cuenta es de toda la plataforma; su local lo dirá la membresía (Fase 2)',
+  profiles: 'una cuenta es de toda la plataforma; qué es en cada local lo dice membresias',
+  equipo: 'el equipo de la plataforma no pertenece a ningún local',
 }
 
 /** Lo de la web de 369: no se toca (ver docs/MULTITENANT.md). */

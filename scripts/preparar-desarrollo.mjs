@@ -169,5 +169,17 @@ async function asegurarAdmin() {
       [id, email],
     )
   }
-  console.log(`✓ Usuario admin listo: ${email}`)
+
+  // Desde la Fase 2, ver los datos depende de estar en el equipo de la
+  // plataforma (tabla `equipo`), no del rol del perfil. Si la tabla existe,
+  // la cuenta de prueba entra como admin del equipo.
+  const [{ hayEquipo }] = (await cliente.query(`select to_regclass('public.equipo') is not null as "hayEquipo"`)).rows
+  if (hayEquipo) {
+    await cliente.query(
+      `insert into public.equipo (user_id, rol) values ($1, 'admin')
+       on conflict (user_id) do update set rol = 'admin'`,
+      [id],
+    )
+  }
+  console.log(`✓ Usuario admin listo: ${email}${hayEquipo ? ' (admin del equipo)' : ''}`)
 }
