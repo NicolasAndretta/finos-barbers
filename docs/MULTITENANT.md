@@ -770,6 +770,10 @@ y se cerraron los dos, en `src/app/actions/reservas.ts` y
 - En el celu, el aviso de error quedaba arriba, fuera de la vista de quien
   apretó el botón de abajo. Ahora la pantalla lo trae al centro.
 - El aviso que ya existía pasó a voseo ("elegí", no "elige").
+- **Seguro:** si al servidor le falta la llave (`SUPABASE_SERVICE_ROLE_KEY`,
+  que en Hostinger un redeploy puede borrar), la lista no queda vacía: vuelve a
+  funcionar como antes, con el error viejo, y el registro del servidor lo avisa.
+  Se probó levantando la app sin la llave.
 
 **Cómo se verificó (con pruebas de navegador, antes y después)**
 - Lista: turno de otra persona de 10:00 a 10:45. Antes ofrecía 09:45, 10:00,
@@ -791,5 +795,5 @@ y se cerraron los dos, en `src/app/actions/reservas.ts` y
   no se aplica sola).
 - **La demo publicada todavía tiene el error.** El mismo arreglo está listo en
   la rama `arreglo/turnos-que-se-pisan`, que sale de `main` y no está unida a
-  `main`. Se publica con Nico presente, verificando enseguida `/api/health`,
-  la demo y 369.
+  `main`. Se publica con Nico presente, verificando enseguida el chequeo de la demo,
+  la reserva con una cuenta real y 369.

@@ -80,7 +80,15 @@ export async function getHorariosDisponibles(barberoId: string, fecha: string, s
   //    reservar dos turnos que se pisan). Se leen solo la hora y la duración, y
   //    de acá sale únicamente la lista de horarios libres: ningún dato de otros
   //    clientes. El barbero es de un solo local, así que no mezcla locales.
-  const servidor = createServiceClient()
+  //    Si al servidor le falta la llave (en Hostinger un redeploy puede borrar
+  //    las variables), se usa la sesión como antes: vuelve el error viejo,
+  //    pero las reservas no se cortan. Queda escrito en el registro del servidor.
+  let servidor = supabase
+  try {
+    servidor = createServiceClient()
+  } catch {
+    console.error('[horarios] Falta SUPABASE_SERVICE_ROLE_KEY: los turnos de otros clientes pueden aparecer libres.')
+  }
   const { data: turnos, error: tErr } = await servidor
     .from('turnos')
     .select(`
