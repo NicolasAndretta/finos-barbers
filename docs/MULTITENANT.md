@@ -185,7 +185,7 @@ Después de cada cambio en producción:
 |---|---|---|
 | 0 | Esquema base versionado + proyecto de desarrollo | ✅ 10/10/2026 (la `0005`, verificada en producción el 13/10) |
 | 1 | Tabla `locales` y columna `local_id` en todas las tablas de la barbería; lo que existe hoy pasa a ser Roble, el local de demostración (sin cortar la demo ni tocar lo de 369) | ✅ Hecha en desarrollo el 10/10/2026; OK de Nico el 14/10 (va a producción con el resto, después de la Fase 5) |
-| 2 | Membresías y RLS por local (reemplaza `is_admin()`), con prueba de aislamiento | 🟡 Plan aprobado el 14/10/2026 (ver bitácora); falta construirla |
+| 2 | Membresías y RLS por local (reemplaza `is_admin()`), con prueba de aislamiento | 🟡 Hecha en desarrollo el 14/10/2026; falta el OK de Nico |
 | 3 | El sitio elige el local por la dirección; `SITE` pasa a ser datos del local | ⏳ |
 | 4 | Llamadas con permisos totales filtradas por local; Mercado Pago e imágenes por local | ⏳ |
 | 5 | Prueba automática de aislamiento completa | ⏳ |
@@ -257,6 +257,23 @@ después quieren saber quién vendió qué.
 Rol **comercial**. Crea, edita y activa barberías, pero no ve los datos
 privados de las barberías ya activas (sus clientes, su caja) ni puede borrar.
 Nico sigue siendo el único administrador total. Se construye en la Fase 2.
+
+### Ideas para después (14/10/2026, sin aprobar todavía)
+- **Es un SaaS:** un producto de Nico que usan muchas barberías, cada una con
+  abono mensual. Convive con los sistemas a medida (setup caro + fee), que son
+  otra línea. El archivo de precios del universo todavía dice que el SaaS "no
+  existe": hay que actualizarlo cuando se definan los precios (referencia ahí:
+  u$s 45 / 65 / 95 por mes).
+- **Tres niveles de plan** (por ejemplo: básico = turnos; pro = + tienda y
+  señas por Mercado Pago; premium = + finanzas y reportes). Es la Fase 7. Qué
+  lleva cada plan lo decide Nico antes de esa fase.
+- **Fase 8 propuesta: cobro automático del abono** con las suscripciones de
+  Mercado Pago (débito mensual con tarjeta). Si un pago rebota, el local pasa
+  solo a `suspendido` y vuelve a `activo` cuando paga. Son **dos cobros que no
+  se mezclan**: la seña que el cliente le paga a la barbería va a la cuenta de
+  Mercado Pago de la barbería; el abono que la barbería le paga a Nico va a la
+  cuenta de Nico.
+- **La página del producto:** necesita el nombre (antes de la Fase 3).
 
 ### A decidir
 - **Demos que no se venden.** Propuesta: se archivan solas a los 30 días (el link
@@ -345,6 +362,17 @@ que los datos de dos barberías se mezclen aunque el código se equivoque.
 **Valor por defecto** — Lo que la base escribe en una columna cuando nadie le
 dice qué poner. `local_id` tiene uno temporal (Roble) para que la app siga
 andando mientras todavía no manda el local. Se quita en la Fase 4.
+
+**Membresía** — La fila que dice "esta persona, en este local, es esto"
+(dueño, barbero o cliente). Es la llave de cada departamento del edificio.
+
+**Disparador (trigger)** — Código que la base corre sola cuando pasa algo en
+una tabla. Las "guardias" de la Fase 2 son disparadores que corren antes de
+cada cambio y pueden comparar la fila vieja con la nueva, cosa que una
+política no puede hacer.
+
+**Contraprueba** — Romper algo a propósito para comprobar que la prueba se da
+cuenta. Una prueba que nunca falla puede no estar probando nada.
 
 **Seed** — Datos de ejemplo para cargar en una base vacía.
 
@@ -660,3 +688,66 @@ de otro (no se ve: lo tiene que encontrar la prueba).
 pruebas usan cuentas reales y el navegador. Desde la nube se puede escribir la
 migración y probarla contra un Postgres que imite a Supabase, como en la Fase
 0, pero no cerrarla.
+
+### Fase 2 — Permisos por local, hecha en desarrollo (14/10/2026)
+
+**Qué se hizo:** una migración, `supabase/migrations/0007_permisos_por_local.sql`.
+Solo base de datos: la app no se tocó.
+
+| Pieza | En simple |
+|---|---|
+| `equipo` | Nico (admin) y Delfina (comercial). Se carga con `node scripts/equipo.mjs`; nunca en el repo. |
+| `membresias` | Qué es cada persona en cada local: `dueno`, `barbero` o `cliente`. El barbero lleva su agenda (candado doble: de su mismo local). |
+| Reglas con nombre | `puede_administrar`, `puede_editar_catalogo`, `puede_operar_privado`, `es_mi_agenda`, `puede_ver_persona`, `local_publico`. Cada regla del cuadro, una vez. |
+| Políticas | Borrón y cuenta nueva en las tablas de la barbería (las de 369 no se tocan), con el cuadro aprobado. |
+| Guardias | El cliente solo cambia nombre y apellido de su perfil; al cancelar, solo el estado del turno; el dueño no cambia estado ni dirección de su local. |
+| Membresías solas | Reservar o comprar te hace cliente del local. TEMPORAL: crear un barbero desde el panel (rol en el perfil) le crea la membresía. |
+
+**Scripts nuevos**
+- `scripts/probar-aislamiento.mjs` — arma un segundo local y siete tipos de
+  cuenta, y compara lo que cada una ve y toca contra el cuadro. 100 controles.
+- `scripts/equipo.mjs` — `listar`, `agregar <mail> admin|comercial`, `quitar
+  <mail>` y `revisar` (cuentas con panel de admin que no son del equipo).
+- `preparar-desarrollo.mjs` ahora deja la cuenta de prueba como admin del equipo.
+
+**Cómo se verificó**
+- La migración corre dos veces, y la cadena entera (foto + `0001` a `0007`).
+- `probar-aislamiento.mjs`: 100 controles ✓. **Contraprueba:** se abrió a
+  propósito un agujero (una política que deja a cualquiera ver todos los
+  turnos) y la prueba marcó 6 fallas, justo donde tocaba. Volver a pasar la
+  `0007` lo cerró, porque borra todas las políticas de cada tabla.
+- `probar-seguridad.mjs` 43 ✓ y `verificar-locales.mjs` 64 ✓ (369 igual que
+  en la foto).
+- Recorrido con navegador de los tres paneles: el admin entra, ve el catálogo
+  y le crea la cuenta a un barbero; una clienta reserva con él; el barbero la
+  ve en su agenda; el admin la ve en la suya; la clienta cancela.
+- `npm run lint` y `npm run build` en verde.
+
+**Encontrado en el recorrido: un error que ya existe en producción**
+La lista de horarios de la reserva (`getHorariosDisponibles`, en
+`src/app/actions/reservas.ts`) consulta los turnos del barbero con la sesión
+del cliente, y el cliente solo puede ver los suyos (así era antes de la Fase 2
+y sigue siendo). Entonces la lista muestra libres los horarios que ocuparon
+otros. Si eligen el mismo horario exacto, la base lo frena ("El horario
+seleccionado ya no está disponible"). Si se pisan a medias (uno a las 10:00 de
+45 minutos y otro a las 10:15), **nada lo frena: dos turnos superpuestos para
+el mismo barbero.**
+- **Arreglo propuesto:** que esa consulta vaya con la llave del servidor. Solo
+  lee horas y duraciones de ese barbero ese día (ningún dato personal), y el
+  barbero ya es de un solo local, así que es seguro con muchos locales.
+- **Está en la demo publicada** (sale de `main`). Arreglarlo ahí es decisión de
+  Nico: `main` no se toca sin su OK.
+
+**Queda anotado para más adelante**
+- **Fase 3/4:** el código todavía elige el panel con `profiles.role`. Un dueño
+  que no sea del equipo no ve el panel de admin hasta que el código lea las
+  membresías. Cuando lo haga, se quita el mecanismo temporal de los barberos.
+- **Fase 4:** el panel del barbero y la lista de clientes usan la llave del
+  servidor: no pasan por estas reglas. Hay que filtrarlos por local.
+- **Al pasar a producción (después de la Fase 5):** correr `equipo.mjs agregar`
+  con las cuentas de Nico y Delfina **enseguida** de aplicar la `0007` (si no,
+  nadie ve el panel), y `equipo.mjs revisar` para decidir qué hacer con las
+  otras cuentas admin.
+- En la copia local quedaron cuentas y turnos de los recorridos (datos de
+  prueba). Se borran con `npx supabase db reset` + `preparar-desarrollo.mjs`,
+  si hace falta.
