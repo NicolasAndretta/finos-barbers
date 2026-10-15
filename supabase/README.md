@@ -52,6 +52,10 @@ node scripts/probar-seguridad.mjs
 # Probar que cada cuenta ve y toca solo lo de su local (solo desarrollo)
 node scripts/probar-aislamiento.mjs
 
+# Probar la reserva de turnos con un navegador, como un cliente (solo desarrollo;
+# la app tiene que estar levantada: npm run build && npx next start -H 127.0.0.1)
+node scripts/probar-reservas.mjs
+
 # El equipo de la plataforma (Nico admin, Delfina comercial)
 node scripts/equipo.mjs listar
 

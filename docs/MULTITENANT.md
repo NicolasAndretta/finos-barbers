@@ -814,3 +814,9 @@ y se cerraron los dos, en `src/app/actions/reservas.ts` y
 Nota: `main` tiene 4 errores de lint viejos (en `pagos`, `AdminNav` y
 `MobileMenu`) que la rama de trabajo ya corrigió. No se pasaron a esta rama,
 para que lo que se publica sea solo el arreglo. El build no los mira.
+
+**Las pruebas quedaron en el repo (15/10/2026):** `scripts/probar-reservas.mjs`
+junta las tres pruebas de navegador del arreglo (lista, lista vieja en el celu,
+reserva normal) y limpia lo que crea. 6 controles ✓. Necesita la app levantada
+contra desarrollo y Playwright (lo toma de `codigo-rojo-web` si este proyecto
+no lo tiene).
