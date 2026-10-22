@@ -133,9 +133,9 @@ try {
   const tGuardia = await reservar(ROBLE, b2.id, servicioA, '12:00:00') // para las pruebas de cancelar
 
   // Pedidos y caja: los crea el servidor (como en la app).
-  const pA = (await uno(`insert into public.pedidos (user_id, total) values ($1, 100) returning id`, [c.cliente.id])).id
+  const pA = (await uno(`insert into public.pedidos (user_id, total, local_id) values ($1, 100, $2) returning id`, [c.cliente.id, ROBLE])).id
   const pB = (await uno(`insert into public.pedidos (user_id, total, local_id) values ($1, 100, $2) returning id`, [c.cliente.id, localB])).id
-  const iA = (await uno(`insert into public.items_pedido (pedido_id, producto_id, nombre, precio, cantidad) values ($1, $2, 'x', 100, 1) returning id`, [pA, productoA])).id
+  const iA = (await uno(`insert into public.items_pedido (pedido_id, producto_id, nombre, precio, cantidad, local_id) values ($1, $2, 'x', 100, 1, $3) returning id`, [pA, productoA, ROBLE])).id
   const iB = (await uno(`insert into public.items_pedido (pedido_id, producto_id, nombre, precio, cantidad, local_id) values ($1, $2, 'x', 100, 1, $3) returning id`, [pB, productoB, localB])).id
   const caja = `insert into public.transacciones (tipo, categoria, monto, descripcion, fecha, created_by, local_id)
                 values ('ingreso', 'prueba', 1, 'prueba de aislamiento', '2031-03-01', $1, $2) returning id`
@@ -259,7 +259,7 @@ try {
     'el dueño de Roble NO puede mudar un servicio suyo a B')
   anotar(!(await intentar('barbero', 'PATCH', `/rest/v1/servicios?id=eq.${servicioA}`, { precio: 1 })) && (await precio(servicioA)) === 4321,
     'el barbero NO puede cambiar precios')
-  anotar(!(await intentar('cliente', 'POST', '/rest/v1/servicios', { nombre: 'Colado', precio: 1, duracion_minutos: 30 })),
+  anotar(!(await intentar('cliente', 'POST', '/rest/v1/servicios', { nombre: 'Colado', precio: 1, duracion_minutos: 30, local_id: ROBLE })),
     'el cliente NO puede crear servicios')
   anotar(await intentar('comercial', 'PATCH', `/rest/v1/servicios?id=eq.${servicioB}`, { precio: 1500 }) && (await precio(servicioB)) === 1500,
     'la comercial cambia un precio de B (el catálogo lo edita en cualquier local)')
@@ -273,9 +273,10 @@ try {
 
   // Caja
   const movimiento = { tipo: 'ingreso', categoria: 'prueba', monto: 1, descripcion: 'prueba', fecha: '2031-03-01' }
-  anotar(!(await intentar('comercial', 'POST', '/rest/v1/transacciones', { ...movimiento, created_by: c.comercial.id })),
+  // Con el local dicho: así lo que frena es el permiso, no que falte el local.
+  anotar(!(await intentar('comercial', 'POST', '/rest/v1/transacciones', { ...movimiento, created_by: c.comercial.id, local_id: ROBLE })),
     'la comercial NO puede cargar caja')
-  anotar(await intentar('duenoA', 'POST', '/rest/v1/transacciones', { ...movimiento, created_by: c.duenoA.id }),
+  anotar(await intentar('duenoA', 'POST', '/rest/v1/transacciones', { ...movimiento, created_by: c.duenoA.id, local_id: ROBLE }),
     'el dueño de Roble carga caja en Roble')
   anotar(!(await intentar('duenoA', 'POST', '/rest/v1/transacciones', { ...movimiento, created_by: c.duenoA.id, local_id: localB })),
     'el dueño de Roble NO puede cargar caja en B')

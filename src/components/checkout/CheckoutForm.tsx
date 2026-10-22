@@ -7,6 +7,8 @@ import { crearPedido } from '@/app/actions/checkout'
 import { Spinner } from '@/components/ui/Spinner'
 import { formatPrecio } from '@/lib/format'
 import type { TipoEntrega } from '@/types'
+import { useLocal } from '@/components/local/LocalProvider'
+import { rutaLocal } from '@/lib/local-datos'
 
 const CATEGORIA_EMOJI: Record<string, string> = {
   'cuidado-cabello': '✂️',
@@ -17,6 +19,7 @@ const CATEGORIA_EMOJI: Record<string, string> = {
 
 export function CheckoutForm({ loggedIn }: { loggedIn: boolean }) {
   const { items, total } = useCart()
+  const local = useLocal()
   const [mounted, setMounted]             = useState(false)
   const [tipoEntrega, setTipoEntrega]     = useState<TipoEntrega>('retiro')
   const [direccion, setDireccion]         = useState('')
@@ -49,7 +52,7 @@ export function CheckoutForm({ loggedIn }: { loggedIn: boolean }) {
         <p className="text-zinc-300 font-semibold text-lg">Tu carrito está vacío</p>
         <p className="text-zinc-500 text-sm mt-1">Agregá productos antes de continuar</p>
         <Link
-          href="/tienda"
+          href={rutaLocal(local.slug, '/tienda')}
           className="inline-block mt-6 bg-amber-500 hover:bg-amber-400 text-black font-bold text-sm px-6 py-2.5 rounded-lg transition-colors"
         >
           Ir a la tienda
@@ -75,6 +78,9 @@ export function CheckoutForm({ loggedIn }: { loggedIn: boolean }) {
 
     startTransition(async () => {
       const fd = new FormData()
+      // De qué local es la compra: el servidor lo busca y revisa que cada
+      // producto sea de ese local.
+      fd.append('local', local.slug)
       fd.append('items', JSON.stringify(items.map(i => ({ id: i.id, cantidad: i.cantidad }))))
       fd.append('tipo_entrega', tipoEntrega)
       if (tipoEntrega === 'envio') fd.append('direccion_envio', direccion.trim())
@@ -260,12 +266,12 @@ export function CheckoutForm({ loggedIn }: { loggedIn: boolean }) {
           </button>
 
           <p className="text-zinc-600 text-xs text-center mt-3">
-            Serás redirigido a la plataforma segura de MercadoPago
+            Te vamos a llevar a la plataforma segura de Mercado Pago
           </p>
 
           {/* Volver */}
           <Link
-            href="/tienda"
+            href={rutaLocal(local.slug, '/tienda')}
             className="block text-center text-zinc-500 hover:text-zinc-300 text-xs font-medium mt-4 transition-colors"
           >
             ← Seguir comprando

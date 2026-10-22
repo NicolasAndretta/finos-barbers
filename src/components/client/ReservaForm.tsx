@@ -4,13 +4,18 @@ import React, { useState, useTransition, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { getHorariosDisponibles, crearReserva, type MetodoPago } from '@/app/actions/reservas'
 import { Spinner } from '@/components/ui/Spinner'
-import { SITE } from '@/lib/site'
+import { useLocal } from '@/components/local/LocalProvider'
+import { rutaLocal } from '@/lib/local-datos'
+import { conMayuscula } from '@/lib/rubros'
 import { formatPrecio } from '@/lib/format'
 
 type Servicio = { id: string; nombre: string; duracion_minutos: number; precio: number; descripcion: string }
 type Barbero = { id: string; nombre: string; apellido: string }
 
 export function ReservaForm({ servicios, barberos }: { servicios: Servicio[], barberos: Barbero[] }) {
+  // El local de la página: su seña, su alias y sus palabras ("barbero", "manicura").
+  const local = useLocal()
+  const Profesional = conMayuscula(local.palabras.profesional)
   const router = useRouter()
   const [step, setStep] = useState(1)
   const [servicioSeleccionado, setServicioSeleccionado] = useState<Servicio | null>(null)
@@ -73,10 +78,10 @@ export function ReservaForm({ servicios, barberos }: { servicios: Servicio[], ba
         setConfirmacion({
           metodo: res.metodo as string,
           sena: (res.sena as number) ?? 0,
-          alias: (res.alias as string) ?? SITE.aliasPago,
+          alias: (res.alias as string) ?? local.aliasPago,
         })
       } else {
-        router.push('/turnos?reserva=success')
+        router.push(rutaLocal(local.slug, '/turnos?reserva=success'))
       }
     })
   }
@@ -90,7 +95,7 @@ export function ReservaForm({ servicios, barberos }: { servicios: Servicio[], ba
               {num}
             </div>
             <span className={`text-xs ${step >= num ? 'text-white font-medium' : 'text-zinc-600'}`}>
-              {num === 1 ? 'Servicio' : num === 2 ? 'Barbero' : 'Fecha'}
+              {num === 1 ? 'Servicio' : num === 2 ? Profesional : 'Fecha'}
             </span>
           </div>
         ))}
@@ -205,22 +210,22 @@ export function ReservaForm({ servicios, barberos }: { servicios: Servicio[], ba
           )}
 
           {horaSeleccionada && !confirmacion && (() => {
-            const sena = Math.round((servicioSeleccionado.precio * SITE.senaPorcentaje) / 100)
+            const sena = Math.round((servicioSeleccionado.precio * local.senaPorcentaje) / 100)
             // La seña se paga siempre por adelantado — sin opción de pagar en el local.
             const metodos: { value: MetodoPago; label: string; desc: string }[] = [
               { value: 'mercadopago', label: 'Mercado Pago', desc: 'Tarjeta o dinero en cuenta' },
-              { value: 'transferencia', label: 'Transferencia', desc: `Alias ${SITE.aliasPago}` },
+              { value: 'transferencia', label: 'Transferencia', desc: `Alias ${local.aliasPago}` },
             ]
             return (
             <div className="pt-6 border-t border-zinc-900">
               <h3 className="text-lg font-bold text-white mb-4">Resumen</h3>
               <div className="space-y-2 text-sm text-zinc-400 mb-5 bg-zinc-900/50 p-4 rounded-xl">
                 <p><strong className="text-zinc-200">Servicio:</strong> {servicioSeleccionado.nombre} ({formatPrecio(servicioSeleccionado.precio)})</p>
-                <p><strong className="text-zinc-200">Barbero:</strong> {barberoSeleccionado.nombre} {barberoSeleccionado.apellido}</p>
+                <p><strong className="text-zinc-200">{Profesional}:</strong> {barberoSeleccionado.nombre} {barberoSeleccionado.apellido}</p>
                 <p><strong className="text-zinc-200">Fecha:</strong> {fecha.split('-').reverse().join('/')}</p>
                 <p><strong className="text-zinc-200">Hora:</strong> {horaSeleccionada}</p>
                 <div className="pt-2 mt-2 border-t border-zinc-800 flex justify-between items-center">
-                  <span>Seña ({SITE.senaPorcentaje}%) para reservar</span>
+                  <span>Seña ({local.senaPorcentaje}%) para reservar</span>
                   <span className="text-amber-400 font-bold text-base">{formatPrecio(sena)}</span>
                 </div>
                 <p className="text-xs text-zinc-600">El resto ({formatPrecio(servicioSeleccionado.precio - sena)}) se abona en el local.</p>
@@ -244,6 +249,7 @@ export function ReservaForm({ servicios, barberos }: { servicios: Servicio[], ba
               </div>
 
               <form action={handleConfirmar}>
+                <input type="hidden" name="local" value={local.slug} />
                 <input type="hidden" name="servicio_id" value={servicioSeleccionado.id} />
                 <input type="hidden" name="barbero_id" value={barberoSeleccionado.id} />
                 <input type="hidden" name="fecha" value={fecha} />
@@ -278,7 +284,7 @@ export function ReservaForm({ servicios, barberos }: { servicios: Servicio[], ba
                 <p className="mt-2 inline-block bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-2 text-white font-mono">{confirmacion.alias}</p>
                 <p className="mt-2 text-xs text-zinc-600">Mandanos el comprobante por WhatsApp y listo.</p>
               </div>
-              <button onClick={() => router.push('/turnos')}
+              <button onClick={() => router.push(rutaLocal(local.slug, '/turnos'))}
                 className="mt-6 bg-white hover:bg-zinc-200 text-zinc-950 font-bold px-6 py-3 rounded-xl transition-colors">
                 Ver mis turnos
               </button>

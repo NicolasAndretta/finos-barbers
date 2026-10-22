@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Montserrat, Bevan } from "next/font/google";
-import { PwaInstallPrompt } from "@/components/ui/PwaInstallPrompt";
-import { SITE } from "@/lib/site";
+import { PRODUCTO } from "@/lib/producto";
 import "./globals.css";
 
 // Tipografía secundaria de marca: Montserrat.
@@ -27,13 +26,15 @@ export const viewport: Viewport = {
   userScalable: false,
 };
 
+// Lo general, para las páginas que no son de un local (el login, por
+// ejemplo). Cada local pisa título, descripción y app instalable con los
+// suyos (app/[local]/layout.tsx).
 export const metadata: Metadata = {
-  title: `${SITE.nombre} | Barbería premium en Buenos Aires`,
-  description:
-    "Cortes, barba y afeitado tradicional. Reservá tu turno online y conocé nuestra tienda de productos.",
+  title: PRODUCTO.nombre,
+  description: "Reservá tu turno online.",
   appleWebApp: {
     capable: true,
-    title: SITE.nombre,
+    title: PRODUCTO.nombre,
     statusBarStyle: "black-translucent",
   },
   formatDetection: {
@@ -53,7 +54,6 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col bg-zinc-950 text-zinc-100">
         {children}
-        <PwaInstallPrompt />
       </body>
     </html>
   );

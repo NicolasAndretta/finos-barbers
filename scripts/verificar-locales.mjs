@@ -124,10 +124,12 @@ try {
   anotar(sinClasificar.length === 0, 'no hay tablas sin clasificar',
     sinClasificar.length ? `${sinClasificar.join(', ')}: decidí si llevan local y anotalas en este script` : '')
 
+  // Desde la 0009 (Fase 3a) ninguna tabla tiene "Roble por defecto", salvo
+  // mp_conexion, que lo conserva hasta la Fase 4 (Mercado Pago por local).
   const conDefecto = CON_LOCAL.filter((n) => porNombre[n]?.defecto)
-  if (conDefecto.length) {
-    console.log(`  ℹ️  ${conDefecto.length} tabla(s) todavía tienen el valor por defecto temporal (Roble). Se quita en la Fase 4.`)
-  }
+  const deMas = conDefecto.filter((n) => n !== 'mp_conexion')
+  anotar(deMas.length === 0, 'ninguna tabla guarda en Roble lo que llega sin local (salvo mp_conexion, hasta la Fase 4)',
+    deMas.length ? `todavía con valor por defecto: ${deMas.join(', ')}` : '')
 
   // ── 2. No hay filas sin local ─────────────────────────────────────────────
   titulo('2. Cada fila, con su local')
@@ -252,26 +254,26 @@ try {
 
       if (categoriaOtro) {
         await debeFallar('producto de Roble con la categoría del otro local', NO_EXISTE,
-          `insert into public.productos (nombre, descripcion, precio, categoria_id) values ('Mezcla', 'x', 1, $1)`, [categoriaOtro.id])
+          `insert into public.productos (nombre, descripcion, precio, categoria_id, local_id) values ('Mezcla', 'x', 1, $1, $2)`, [categoriaOtro.id, ROBLE])
         await debeFallar('servicio de Roble con la categoría del otro local', NO_EXISTE,
-          `insert into public.servicios (nombre, precio, duracion_minutos, categoria_id) values ('Mezcla', 1, 30, $1)`, [categoriaOtro.id])
+          `insert into public.servicios (nombre, precio, duracion_minutos, categoria_id, local_id) values ('Mezcla', 1, 30, $1, $2)`, [categoriaOtro.id, ROBLE])
       }
       if (productoOtro) {
         const pedidoRoble = await debeAndar('crear un pedido en Roble',
-          `insert into public.pedidos (total) values (1) returning id`)
+          `insert into public.pedidos (total, local_id) values (1, $1) returning id`, [ROBLE])
         if (pedidoRoble) {
           await debeFallar('renglón de ese pedido con un producto del otro local', NO_EXISTE,
-            `insert into public.items_pedido (pedido_id, producto_id, nombre, precio, cantidad) values ($1, $2, 'Mezcla', 1, 1)`,
-            [pedidoRoble.id, productoOtro.id])
+            `insert into public.items_pedido (pedido_id, producto_id, nombre, precio, cantidad, local_id) values ($1, $2, 'Mezcla', 1, 1, $3)`,
+            [pedidoRoble.id, productoOtro.id, ROBLE])
         }
       }
       if (cuenta && barberoOtro && servicioOtro && barberoRoble && servicioRoble) {
         await debeFallar('turno de Roble con el barbero del otro local', NO_EXISTE,
-          `insert into public.turnos (cliente_id, barbero_id, servicio_id, fecha, hora) values ($1, $2, $3, '2031-02-01', '10:00')`,
-          [cuenta, barberoOtro.id, servicioRoble.id])
+          `insert into public.turnos (cliente_id, barbero_id, servicio_id, fecha, hora, local_id) values ($1, $2, $3, '2031-02-01', '10:00', $4)`,
+          [cuenta, barberoOtro.id, servicioRoble.id, ROBLE])
         await debeFallar('turno de Roble con el servicio del otro local', NO_EXISTE,
-          `insert into public.turnos (cliente_id, barbero_id, servicio_id, fecha, hora) values ($1, $2, $3, '2031-02-01', '11:00')`,
-          [cuenta, barberoRoble.id, servicioOtro.id])
+          `insert into public.turnos (cliente_id, barbero_id, servicio_id, fecha, hora, local_id) values ($1, $2, $3, '2031-02-01', '11:00', $4)`,
+          [cuenta, barberoRoble.id, servicioOtro.id, ROBLE])
         const turnoOtro = await debeAndar('turno completo dentro del otro local (esto sí tiene que andar)',
           `insert into public.turnos (cliente_id, barbero_id, servicio_id, fecha, hora, local_id) values ($1, $2, $3, '2031-02-01', '12:00', $4) returning id`,
           [cuenta, barberoOtro.id, servicioOtro.id, otro.id])

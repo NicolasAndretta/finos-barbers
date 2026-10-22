@@ -52,7 +52,7 @@ const pg = createRequire(resolve(PROYECTO, 'package.json'))('pg')
 
 // ¿La app está levantada?
 try {
-  await fetch(`${APP}/`, { signal: AbortSignal.timeout(10_000) })
+  await fetch(`${APP}/roble`, { signal: AbortSignal.timeout(10_000) })
 } catch {
   console.error(`✗ La app no responde en ${APP}. Levantala primero (ver el comentario de arriba de este archivo).`)
   process.exit(1)
@@ -102,10 +102,11 @@ const PANTALLA = { compu: { viewport: { width: 1280, height: 860 } }, celu: { vi
 // Entra con la cuenta, va a reservar y elige Corte clásico (30 min) con Leandro en esa fecha.
 async function abrirReserva(cuenta, fecha, pantalla) {
   const p = await (await navegador.newContext(PANTALLA[pantalla])).newPage()
-  await p.goto(`${APP}/login`, { waitUntil: 'networkidle' })
+  // Desde la Fase 3a cada local vive en su carpeta: Roble es /roble.
+  await p.goto(`${APP}/login?local=roble`, { waitUntil: 'networkidle' })
   await p.fill('#email', cuenta.email); await p.fill('#password', cuenta.clave)
   await Promise.all([p.waitForURL((u) => !u.pathname.startsWith('/login'), { timeout: 30_000 }), p.click('button[type="submit"]')])
-  await p.goto(`${APP}/reservar`, { waitUntil: 'networkidle' })
+  await p.goto(`${APP}/roble/reservar`, { waitUntil: 'networkidle' })
   await p.getByRole('button', { name: /Corte clásico/ }).click()
   await p.getByRole('button', { name: /Leandro/ }).click()
   await p.fill('input[type="date"]', fecha)
@@ -121,8 +122,9 @@ if (!leandro || !largo) {
   process.exit(1)
 }
 const turnoDeOtro = (cliente, fecha, hora) => db.query(
-  `insert into public.turnos (cliente_id, barbero_id, servicio_id, fecha, hora, estado) values ($1, $2, $3, $4, $5, 'pendiente')`,
-  [cliente, leandro, largo, fecha, hora])
+  // Desde la 0009 la base no completa el local sola: el turno dice que es de Roble.
+  `insert into public.turnos (local_id, cliente_id, barbero_id, servicio_id, fecha, hora, estado) values ($6, $1, $2, $3, $4, $5, 'pendiente')`,
+  [cliente, leandro, largo, fecha, hora, '00000000-0000-4000-a000-000000000001'])
 
 try {
   // ─── 1. La lista no ofrece los horarios que ocupó otro ─────────────────────

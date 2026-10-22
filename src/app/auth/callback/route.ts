@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase'
 import type { EmailOtpType } from '@supabase/supabase-js'
+import { esSlug } from '@/lib/local-datos'
 
 /**
  * Callback de Supabase Auth (confirmación de email, recuperación, etc.).
@@ -22,6 +23,10 @@ export async function GET(request: Request) {
   // rutas internas para evitar open-redirects.
   const nextRaw = searchParams.get('next')
   const next = nextRaw && nextRaw.startsWith('/') ? nextRaw : null
+  // De qué local se registró (lo agrega el registro): la pantalla de éxito lo
+  // usa para que el botón lo lleve de vuelta a ese local.
+  const localRaw = searchParams.get('local')
+  const sufijoLocal = localRaw && esSlug(localRaw) ? `local=${localRaw}` : ''
 
   // Preferimos la URL pública configurada; el origin de la request puede venir
   // mal detrás del proxy de Hostinger.
@@ -40,11 +45,11 @@ export async function GET(request: Request) {
   }
 
   if (ok) {
-    const dest = next || (type === 'recovery' ? '/restablecer' : '/auth/confirmado')
+    const dest = next || (type === 'recovery' ? '/restablecer' : `/auth/confirmado${sufijoLocal ? `?${sufijoLocal}` : ''}`)
     return NextResponse.redirect(`${base}${dest}`)
   }
 
   // Falló: si venía de recuperación, mandamos a pedir un enlace nuevo.
-  const errorDest = next === '/restablecer' ? '/recuperar?error=1' : '/auth/confirmado?error=1'
+  const errorDest = next === '/restablecer' ? '/recuperar?error=1' : `/auth/confirmado?error=1${sufijoLocal ? `&${sufijoLocal}` : ''}`
   return NextResponse.redirect(`${base}${errorDest}`)
 }

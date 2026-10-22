@@ -1,11 +1,12 @@
 'use server'
 
 import { createClient } from '@/lib/supabase'
-import { requireAdmin } from '@/lib/auth'
-import { revalidatePath } from 'next/cache'
+import { exigirPermiso, requireProfile } from '@/lib/auth'
+import { localDeAccion } from '@/lib/local'
+import { refrescarLocales } from '@/lib/refrescar'
 
 /**
- * Catálogo público de la tienda.
+ * Catálogo público de la tienda de un local.
  *
  * Si la base no responde devuelve una lista vacía en lugar de tirar: la página
  * ya tiene programado el estado "la tienda está en construcción" y eso es mucho
@@ -15,11 +16,13 @@ import { revalidatePath } from 'next/cache'
  * ⚠️ El panel usa `adminGetProductos`, que SÍ tira: ahí un fallo tiene que
  * verse, porque significa que no se puede administrar el catálogo.
  */
-export async function getProductos() {
+export async function getProductos(slug: string) {
+  const local = await localDeAccion(slug)
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('productos')
     .select('*')
+    .eq('local_id', local.id)
     .eq('activo', true)
     .order('nombre')
 
@@ -30,12 +33,14 @@ export async function getProductos() {
   return data ?? []
 }
 
-export async function adminGetProductos() {
-  await requireAdmin()
+export async function adminGetProductos(slug: string) {
+  const local = await localDeAccion(slug)
+  await exigirPermiso(local, 'editaCatalogo')
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('productos')
     .select('*')
+    .eq('local_id', local.id)
     .order('nombre')
 
   if (error) throw new Error(error.message)
@@ -43,7 +48,8 @@ export async function adminGetProductos() {
 }
 
 export async function adminCrearProducto(formData: FormData) {
-  await requireAdmin()
+  const local = await localDeAccion(formData.get('local'))
+  await exigirPermiso(local, 'editaCatalogo')
 
   const nombre       = formData.get('nombre') as string
   const descripcion  = formData.get('descripcion') as string
@@ -59,6 +65,7 @@ export async function adminCrearProducto(formData: FormData) {
 
   const supabase = await createClient()
   const { error } = await supabase.from('productos').insert({
+    local_id: local.id,
     nombre,
     descripcion,
     precio: parseFloat(precio),
@@ -71,13 +78,16 @@ export async function adminCrearProducto(formData: FormData) {
 
   if (error) return { error: error.message }
 
-  revalidatePath('/admin/productos')
-  revalidatePath('/tienda')
+  refrescarLocales()
   return { success: true }
 }
 
+// Las que siguen trabajan por id. No necesitan el local: la base solo deja
+// tocar productos de un local donde tenés permiso (Fase 2). Si no tocó
+// ninguna fila (no existe o no es tuyo), se avisa en vez de decir "guardado".
+
 export async function adminActualizarProducto(formData: FormData) {
-  await requireAdmin()
+  await requireProfile()
 
   const id           = formData.get('id') as string
   const nombre       = formData.get('nombre') as string
@@ -93,7 +103,7 @@ export async function adminActualizarProducto(formData: FormData) {
   }
 
   const supabase = await createClient()
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('productos')
     .update({
       nombre,
@@ -105,16 +115,17 @@ export async function adminActualizarProducto(formData: FormData) {
       categoria,
     })
     .eq('id', id)
+    .select('id')
 
   if (error) return { error: error.message }
+  if (!data?.length) return { error: 'No se encontró el producto o no tenés permiso para cambiarlo.' }
 
-  revalidatePath('/admin/productos')
-  revalidatePath('/tienda')
+  refrescarLocales()
   return { success: true }
 }
 
 export async function adminToggleProducto(id: string) {
-  await requireAdmin()
+  await requireProfile()
   const supabase = await createClient()
 
   const { data, error: getErr } = await supabase
@@ -125,14 +136,15 @@ export async function adminToggleProducto(id: string) {
 
   if (getErr || !data) return { error: 'Producto no encontrado' }
 
-  const { error } = await supabase
+  const { data: cambiados, error } = await supabase
     .from('productos')
     .update({ activo: !data.activo })
     .eq('id', id)
+    .select('id')
 
   if (error) return { error: error.message }
+  if (!cambiados?.length) return { error: 'No tenés permiso para cambiar este producto.' }
 
-  revalidatePath('/admin/productos')
-  revalidatePath('/tienda')
+  refrescarLocales()
   return { success: true, activo: !data.activo }
 }

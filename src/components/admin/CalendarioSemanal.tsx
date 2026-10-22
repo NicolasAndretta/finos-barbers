@@ -3,6 +3,7 @@
 import { useState, useEffect, useTransition } from 'react'
 import { adminGetCalendario, adminConfirmarTurno, adminCancelarTurno } from '@/app/actions/admin'
 import { Spinner } from '@/components/ui/Spinner'
+import { useLocal } from '@/components/local/LocalProvider'
 import { formatPrecio } from '@/lib/format'
 
 // ─── Constantes del grid ─────────────────────────────────────────────────────
@@ -143,6 +144,8 @@ function calcLayout(
 
 // ─── Componente principal ────────────────────────────────────────────────────
 export function CalendarioSemanal() {
+  // La agenda del local del panel (el de la dirección).
+  const local = useLocal()
   const [semanaInicio, setSemanaInicio] = useState<Date>(() => lunesDeEstaSemana(new Date()))
   const [turnos, setTurnos]             = useState<TurnoCalendario[]>([])
   const [loading, setLoading]           = useState(true)
@@ -167,12 +170,12 @@ export function CalendarioSemanal() {
   useEffect(() => {
     let cancelled = false
     setLoading(true)
-    adminGetCalendario(isoIni, isoFin)
+    adminGetCalendario(local.slug, isoIni, isoFin)
       .then(d  => { if (!cancelled) setTurnos(d as TurnoCalendario[]) })
       .catch(() => { if (!cancelled) setTurnos([]) })
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
-  }, [isoIni, isoFin])
+  }, [local.slug, isoIni, isoFin])
   /* eslint-enable react-hooks/set-state-in-effect */
 
   // ── Navegación de semana ──────────────────────────────────────────────────

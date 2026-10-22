@@ -3,10 +3,11 @@
 import { MercadoPagoConfig, Preference, Payment } from 'mercadopago'
 import { createClient, createServiceClient } from '@/lib/supabase'
 import { getAccessTokenComercio } from '@/lib/mp-oauth'
-import { getUser, requireClient } from '@/lib/auth'
+import { getUser, requireProfile } from '@/lib/auth'
 import { sendConfirmacionTurno, sendCancelacionTurno } from '@/lib/resend'
-import { SITE } from '@/lib/site'
-import { revalidatePath } from 'next/cache'
+import { localDeAccion } from '@/lib/local'
+import { localVisible, rutaLocal } from '@/lib/local-datos'
+import { refrescarLocales } from '@/lib/refrescar'
 
 // La seña se paga siempre por adelantado (online), nunca en el local.
 export type MetodoPago = 'mercadopago' | 'transferencia'
@@ -27,11 +28,16 @@ function addMinutesToTime(time: string, mins: number) {
   return `${newH}:${newM}`
 }
 
-export async function getServicios() {
+// Las acciones reciben el nombre corto del local (el de la dirección, "roble")
+// y lo buscan ellas mismas: nunca confían en un id que mande el navegador.
+
+export async function getServicios(slug: string) {
+  const local = await localDeAccion(slug)
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('servicios')
     .select('*')
+    .eq('local_id', local.id)
     .eq('activo', true)
     .order('nombre')
   
@@ -39,11 +45,13 @@ export async function getServicios() {
   return data
 }
 
-export async function getBarberos() {
+export async function getBarberos(slug: string) {
+  const local = await localDeAccion(slug)
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('barberos')
     .select('*')
+    .eq('local_id', local.id)
     .eq('activo', true)
     .order('nombre')
   
@@ -139,8 +147,10 @@ export async function getHorariosDisponibles(barberoId: string, fecha: string, s
 }
 
 export async function crearReserva(formData: FormData) {
-  const profile = await requireClient() // Protege la ruta y obtiene el usuario
-  
+  const local = await localDeAccion(formData.get('local'))
+  const profile = await requireProfile(rutaLocal(local.slug, '/reservar'))
+  if (!localVisible(local)) return { error: 'Este local no está tomando reservas por ahora.' }
+
   const barbero_id = formData.get('barbero_id') as string
   const servicio_id = formData.get('servicio_id') as string
   const fecha = formData.get('fecha') as string
@@ -189,18 +199,21 @@ export async function crearReserva(formData: FormData) {
 
   const supabase = await createClient()
 
-  // 1. Obtener detalles para el email y el precio (para la seña)
-  const { data: barbero } = await supabase.from('barberos').select('nombre, apellido').eq('id', barbero_id).single()
-  const { data: servicio } = await supabase.from('servicios').select('nombre, precio').eq('id', servicio_id).single()
+  // 1. Obtener detalles para el email y el precio (para la seña). Los dos
+  //    tienen que ser de ESTE local (igual la base lo frena: candado doble).
+  const { data: barbero } = await supabase.from('barberos').select('nombre, apellido').eq('id', barbero_id).eq('local_id', local.id).single()
+  const { data: servicio } = await supabase.from('servicios').select('nombre, precio').eq('id', servicio_id).eq('local_id', local.id).single()
+  if (!barbero || !servicio) return { error: 'Ese servicio o ese profesional no son de este local.' }
 
-  // Seña = porcentaje del precio del servicio (definido en SITE).
-  const precio = servicio?.precio ?? 0
-  const senaMonto = Math.round((precio * SITE.senaPorcentaje) / 100)
+  // Seña = porcentaje del precio del servicio (lo define cada local).
+  const precio = servicio.precio ?? 0
+  const senaMonto = Math.round((precio * local.senaPorcentaje) / 100)
 
   // 2. Insertar en la BD
   const { data, error } = await supabase
     .from('turnos')
     .insert({
+      local_id: local.id,
       cliente_id: profile.id,
       barbero_id,
       servicio_id,
@@ -243,15 +256,14 @@ export async function crearReserva(formData: FormData) {
     if (!envio.ok) console.error('[reservas] no se pudo enviar la confirmación:', envio.error)
   }
 
-  // 4. Revalidar rutas
-  revalidatePath('/turnos')
-  revalidatePath('/admin/turnos')
+  // 4. Que las pantallas muestren el turno nuevo
+  refrescarLocales()
 
   // 5. Pago de la seña según el método elegido
   if (metodo_pago === 'mercadopago' && senaMonto > 0) {
     const accessToken = (await getAccessTokenComercio()) ?? process.env.MERCADOPAGO_ACCESS_TOKEN
     if (!accessToken) {
-      return { success: true, turnoId: data.id, metodo: metodo_pago, sena: senaMonto, alias: SITE.aliasPago }
+      return { success: true, turnoId: data.id, metodo: metodo_pago, sena: senaMonto, alias: local.aliasPago }
     }
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
     try {
@@ -260,16 +272,16 @@ export async function crearReserva(formData: FormData) {
         body: {
           items: [{
             id: data.id,
-            title: `Seña ${SITE.senaPorcentaje}% — ${servicio?.nombre ?? 'Turno'} (${SITE.nombreCorto})`,
+            title: `Seña ${local.senaPorcentaje}% — ${servicio.nombre} (${local.nombreCorto})`,
             quantity: 1,
             unit_price: senaMonto,
             currency_id: 'ARS',
           }],
           payer: { email: profile.email },
           back_urls: {
-            success: `${appUrl}/turnos`,
-            failure: `${appUrl}/turnos`,
-            pending: `${appUrl}/turnos`,
+            success: `${appUrl}${rutaLocal(local.slug, '/turnos')}`,
+            failure: `${appUrl}${rutaLocal(local.slug, '/turnos')}`,
+            pending: `${appUrl}${rutaLocal(local.slug, '/turnos')}`,
           },
           ...(!appUrl.includes('localhost') && { auto_return: 'approved' as const }),
           external_reference: data.id,
@@ -281,11 +293,11 @@ export async function crearReserva(formData: FormData) {
     } catch (err) {
       console.error('[MP turno] Error al crear preferencia:', err)
       // El turno queda creado; la seña se podrá pagar por otro medio.
-      return { success: true, turnoId: data.id, metodo: metodo_pago, sena: senaMonto, alias: SITE.aliasPago }
+      return { success: true, turnoId: data.id, metodo: metodo_pago, sena: senaMonto, alias: local.aliasPago }
     }
   }
 
-  return { success: true, turnoId: data.id, metodo: metodo_pago, sena: senaMonto, alias: SITE.aliasPago }
+  return { success: true, turnoId: data.id, metodo: metodo_pago, sena: senaMonto, alias: local.aliasPago }
 }
 
 /**
@@ -312,13 +324,14 @@ export async function confirmarPagoSenaTurno(turnoId: string, paymentId: string)
   await supabase.from('turnos')
     .update({ sena_estado: 'pagada', mp_payment_id: paymentId, estado: 'confirmado' })
     .eq('id', turnoId)
-  revalidatePath('/turnos')
-  revalidatePath('/admin/turnos')
+  refrescarLocales()
   return { success: true }
 }
 
-export async function getTurnosCliente() {
-  const profile = await requireClient()
+/** Los turnos del cliente conectado en ESTE local. */
+export async function getTurnosCliente(slug: string) {
+  const local = await localDeAccion(slug)
+  const profile = await requireProfile(rutaLocal(local.slug, '/turnos'))
   const supabase = await createClient()
 
   const { data, error } = await supabase
@@ -332,6 +345,7 @@ export async function getTurnosCliente() {
       servicios ( nombre, duracion_minutos, precio )
     `)
     .eq('cliente_id', profile.id)
+    .eq('local_id', local.id)
     .order('fecha', { ascending: true })
     .order('hora', { ascending: true })
 
@@ -340,7 +354,8 @@ export async function getTurnosCliente() {
 }
 
 export async function cancelarTurno(turnoId: string) {
-  const profile = await requireClient()
+  // Por id: la base solo deja ver y cancelar los turnos propios (Fase 2).
+  const profile = await requireProfile()
   const supabase = await createClient()
 
   // 1. Obtener turno para validar propiedad y datos para el email
@@ -391,8 +406,7 @@ export async function cancelarTurno(turnoId: string) {
   })
   if (!envio.ok) console.error('[reservas] no se pudo enviar la cancelación:', envio.error)
 
-  revalidatePath('/turnos')
-  revalidatePath('/admin/turnos')
-  
+  refrescarLocales()
+
   return { success: true }
 }

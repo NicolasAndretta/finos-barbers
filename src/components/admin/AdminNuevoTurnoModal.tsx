@@ -4,6 +4,8 @@ import { useState, useTransition, useEffect } from 'react'
 import { getServicios, getBarberos, getHorariosDisponibles } from '@/app/actions/reservas'
 import { adminGetClientes, adminCrearTurno } from '@/app/actions/admin'
 import { Spinner } from '@/components/ui/Spinner'
+import { useLocal } from '@/components/local/LocalProvider'
+import { conMayuscula } from '@/lib/rubros'
 import { formatPrecio } from '@/lib/format'
 import type { Servicio, Barbero } from '@/types'
 
@@ -30,6 +32,9 @@ type Props = {
 }
 
 export function AdminNuevoTurnoModal({ onClose, onSuccess }: Props) {
+  // Turno a mano en el local del panel: sus clientes, servicios y equipo.
+  const local = useLocal()
+  const Profesional = conMayuscula(local.palabras.profesional)
   const [step, setStep] = useState<Step>('cliente')
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
@@ -54,14 +59,14 @@ export function AdminNuevoTurnoModal({ onClose, onSuccess }: Props) {
 
   // Cargar datos iniciales al montar
   useEffect(() => {
-    Promise.all([adminGetClientes(), getServicios(), getBarberos()])
+    Promise.all([adminGetClientes(local.slug), getServicios(local.slug), getBarberos(local.slug)])
       .then(([c, s, b]) => {
         setClientes(c)
         setServicios(s)
         setBarberos(b)
       })
       .finally(() => setLoadingInicial(false))
-  }, [])
+  }, [local.slug])
 
   // Cerrar con ESC
   useEffect(() => {
@@ -106,6 +111,7 @@ export function AdminNuevoTurnoModal({ onClose, onSuccess }: Props) {
     setError(null)
     startTransition(async () => {
       const fd = new FormData()
+      fd.append('local', local.slug)
       fd.append('cliente_id', clienteSeleccionado.id)
       fd.append('servicio_id', servicioSeleccionado.id)
       fd.append('barbero_id', barberoSeleccionado.id)
@@ -300,7 +306,7 @@ export function AdminNuevoTurnoModal({ onClose, onSuccess }: Props) {
 
                   {/* Barbero */}
                   <div>
-                    <label className="text-xs text-zinc-500 mb-2 block">Barbero</label>
+                    <label className="text-xs text-zinc-500 mb-2 block">{Profesional}</label>
                     <div className="grid grid-cols-2 gap-2">
                       {barberos.map((b) => (
                         <button
@@ -403,7 +409,7 @@ export function AdminNuevoTurnoModal({ onClose, onSuccess }: Props) {
                         <span className="text-white font-medium text-sm">{servicioSeleccionado.nombre}</span>
                       </div>
                       <div className="flex justify-between items-center px-4 py-3">
-                        <span className="text-zinc-500 text-sm">Barbero</span>
+                        <span className="text-zinc-500 text-sm">{Profesional}</span>
                         <span className="text-white font-medium text-sm">
                           {barberoSeleccionado.nombre} {barberoSeleccionado.apellido}
                         </span>

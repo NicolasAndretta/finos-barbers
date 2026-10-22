@@ -1,16 +1,22 @@
-import { SITE, whatsappLink } from "@/lib/site";
+"use client";
+
+import { useLocal } from "@/components/local/LocalProvider";
+import { whatsappLink } from "@/lib/local-datos";
 
 /**
  * Botón flotante de WhatsApp — conversión. Fijo abajo a la derecha, en todos
- * los tamaños. Pre-carga un mensaje. Server component (sin estado).
+ * los tamaños. Pre-carga un mensaje. Va al WhatsApp del local de la página; si
+ * el local no cargó uno, no se muestra.
  */
 export function WhatsappFloat() {
+  const local = useLocal();
+  if (!local.whatsapp) return null;
   return (
     <a
-      href={whatsappLink()}
+      href={whatsappLink(local)}
       target="_blank"
       rel="noopener noreferrer"
-      aria-label={`Escribinos por WhatsApp a ${SITE.nombre}`}
+      aria-label={`Escribinos por WhatsApp a ${local.nombre}`}
       className="fixed bottom-5 right-5 z-40 flex items-center justify-center h-14 w-14 rounded-full bg-[#25D366] text-white shadow-lg shadow-black/40 transition-transform hover:scale-110 active:scale-95"
     >
       <svg

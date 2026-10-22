@@ -3,18 +3,14 @@
 import { useState, useEffect, useSyncExternalStore } from 'react'
 import { createPortal } from 'react-dom'
 import Link from 'next/link'
+import { useLocal } from '@/components/local/LocalProvider'
+import { conMayuscula } from '@/lib/rubros'
+import { rutaLocal } from '@/lib/local-datos'
 
 // Suscripción vacía: "estar en el navegador" no cambia nunca, no hay nada que escuchar.
 const sinSuscripcion = () => () => {}
 
 type NavLink = { href: string; label: string }
-
-const NAV: NavLink[] = [
-  { href: '#servicios', label: 'Servicios' },
-  { href: '/tienda', label: 'Tienda' },
-  { href: '#barberos', label: 'Barberos' },
-  { href: '#ubicacion', label: 'Ubicación' },
-]
 
 export function MobileMenu({
   panelLink,
@@ -24,6 +20,14 @@ export function MobileMenu({
   panelLabel: string
 }) {
   const [open, setOpen] = useState(false)
+  // Los links son los del local de la página (su tienda, su reserva).
+  const local = useLocal()
+  const NAV: NavLink[] = [
+    { href: '#servicios', label: 'Servicios' },
+    { href: rutaLocal(local.slug, '/tienda'), label: 'Tienda' },
+    { href: '#equipo', label: conMayuscula(local.palabras.profesionales) },
+    { href: '#ubicacion', label: 'Ubicación' },
+  ]
   // Solo portamos al body en el navegador (evita desajustes con SSR): en el
   // servidor y durante la hidratación da false, y enseguida pasa a true.
   const mounted = useSyncExternalStore(sinSuscripcion, () => true, () => false)
@@ -91,14 +95,14 @@ export function MobileMenu({
           ) : (
             <>
               <Link
-                href="/login"
+                href={`/login?local=${local.slug}`}
                 onClick={() => setOpen(false)}
                 className="w-full text-center text-sm font-semibold text-zinc-300 hover:text-white border border-white/15 hover:bg-white/5 px-4 py-3 rounded-lg transition-colors"
               >
                 Ingresar
               </Link>
               <Link
-                href="/reservar"
+                href={rutaLocal(local.slug, '/reservar')}
                 onClick={() => setOpen(false)}
                 className="w-full text-center bg-amber-400 hover:bg-amber-300 text-zinc-950 text-sm font-bold px-4 py-3 rounded-lg transition-colors"
               >

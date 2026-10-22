@@ -3,6 +3,7 @@
 import React, { useRef, useState } from 'react'
 import { subirImagen } from '@/app/actions/uploads'
 import { Spinner } from './Spinner'
+import { useLocal } from '@/components/local/LocalProvider'
 
 /**
  * Campo de imagen con dos opciones: subir desde la PC (a Supabase Storage) o
@@ -18,6 +19,8 @@ export function ImageUploadField({
   label?: string
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
+  // Las imágenes se suben a la carpeta del local del panel.
+  const local = useLocal()
   const [subiendo, setSubiendo] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -28,6 +31,7 @@ export function ImageUploadField({
     setSubiendo(true)
     try {
       const fd = new FormData()
+      fd.append('local', local.slug)
       fd.append('file', file)
       const res = await subirImagen(fd)
       if (res.error) setError(res.error)

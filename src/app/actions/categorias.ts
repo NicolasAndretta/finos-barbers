@@ -1,8 +1,9 @@
 'use server'
 
 import { createClient } from '@/lib/supabase'
-import { requireAdmin } from '@/lib/auth'
-import { revalidatePath } from 'next/cache'
+import { exigirPermiso, requireProfile } from '@/lib/auth'
+import { localDeAccion } from '@/lib/local'
+import { refrescarLocales } from '@/lib/refrescar'
 
 export type TipoCategoria = 'producto' | 'servicio'
 
@@ -15,12 +16,14 @@ function slugify(s: string) {
     .replace(/^-+|-+$/g, '')
 }
 
-/** Público: categorías activas de un tipo (para selectores y filtros). */
-export async function getCategorias(tipo: TipoCategoria) {
+/** Público: categorías activas de un tipo, de un local (para selectores y filtros). */
+export async function getCategorias(slug: string, tipo: TipoCategoria) {
+  const local = await localDeAccion(slug)
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('categorias')
     .select('*')
+    .eq('local_id', local.id)
     .eq('tipo', tipo)
     .eq('activo', true)
     .order('orden')
@@ -29,10 +32,11 @@ export async function getCategorias(tipo: TipoCategoria) {
   return data
 }
 
-export async function adminGetCategorias(tipo?: TipoCategoria) {
-  await requireAdmin()
+export async function adminGetCategorias(slug: string, tipo?: TipoCategoria) {
+  const local = await localDeAccion(slug)
+  await exigirPermiso(local, 'editaCatalogo')
   const supabase = await createClient()
-  let q = supabase.from('categorias').select('*').order('tipo').order('orden').order('nombre')
+  let q = supabase.from('categorias').select('*').eq('local_id', local.id).order('tipo').order('orden').order('nombre')
   if (tipo) q = q.eq('tipo', tipo)
   const { data, error } = await q
   if (error) throw new Error(error.message)
@@ -40,7 +44,8 @@ export async function adminGetCategorias(tipo?: TipoCategoria) {
 }
 
 export async function adminCrearCategoria(formData: FormData) {
-  await requireAdmin()
+  const local = await localDeAccion(formData.get('local'))
+  await exigirPermiso(local, 'editaCatalogo')
   const nombre   = (formData.get('nombre') as string)?.trim()
   const tipo     = formData.get('tipo') as TipoCategoria
   const parentId = (formData.get('parent_id') as string) || null
@@ -49,7 +54,9 @@ export async function adminCrearCategoria(formData: FormData) {
   if (!nombre || !tipo) return { error: 'Faltan campos requeridos' }
 
   const supabase = await createClient()
+  // La categoría madre tiene que ser del mismo local: la base lo exige (candado doble).
   const { error } = await supabase.from('categorias').insert({
+    local_id: local.id,
     nombre,
     slug: slugify(nombre),
     tipo,
@@ -59,13 +66,14 @@ export async function adminCrearCategoria(formData: FormData) {
   })
   if (error) return { error: error.message }
 
-  revalidatePath('/admin/categorias')
-  revalidatePath('/tienda')
+  refrescarLocales()
   return { success: true }
 }
 
+// Por id: la base solo deja tocar categorías de un local donde tenés permiso.
+
 export async function adminActualizarCategoria(formData: FormData) {
-  await requireAdmin()
+  await requireProfile()
   const id       = formData.get('id') as string
   const nombre   = (formData.get('nombre') as string)?.trim()
   const parentId = (formData.get('parent_id') as string) || null
@@ -74,7 +82,7 @@ export async function adminActualizarCategoria(formData: FormData) {
   if (!id || !nombre) return { error: 'Faltan campos requeridos' }
 
   const supabase = await createClient()
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('categorias')
     .update({
       nombre,
@@ -83,34 +91,36 @@ export async function adminActualizarCategoria(formData: FormData) {
       orden: isNaN(orden) ? 0 : orden,
     })
     .eq('id', id)
+    .select('id')
   if (error) return { error: error.message }
+  if (!data?.length) return { error: 'No se encontró la categoría o no tenés permiso para cambiarla.' }
 
-  revalidatePath('/admin/categorias')
-  revalidatePath('/tienda')
+  refrescarLocales()
   return { success: true }
 }
 
 export async function adminToggleCategoria(id: string) {
-  await requireAdmin()
+  await requireProfile()
   const supabase = await createClient()
   const { data, error: getErr } = await supabase
     .from('categorias').select('activo').eq('id', id).single()
   if (getErr || !data) return { error: 'Categoría no encontrada' }
-  const { error } = await supabase
-    .from('categorias').update({ activo: !data.activo }).eq('id', id)
+  const { data: cambiadas, error } = await supabase
+    .from('categorias').update({ activo: !data.activo }).eq('id', id).select('id')
   if (error) return { error: error.message }
-  revalidatePath('/admin/categorias')
-  revalidatePath('/tienda')
+  if (!cambiadas?.length) return { error: 'No tenés permiso para cambiar esta categoría.' }
+  refrescarLocales()
   return { success: true }
 }
 
 export async function adminEliminarCategoria(id: string) {
-  await requireAdmin()
+  await requireProfile()
   const supabase = await createClient()
   // Los productos/servicios con esta categoría quedan con categoria_id = null (FK on delete set null).
-  const { error } = await supabase.from('categorias').delete().eq('id', id)
+  // Borrar solo lo puede quien administra el local (Fase 2).
+  const { data, error } = await supabase.from('categorias').delete().eq('id', id).select('id')
   if (error) return { error: error.message }
-  revalidatePath('/admin/categorias')
-  revalidatePath('/tienda')
+  if (!data?.length) return { error: 'No se encontró la categoría o no tenés permiso para borrarla.' }
+  refrescarLocales()
   return { success: true }
 }

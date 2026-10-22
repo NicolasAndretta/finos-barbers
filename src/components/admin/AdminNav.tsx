@@ -4,25 +4,38 @@ import { useState, useEffect, useSyncExternalStore } from 'react'
 import { createPortal } from 'react-dom'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useLocal } from '@/components/local/LocalProvider'
+import { rutaLocal } from '@/lib/local-datos'
+import { conMayuscula } from '@/lib/rubros'
 
 // Suscripción vacía: "estar en el navegador" no cambia nunca, no hay nada que escuchar.
 const sinSuscripcion = () => () => {}
 
-const LINKS = [
-  { href: '/admin/dashboard', label: 'Dashboard' },
-  { href: '/admin/servicios', label: 'Servicios' },
-  { href: '/admin/turnos', label: 'Turnos' },
-  { href: '/admin/calendario', label: 'Calendario' },
-  { href: '/admin/productos', label: 'Productos' },
-  { href: '/admin/categorias', label: 'Categorías' },
-  { href: '/admin/barberos', label: 'Barberos' },
-  { href: '/admin/resenas', label: 'Reseñas' },
-  { href: '/admin/pagos', label: 'Cobros' },
-  { href: '/admin/finanzas', label: 'Finanzas' },
-]
-
-export function AdminNav() {
+/**
+ * Qué secciones ve cada uno (son las reglas de la Fase 2):
+ *  - Turnos y Calendario: quien opera lo privado del local (el dueño, el admin
+ *    de la plataforma, y la comercial solo en las demos).
+ *  - Cobros y Finanzas: solo quien administra el local (la caja).
+ *  - El catálogo: todos los que entran al panel.
+ * Ocultar no es lo que protege (eso lo hace la base): es para no mostrar
+ * botones que después dirían "no tenés permiso".
+ */
+export function AdminNav({ permisos }: { permisos: { administra: boolean; operaPrivado: boolean } }) {
   const pathname = usePathname()
+  const local = useLocal()
+  const ruta = (r: string) => rutaLocal(local.slug, r)
+  const LINKS = [
+    { href: ruta('/admin/dashboard'), label: 'Inicio', ver: true },
+    { href: ruta('/admin/servicios'), label: 'Servicios', ver: true },
+    { href: ruta('/admin/turnos'), label: 'Turnos', ver: permisos.operaPrivado },
+    { href: ruta('/admin/calendario'), label: 'Calendario', ver: permisos.operaPrivado },
+    { href: ruta('/admin/productos'), label: 'Productos', ver: true },
+    { href: ruta('/admin/categorias'), label: 'Categorías', ver: true },
+    { href: ruta('/admin/barberos'), label: conMayuscula(local.palabras.profesionales), ver: true },
+    { href: ruta('/admin/resenas'), label: 'Reseñas', ver: true },
+    { href: ruta('/admin/pagos'), label: 'Cobros', ver: permisos.administra },
+    { href: ruta('/admin/finanzas'), label: 'Finanzas', ver: permisos.administra },
+  ].filter((l) => l.ver)
   const [open, setOpen] = useState(false)
   // true solo en el navegador (en el servidor y durante la hidratación da false):
   // el drawer se porta a document.body recién cuando existe document.

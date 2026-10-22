@@ -1,15 +1,21 @@
 'use server'
 
 import { createClient } from '@/lib/supabase'
-import { requireAdmin } from '@/lib/auth'
-import { revalidatePath } from 'next/cache'
+import { exigirPermiso, requireProfile } from '@/lib/auth'
+import { localDeAccion } from '@/lib/local'
+import { refrescarLocales } from '@/lib/refrescar'
 
-export async function adminGetTransacciones() {
-  await requireAdmin()
+// La caja de un local la ve y la toca solo quien lo administra (el dueño y el
+// admin de la plataforma). La comercial no (Fase 2).
+
+export async function adminGetTransacciones(slug: string) {
+  const local = await localDeAccion(slug)
+  await exigirPermiso(local, 'administra')
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('transacciones')
     .select('*')
+    .eq('local_id', local.id)
     .order('fecha', { ascending: false })
     .order('created_at', { ascending: false })
   if (error) throw new Error(error.message)
@@ -17,7 +23,8 @@ export async function adminGetTransacciones() {
 }
 
 export async function adminCrearTransaccion(formData: FormData) {
-  const profile = await requireAdmin()
+  const local = await localDeAccion(formData.get('local'))
+  const profile = await exigirPermiso(local, 'administra')
 
   const tipo        = formData.get('tipo') as string
   const categoria   = formData.get('categoria') as string
@@ -34,6 +41,7 @@ export async function adminCrearTransaccion(formData: FormData) {
 
   const supabase = await createClient()
   const { error } = await supabase.from('transacciones').insert({
+    local_id:   local.id,
     tipo,
     categoria,
     monto,
@@ -45,12 +53,14 @@ export async function adminCrearTransaccion(formData: FormData) {
 
   if (error) return { error: error.message }
 
-  revalidatePath('/admin/finanzas')
+  refrescarLocales()
   return { success: true }
 }
 
+// Por id: la base solo deja tocar movimientos de un local que administrás.
+
 export async function adminActualizarTransaccion(formData: FormData) {
-  await requireAdmin()
+  await requireProfile()
 
   const id          = formData.get('id') as string
   const tipo        = formData.get('tipo') as string
@@ -67,22 +77,25 @@ export async function adminActualizarTransaccion(formData: FormData) {
   if (isNaN(monto) || monto <= 0) return { error: 'El monto debe ser mayor a 0' }
 
   const supabase = await createClient()
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('transacciones')
     .update({ tipo, categoria, monto, descripcion: descripcion.trim(), fecha })
     .eq('id', id)
+    .select('id')
 
   if (error) return { error: error.message }
+  if (!data?.length) return { error: 'No se encontró el movimiento o no tenés permiso para cambiarlo.' }
 
-  revalidatePath('/admin/finanzas')
+  refrescarLocales()
   return { success: true }
 }
 
 export async function adminEliminarTransaccion(id: string) {
-  await requireAdmin()
+  await requireProfile()
   const supabase = await createClient()
-  const { error } = await supabase.from('transacciones').delete().eq('id', id)
+  const { data, error } = await supabase.from('transacciones').delete().eq('id', id).select('id')
   if (error) return { error: error.message }
-  revalidatePath('/admin/finanzas')
+  if (!data?.length) return { error: 'No se encontró el movimiento o no tenés permiso para borrarlo.' }
+  refrescarLocales()
   return { success: true }
 }

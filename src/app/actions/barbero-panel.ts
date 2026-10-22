@@ -1,17 +1,20 @@
 'use server'
 
 import { createServiceClient } from '@/lib/supabase'
-import { requireBarbero } from '@/lib/auth'
+import { requirePanelBarbero } from '@/lib/auth'
+import { localDeAccion } from '@/lib/local'
 
 /**
- * Turnos del barbero logueado (los suyos). Scopeado por su barbero_id: el guard
- * requireBarbero asegura el rol y el filtro por barbero_id asegura que solo ve
- * lo propio. Usa service client porque el rol barbero no tiene políticas RLS
- * de lectura sobre turnos (el acceso queda acotado acá, server-side).
+ * Turnos del barbero conectado, en ESTE local (su agenda).
+ *
+ * El barbero sale de su membresía en el local (Fase 2), no del perfil: una
+ * persona puede ser barbero en un local y cliente en otro. Usa la llave del
+ * servidor, así que el filtro por local y por barbero se hace acá, a mano.
  */
-export async function getMisTurnos() {
-  const profile = await requireBarbero()
-  if (!profile.barbero_id) return []
+export async function getMisTurnos(slug: string) {
+  const local = await localDeAccion(slug)
+  const { permisos } = await requirePanelBarbero(local)
+  if (!permisos.barberoId) return []
 
   const supabase = createServiceClient()
   const { data, error } = await supabase
@@ -21,7 +24,8 @@ export async function getMisTurnos() {
       profiles ( nombre, apellido ),
       servicios ( nombre, duracion_minutos, precio )
     `)
-    .eq('barbero_id', profile.barbero_id)
+    .eq('local_id', local.id)
+    .eq('barbero_id', permisos.barberoId)
     .neq('estado', 'cancelado')
     .order('fecha', { ascending: true })
     .order('hora', { ascending: true })
@@ -36,19 +40,24 @@ export async function getMisTurnos() {
 }
 
 /**
- * Lista de clientes (solo lectura) para el barbero. No incluye datos sensibles
- * de pago; solo contacto básico para reconocer a quién atiende.
+ * Los clientes de ESTE local (solo lectura), para que el barbero reconozca a
+ * quién atiende. Sin datos de pago: nombre, apellido y mail.
+ * Un cliente de un local es quien reservó o compró ahí (membresía "cliente").
  */
-export async function getClientesLista() {
-  await requireBarbero()
+export async function getClientesLista(slug: string) {
+  const local = await localDeAccion(slug)
+  await requirePanelBarbero(local)
 
   const supabase = createServiceClient()
   const { data, error } = await supabase
-    .from('profiles')
-    .select('id, nombre, apellido, email')
-    .eq('role', 'client')
-    .order('apellido', { ascending: true })
+    .from('membresias')
+    .select('profiles ( id, nombre, apellido, email )')
+    .eq('local_id', local.id)
+    .eq('rol', 'cliente')
 
   if (error) throw new Error(error.message)
-  return data ?? []
+  return (data ?? [])
+    .map((m) => (Array.isArray(m.profiles) ? m.profiles[0] : m.profiles) as { id: string; nombre: string; apellido: string; email: string } | null)
+    .filter((p): p is { id: string; nombre: string; apellido: string; email: string } => !!p)
+    .sort((a, b) => (a.apellido || '').localeCompare(b.apellido || ''))
 }

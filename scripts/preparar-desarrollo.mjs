@@ -68,9 +68,21 @@ try {
   }
 
   // ── 3. Datos de ejemplo ───────────────────────────────────────────────────
+  // Son el catálogo de Roble. El archivo se exportó de producción antes de que
+  // existieran los locales, así que no dice de qué local es cada fila; desde
+  // la 0009 la base ya no lo adivina. Por eso, solo mientras se carga, Roble
+  // vuelve a ser el valor por defecto de esas tablas, y después se saca.
   if (existsSync(ARCHIVO_SEED)) {
-    if (!(await aplicarArchivo(cliente, ARCHIVO_SEED))) process.exit(1)
-    console.log('✓ Datos de ejemplo cargados')
+    const ROBLE = '00000000-0000-4000-a000-000000000001'
+    const TABLAS_DEL_SEED = ['barberos', 'categorias', 'servicios', 'productos', 'resenas']
+    const ponerDefecto = (sql) => cliente.query(TABLAS_DEL_SEED.map((t) => `alter table public.${t} alter column local_id ${sql};`).join(' '))
+    await ponerDefecto(`set default '${ROBLE}'`)
+    try {
+      if (!(await aplicarArchivo(cliente, ARCHIVO_SEED))) process.exit(1)
+    } finally {
+      await ponerDefecto('drop default')
+    }
+    console.log('✓ Datos de ejemplo cargados (son de Roble)')
   } else {
     console.log('ℹ️  No hay supabase/seed-desarrollo.sql: la base queda sin datos de ejemplo.')
   }

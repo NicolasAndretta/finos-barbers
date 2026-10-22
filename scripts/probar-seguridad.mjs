@@ -161,15 +161,15 @@ try {
 
   // ─── 6. Pedidos ────────────────────────────────────────────────────────────
   titulo('6. Cliente logueado: pedidos, sin pasar por la app')
-  anotar(filas(await cliente('POST', tabla('pedidos'), { user_id: uid, estado: 'pagado', total: 1 })) === 0, 'no puede crear un pedido ya "pagado"')
+  anotar(filas(await cliente('POST', tabla('pedidos'), { user_id: uid, estado: 'pagado', total: 1, local_id: ROBLE })) === 0, 'no puede crear un pedido ya "pagado"')
   {
     // Un pedido legítimo: lo crea el servidor, como hace la app.
-    const pedido = (await servidor('POST', tabla('pedidos'), { user_id: uid, estado: 'pendiente', total: 100 })).datos?.[0]
-    const producto = (await pedir('GET', tabla('productos', '?select=id&limit=1'))).datos?.[0]
+    const pedido = (await servidor('POST', tabla('pedidos'), { user_id: uid, estado: 'pendiente', total: 100, local_id: ROBLE })).datos?.[0]
+    const producto = (await pedir('GET', tabla('productos', `?select=id&local_id=eq.${ROBLE}&limit=1`))).datos?.[0]
     if (!pedido || !producto) {
       anotar(false, 'preparar un pedido de prueba', 'faltan productos: corré antes node scripts/preparar-desarrollo.mjs')
     } else {
-      const colado = await cliente('POST', tabla('items_pedido'), { pedido_id: pedido.id, producto_id: producto.id, nombre: 'colado', precio: 0, cantidad: 99 })
+      const colado = await cliente('POST', tabla('items_pedido'), { pedido_id: pedido.id, producto_id: producto.id, nombre: 'colado', precio: 0, cantidad: 99, local_id: ROBLE })
       anotar(filas(colado) === 0, 'no puede agregarle renglones a un pedido propio')
       const propios = await cliente('GET', tabla('pedidos', '?select=id'))
       anotar(trae(propios, pedido.id), 'sigue viendo sus propios pedidos')
@@ -181,12 +181,12 @@ try {
 
   // ─── 7. Turnos ─────────────────────────────────────────────────────────────
   titulo('7. Cliente logueado: turnos')
-  const barbero = (await pedir('GET', tabla('barberos', '?select=id&limit=1'))).datos?.[0]
-  const servicio = (await pedir('GET', tabla('servicios', '?select=id&limit=1'))).datos?.[0]
+  const barbero = (await pedir('GET', tabla('barberos', `?select=id&local_id=eq.${ROBLE}&limit=1`))).datos?.[0]
+  const servicio = (await pedir('GET', tabla('servicios', `?select=id&local_id=eq.${ROBLE}&limit=1`))).datos?.[0]
   if (!barbero || !servicio) {
     anotar(false, 'preparar un turno de prueba', 'faltan barberos o servicios: corré antes node scripts/preparar-desarrollo.mjs')
   } else {
-    const base = { cliente_id: uid, barbero_id: barbero.id, servicio_id: servicio.id, fecha: '2031-01-15' }
+    const base = { cliente_id: uid, barbero_id: barbero.id, servicio_id: servicio.id, fecha: '2031-01-15', local_id: ROBLE }
     // Lo mismo que manda la app (src/app/actions/reservas.ts): tiene que andar.
     const normal = await cliente('POST', tabla('turnos'), {
       ...base, hora: '10:00:00', estado: 'pendiente', metodo_pago: 'transferencia', sena_monto: 1000, sena_estado: 'pendiente',

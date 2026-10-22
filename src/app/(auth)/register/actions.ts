@@ -3,6 +3,8 @@
 import { createClient } from '@/lib/supabase'
 import { redirect } from 'next/navigation'
 import type { AuthFormState } from '@/components/ui/AuthForm'
+import { esVueltaSegura } from '@/lib/auth'
+import { esSlug } from '@/lib/local-datos'
 
 export async function registerAction(
   prevState: AuthFormState,
@@ -12,9 +14,14 @@ export async function registerAction(
   const apellido = formData.get('apellido') as string
   const email = formData.get('email') as string
   const password = formData.get('password') as string
+  // De qué local llegó y a dónde volver: se mantienen hasta después del login.
+  const volverRaw = formData.get('next')
+  const volver = esVueltaSegura(volverRaw) ? volverRaw : null
+  const localRaw = formData.get('local')
+  const local = typeof localRaw === 'string' && esSlug(localRaw) ? localRaw : null
 
   if (!nombre || !apellido || !email || !password) {
-    return { error: 'Por favor, completa todos los campos.' }
+    return { error: 'Completá todos los campos.' }
   }
 
   let redirectPath: string | null = null
@@ -28,8 +35,9 @@ export async function registerAction(
       password,
       options: {
         // Tras confirmar el email, Supabase redirige a nuestra ruta de callback,
-        // que verifica el token y muestra la pantalla de éxito.
-        emailRedirectTo: `${appUrl}/auth/callback`,
+        // que verifica el token y muestra la pantalla de éxito (con el local
+        // del que vino, para que el botón lo lleve de vuelta ahí).
+        emailRedirectTo: `${appUrl}/auth/callback${local ? `?local=${local}` : ''}`,
         data: {
           nombre,
           apellido,
@@ -43,10 +51,13 @@ export async function registerAction(
     }
 
     if (!data.user) {
-      return { error: 'No se pudo crear la cuenta. Por favor, intenta de nuevo.' }
+      return { error: 'No se pudo crear la cuenta. Probá de nuevo.' }
     }
 
-    redirectPath = '/login?confirmar=1'
+    const consulta = new URLSearchParams({ confirmar: '1' })
+    if (volver) consulta.set('next', volver)
+    if (local) consulta.set('local', local)
+    redirectPath = `/login?${consulta.toString()}`
   } catch (err: unknown) {
     if (err instanceof Error && 'digest' in err && typeof (err as { digest?: string }).digest === 'string' && (err as { digest: string }).digest.startsWith('NEXT_REDIRECT')) {
       throw err

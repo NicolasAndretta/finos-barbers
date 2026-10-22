@@ -1,40 +1,51 @@
 'use server'
 
 import { createClient, createServiceClient } from '@/lib/supabase'
-import { requireAdmin } from '@/lib/auth'
-import { revalidatePath } from 'next/cache'
+import { exigirPermiso, requireProfile } from '@/lib/auth'
+import { localDeAccion } from '@/lib/local'
+import { refrescarLocales } from '@/lib/refrescar'
 
-/** Público: barberos activos (para la home y la reserva). */
-export async function getBarberos() {
+/** Público: barberos activos de un local (para su home y la reserva). */
+export async function getBarberos(slug: string) {
+  const local = await localDeAccion(slug)
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('barberos')
     .select('*')
+    .eq('local_id', local.id)
     .eq('activo', true)
     .order('nombre')
   if (error) throw new Error(error.message)
   return data
 }
 
-export async function adminGetBarberos() {
-  await requireAdmin()
+export async function adminGetBarberos(slug: string) {
+  const local = await localDeAccion(slug)
+  await exigirPermiso(local, 'editaCatalogo')
   const supabase = await createClient()
   // Embebemos las cuentas de acceso vinculadas (profiles.barbero_id → barberos.id)
   // para saber cuáles ya tienen login.
   const { data, error } = await supabase
     .from('barberos')
     .select('*, cuentas:profiles(id, email)')
+    .eq('local_id', local.id)
     .order('nombre')
   if (error) throw new Error(error.message)
   return data
 }
 
 /**
- * Crea una cuenta de acceso (rol "barbero") vinculada a un barbero.
- * Solo admin. Usa service role (auth admin) para crear el usuario confirmado.
+ * Crea una cuenta de acceso (rol "barbero") vinculada a un barbero del local.
+ * Solo quien administra el local (el dueño o el admin de la plataforma): es
+ * darle a alguien entrada al sistema. Usa la llave del servidor (crear un
+ * usuario ya confirmado), así que acá se revisa todo a mano:
+ *   - el permiso, en el local de la pantalla;
+ *   - que el barbero sea de ESE local.
+ * La membresía de barbero en el local se crea sola (disparador de la Fase 2).
  */
 export async function adminCrearCuentaBarbero(formData: FormData) {
-  await requireAdmin()
+  const local = await localDeAccion(formData.get('local'))
+  await exigirPermiso(local, 'administra')
   const barberoId = formData.get('barbero_id') as string
   const email = ((formData.get('email') as string) || '').trim().toLowerCase()
   const password = (formData.get('password') as string) || ''
@@ -45,8 +56,8 @@ export async function adminCrearCuentaBarbero(formData: FormData) {
   const service = createServiceClient()
 
   const { data: barbero } = await service
-    .from('barberos').select('nombre, apellido').eq('id', barberoId).single()
-  if (!barbero) return { error: 'Barbero no encontrado.' }
+    .from('barberos').select('nombre, apellido').eq('id', barberoId).eq('local_id', local.id).single()
+  if (!barbero) return { error: 'Ese barbero no es de este local.' }
 
   const { data: created, error: createErr } = await service.auth.admin.createUser({
     email, password, email_confirm: true,
@@ -72,7 +83,7 @@ export async function adminCrearCuentaBarbero(formData: FormData) {
     return { error: profErr.message }
   }
 
-  revalidatePath('/admin/barberos')
+  refrescarLocales()
   return { success: true }
 }
 
@@ -82,7 +93,8 @@ function parseDias(raw: string | null): string[] {
 }
 
 export async function adminCrearBarbero(formData: FormData) {
-  await requireAdmin()
+  const local = await localDeAccion(formData.get('local'))
+  await exigirPermiso(local, 'editaCatalogo')
   const nombre       = (formData.get('nombre') as string)?.trim()
   const apellido     = ((formData.get('apellido') as string) || '').trim()
   const bio          = ((formData.get('bio') as string) || '').trim() || null
@@ -94,15 +106,17 @@ export async function adminCrearBarbero(formData: FormData) {
 
   const supabase = await createClient()
   const { error } = await supabase.from('barberos').insert({
-    nombre, apellido, bio, especialidad, foto_url, dias, activo: true,
+    local_id: local.id, nombre, apellido, bio, especialidad, foto_url, dias, activo: true,
   })
   if (error) return { error: error.message }
-  revalidatePath('/admin/barberos')
+  refrescarLocales()
   return { success: true }
 }
 
+// Por id: la base solo deja tocar barberos de un local donde tenés permiso.
+
 export async function adminActualizarBarbero(formData: FormData) {
-  await requireAdmin()
+  await requireProfile()
   const id           = formData.get('id') as string
   const nombre       = (formData.get('nombre') as string)?.trim()
   const apellido     = ((formData.get('apellido') as string) || '').trim()
@@ -114,24 +128,27 @@ export async function adminActualizarBarbero(formData: FormData) {
   if (!id || !nombre) return { error: 'Faltan campos requeridos' }
 
   const supabase = await createClient()
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('barberos')
     .update({ nombre, apellido, bio, especialidad, foto_url, dias })
     .eq('id', id)
+    .select('id')
   if (error) return { error: error.message }
-  revalidatePath('/admin/barberos')
+  if (!data?.length) return { error: 'No se encontró el barbero o no tenés permiso para cambiarlo.' }
+  refrescarLocales()
   return { success: true }
 }
 
 export async function adminToggleBarbero(id: string) {
-  await requireAdmin()
+  await requireProfile()
   const supabase = await createClient()
   const { data, error: getErr } = await supabase
     .from('barberos').select('activo').eq('id', id).single()
   if (getErr || !data) return { error: 'Barbero no encontrado' }
-  const { error } = await supabase
-    .from('barberos').update({ activo: !data.activo }).eq('id', id)
+  const { data: cambiados, error } = await supabase
+    .from('barberos').update({ activo: !data.activo }).eq('id', id).select('id')
   if (error) return { error: error.message }
-  revalidatePath('/admin/barberos')
+  if (!cambiados?.length) return { error: 'No tenés permiso para cambiar este barbero.' }
+  refrescarLocales()
   return { success: true }
 }

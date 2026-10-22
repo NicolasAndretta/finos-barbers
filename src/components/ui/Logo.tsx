@@ -1,4 +1,7 @@
-import { SITE } from "@/lib/site";
+"use client";
+
+import { useLocalOpcional } from "@/components/local/LocalProvider";
+import { PRODUCTO } from "@/lib/producto";
 
 type LogoProps = {
   /** Alto en px del isologo. El ancho se ajusta solo (relación 2.5:1). */
@@ -14,11 +17,14 @@ type LogoProps = {
 };
 
 /**
- * Isologo de la barbería, dibujado como SVG a partir de `SITE.nombreCorto`.
+ * Isologo del local de la página, dibujado como SVG con su nombre corto y su
+ * rubro (BARBERÍA, UÑAS...). Fuera de un local (el login, por ejemplo) dibuja
+ * el nombre del producto.
  *
- * No hay archivo de marca en `public/`: cambiar el nombre en `lib/site.ts`
- * re-marca el sitio entero. El texto usa `textLength` para ocupar siempre el
- * mismo ancho, así que no se descuadra mientras carga la tipografía.
+ * No hay archivo de marca en `public/`: el nombre sale de la base, así que
+ * cada local tiene su logo sin hacer nada. El texto usa `textLength` para
+ * ocupar siempre el mismo ancho, así que no se descuadra mientras carga la
+ * tipografía. (El logo propio de cada local, como imagen, llega en la Fase 4.)
  */
 export function Logo({
   size = 40,
@@ -27,18 +33,21 @@ export function Logo({
 }: LogoProps) {
   const color =
     variant === "black" ? "#0a0a0a" : variant === "wood" ? "#c79c64" : "#ffffff";
-  const nombre = SITE.nombreCorto.toUpperCase();
+  const local = useLocalOpcional();
+  const nombre = (local?.nombreCorto ?? PRODUCTO.nombre).toUpperCase();
+  const etiqueta = (local?.palabras.negocio ?? "Reservas").toUpperCase();
+  const nombreCompleto = local?.nombre ?? PRODUCTO.nombre;
 
   return (
     <svg
       viewBox="0 0 250 100"
       role="img"
-      aria-label={SITE.nombre}
+      aria-label={nombreCompleto}
       className={`select-none ${className}`}
       style={{ height: size, width: "auto" }}
       fill="none"
     >
-      {/* Filete superior: BARBERÍA entre dos reglas */}
+      {/* Filete superior: el rubro (BARBERÍA, UÑAS...) entre dos reglas */}
       <line x1="18" y1="22" x2="78" y2="22" stroke={color} strokeWidth="2" opacity="0.75" />
       <line x1="172" y1="22" x2="232" y2="22" stroke={color} strokeWidth="2" opacity="0.75" />
       <text
@@ -49,11 +58,12 @@ export function Logo({
         opacity="0.75"
         fontSize="15"
         letterSpacing="3"
-        textLength="80"
+        // Las palabras cortas (UÑAS) no se estiran: ocupan lo que les toca.
+        textLength={Math.min(80, etiqueta.length * 10.5)}
         lengthAdjust="spacingAndGlyphs"
         style={{ fontFamily: "var(--font-body), sans-serif", fontWeight: 600 }}
       >
-        BARBERÍA
+        {etiqueta}
       </text>
 
       {/* Palabra principal */}

@@ -187,7 +187,8 @@ Después de cada cambio en producción:
 | 0 | Esquema base versionado + proyecto de desarrollo | ✅ 10/10/2026 (la `0005`, verificada en producción el 13/10) |
 | 1 | Tabla `locales` y columna `local_id` en todas las tablas de la barbería; lo que existe hoy pasa a ser Roble, el local de demostración (sin cortar la demo ni tocar lo de 369) | ✅ Hecha en desarrollo el 10/10/2026; OK de Nico el 14/10 (va a producción con el resto, después de la Fase 5) |
 | 2 | Membresías y RLS por local (reemplaza `is_admin()`), con prueba de aislamiento | ✅ Hecha en desarrollo el 14/10/2026; OK de Nico el 22/10 (va a producción con el resto, después de la Fase 5) |
-| 3 | El sitio elige el local por la dirección; `SITE` pasa a ser datos del local | ⏳ |
+| 3a | El sitio elige el local por la dirección; `SITE` pasa a ser datos del local; panel por local con permisos de la Fase 2; un solo login; rubro y nombre provisorio | 🟡 Hecha en desarrollo el 22/10/2026; falta el OK de Nico |
+| 3b | Horarios reales del local y de cada profesional (la reserva solo ofrece lo abierto) | ⏳ |
 | 4 | Llamadas con permisos totales filtradas por local; Mercado Pago e imágenes por local | ⏳ |
 | 5 | Prueba automática de aislamiento completa | ⏳ |
 | 6 | Alta de barberías desde el panel (demo → activo), ver la sección de abajo | ⏳ |
@@ -821,3 +822,100 @@ junta las tres pruebas de navegador del arreglo (lista, lista vieja en el celu,
 reserva normal) y limpia lo que crea. 6 controles ✓. Necesita la app levantada
 contra desarrollo y Playwright (lo toma de `codigo-rojo-web` si este proyecto
 no lo tiene).
+
+### Fase 3 — Plan aprobado (22/10/2026)
+
+Nico aprobó el plan con las cuatro recomendaciones: panel por local en la
+dirección (`/roble/admin`), un solo login para todos los locales, nombre
+provisorio "Turnos" (en `src/lib/producto.ts`, se cambia en una línea) y la
+fase partida en dos (3a y 3b), cada una con su OK. "Vos pensá en lo que sea más
+correcto, lo que sea una buena práctica y tenga más lógica."
+
+Antes de la 3a, un paso 0: **Next 16.2.7 tenía una falla crítica conocida**
+(se podía saltear el `proxy` en apps compiladas con Turbopack). Se pasó a
+Next 16.4.2 y a `next build --webpack`, como 369 y Código Rojo. Las
+dependencias de producción quedan sin vulnerabilidades (las 5 que quedan son
+de `braces`, que solo usa el lint). Lint, build y las 5 pruebas en verde.
+
+### Fase 3a — Cada local con su dirección y sus datos, hecha en desarrollo (22/10/2026)
+
+**Qué cambió, en simple**
+
+| Antes | Ahora |
+|---|---|
+| Una sola barbería, con sus datos escritos a mano en `lib/site.ts` | Cada local vive en su carpeta (`/roble`, `/otro-local`) y sus datos salen de la base. `lib/site.ts` ya no existe |
+| `/reservar`, `/tienda`, `/admin` | `/roble/reservar`... Los links viejos redirigen solos a Roble (nada que ya se haya mandado a un cliente se rompe) |
+| El panel lo decidía el "rol" de la cuenta (de toda la plataforma) | Cada local tiene su panel, y entra quien tiene permiso en ESE local (las reglas de la Fase 2). Un dueño que no es del equipo ya ve su panel |
+| El login mandaba a todos a `/dashboard` | Un solo login que muestra la marca del local del que venís y te devuelve a la página que querías |
+| La home mezclaría el catálogo de todos los locales | Cada pantalla filtra por su local. Lo que se guarda dice siempre de qué local es |
+| "Barbero" en todos lados | Cada local tiene rubro (barbería, uñas, pestañas, peluquería, estética) y sus palabras ("manicura", "peluquero") |
+| Un solo ícono ("RB BARBERÍA") y una sola app instalable | Ícono y app instalable de cada local, con sus iniciales y su nombre |
+| La base completaba "Roble" sola si faltaba el local | Ya no: si algo llega sin local, la base lo rechaza (salvo `mp_conexion`, hasta la Fase 4) |
+
+**La base: dos migraciones nuevas**
+- `0008_locales_en_la_web.sql`: el rubro; las direcciones reservadas (un local
+  no se puede llamar "login" ni "reservar"); `datos_del_local(slug)`, que da
+  solo los datos públicos de un local (los visitantes siguen sin poder leer la
+  tabla `locales`); y `permisos_en_local(local)`, qué puede hacer quien está
+  conectado en ese local.
+- `0009_sin_local_por_defecto.sql`: se termina el "Roble por defecto".
+  **⚠️ En producción va DESPUÉS de publicar el código de la Fase 3a.**
+
+**Cómo identifica el local el código** (comentado en cada archivo)
+- Las páginas: por la dirección. `src/app/[local]/layout.tsx` busca el local;
+  si no existe da 404; si está suspendido o archivado muestra un aviso (salvo
+  a quien lo administra).
+- Las acciones del servidor reciben el nombre corto del local y lo buscan
+  ellas mismas: nunca confían en un id que mande el navegador.
+- Lo que se toca por id (activar un producto, confirmar un turno) lo frena la
+  base si no es de tu local; y si no se tocó ninguna fila, la pantalla avisa en
+  vez de decir "guardado".
+- Lo que usa la llave del servidor (el checkout, el panel del barbero, crear
+  cuentas de barbero) filtra a mano por local: ahí no hay reglas de la base que
+  lo cuiden.
+
+**Lo que quedó solo para Roble, a propósito**
+- La franja "+10 años de oficio" y "Nuestro espacio" de la home: son texto
+  inventado de la demo. En un local real serían datos falsos sobre un negocio
+  que existe. Pasan a la base cuando cada local pueda personalizar su home
+  (Fase 6).
+- Mercado Pago: hay una sola conexión, la de Roble. Los demás locales ven
+  "disponible muy pronto" en Cobros. Por local, en la Fase 4.
+
+**Arreglos de paso**
+- La home ya no promete "te llega el recordatorio" (no hay recordatorios
+  todavía: una de las dos fallas de la demo que encontró el mapa del producto).
+- Los servicios de la home salen de la base. Antes eran tres inventados con
+  precios que no coincidían con los de la reserva.
+- El carrito se guarda por local (antes uno solo, `roble-cart`).
+- Textos en tuteo pasados a voseo (reservar, mis turnos, login, tienda).
+- El aviso de instalar la app decía "FB" (de Finos Barbers): ahora las
+  iniciales del local.
+
+**Cómo se verificó**
+- `node scripts/preparar-desarrollo.mjs` arma la base de cero (0000 a 0009 y
+  los datos de ejemplo de Roble).
+- `verificar-locales` 67 ✓ · `probar-seguridad` 43 ✓ · `probar-aislamiento`
+  101 ✓. Las tres tenían filas de prueba que se apoyaban en el "Roble por
+  defecto": ahora dicen su local. Tres controles pasaban por la razón
+  equivocada (los frenaba que faltara el local, no el permiso): corregidos.
+- `probar-reservas` 6 ✓ (con las direcciones nuevas; antes de actualizarla
+  pasó también con las viejas, a través de las redirecciones).
+- **`scripts/probar-locales.mjs` (nuevo), 31 ✓**: arma un segundo local (de
+  uñas, en Rosario) y revisa en el navegador que cada home y cada tienda
+  muestren lo suyo, que un cliente reserve en el local nuevo con su seña (30%)
+  y su alias, que la dueña entre a su panel y no al de Roble, los locales
+  suspendido y archivado, el 404 y los links viejos. En celu y en compu.
+- **Contraprueba:** se sacó a propósito el filtro por local de la lista de
+  servicios y `probar-locales` marcó 3 fallas, justo donde se ven los
+  servicios. Se volvió a poner (archivo idéntico a la copia) y pasó de nuevo.
+- Capturas de la home de Roble y del local nuevo, y del panel, en celu y en
+  compu: sin scroll de costado.
+- `npm run lint` (0 errores, las 6 advertencias viejas) y `npm run build` en verde.
+
+**Para la Fase 4 (anotado)**
+- Mercado Pago por local (`mp_conexion` y el webhook), imágenes por local
+  (ya se suben a una carpeta por local), y sacar el mecanismo temporal que crea
+  la membresía de barbero desde `profiles.role`.
+- Crear cuentas de barbero quedó para quien administra el local (no la
+  comercial). Revisar si en las demos la comercial también lo necesita.

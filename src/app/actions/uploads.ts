@@ -1,19 +1,22 @@
 'use server'
 
 import { createServiceClient } from '@/lib/supabase'
-import { requireAdmin } from '@/lib/auth'
+import { exigirPermiso } from '@/lib/auth'
+import { localDeAccion } from '@/lib/local'
 
 const MAX_BYTES = 5 * 1024 * 1024 // 5 MB
 const BUCKET = 'imagenes'
 
 /**
  * Sube una imagen al Storage de Supabase (bucket público "imagenes") y devuelve
- * su URL pública. Solo admin. La valida por tipo y tamaño.
+ * su URL pública. Solo quien edita el catálogo del local. La valida por tipo y
+ * tamaño. Cada local guarda en su propia carpeta (<slug>/...).
  */
 export async function subirImagen(
   formData: FormData
 ): Promise<{ url?: string; error?: string }> {
-  await requireAdmin()
+  const local = await localDeAccion(formData.get('local'))
+  await exigirPermiso(local, 'editaCatalogo')
 
   const file = formData.get('file') as File | null
   if (!file || file.size === 0) return { error: 'No se seleccionó ninguna imagen.' }
@@ -21,7 +24,7 @@ export async function subirImagen(
   if (file.size > MAX_BYTES) return { error: 'La imagen supera los 5 MB.' }
 
   const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '')
-  const path = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`
+  const path = `${local.slug}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`
 
   const supabase = createServiceClient()
   const buffer = Buffer.from(await file.arrayBuffer())

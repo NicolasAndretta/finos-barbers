@@ -1,12 +1,18 @@
 import React from 'react'
 import Link from 'next/link'
-import { Logo } from '@/components/ui/Logo'
+import { MarcaAcceso } from '@/components/ui/MarcaAcceso'
+import { esSlug, rutaLocal } from '@/lib/local-datos'
+import { PRODUCTO } from '@/lib/producto'
 
 type SearchParams = Promise<{ [key: string]: string | string[] | undefined }>
 
 export default async function ConfirmadoPage({ searchParams }: { searchParams: SearchParams }) {
   const sp = await searchParams
   const isError = sp.error === '1'
+  // El local desde donde se registró (lo agrega el registro): los botones
+  // llevan de vuelta ahí. Si no vino, el de demostración.
+  const local = typeof sp.local === 'string' && esSlug(sp.local) ? sp.local : null
+  const loginHref = local ? `/login?local=${local}` : '/login'
 
   return (
     <div className="relative min-h-screen flex flex-col justify-center items-center bg-zinc-950 font-sans text-zinc-100 px-4 py-12 overflow-hidden">
@@ -14,9 +20,7 @@ export default async function ConfirmadoPage({ searchParams }: { searchParams: S
       <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-gradient-to-tl from-zinc-800/20 to-transparent rounded-full blur-[120px] pointer-events-none" />
 
       <div className="relative z-10 mb-8 flex flex-col items-center">
-        <Link href="/">
-          <Logo size={44} />
-        </Link>
+        <MarcaAcceso slug={local} size={44} />
       </div>
 
       <div className="relative z-10 w-full max-w-md p-8 rounded-2xl bg-zinc-900/80 backdrop-blur-xl border border-zinc-800 shadow-2xl text-center">
@@ -33,7 +37,7 @@ export default async function ConfirmadoPage({ searchParams }: { searchParams: S
               si tu cuenta ya estaba confirmada, vas a poder entrar normalmente.
             </p>
             <Link
-              href="/login"
+              href={loginHref}
               className="mt-6 inline-flex w-full items-center justify-center rounded-xl bg-white hover:bg-zinc-200 px-4 py-3 text-sm font-black text-zinc-950 transition-all"
             >
               Ir a iniciar sesión
@@ -51,13 +55,13 @@ export default async function ConfirmadoPage({ searchParams }: { searchParams: S
               Tu email quedó verificado. Ya podés iniciar sesión y reservar tu turno.
             </p>
             <Link
-              href="/dashboard"
+              href={rutaLocal(local ?? PRODUCTO.localPorDefecto, '/dashboard')}
               className="mt-6 inline-flex w-full items-center justify-center rounded-xl bg-white hover:bg-zinc-200 px-4 py-3 text-sm font-black text-zinc-950 transition-all"
             >
               Ir a mi cuenta
             </Link>
             <Link
-              href="/login"
+              href={loginHref}
               className="mt-3 inline-block text-sm font-bold text-zinc-400 hover:text-white transition-colors"
             >
               Iniciar sesión

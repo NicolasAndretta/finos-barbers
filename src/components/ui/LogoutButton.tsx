@@ -4,6 +4,7 @@ import React from 'react'
 import { useFormStatus } from 'react-dom'
 import { logoutAction } from '@/app/actions/auth'
 import { Spinner } from './Spinner'
+import { useLocalOpcional } from '@/components/local/LocalProvider'
 
 function SubmitButton() {
   const { pending } = useFormStatus()
@@ -29,8 +30,11 @@ function SubmitButton() {
 }
 
 export function LogoutButton() {
+  // Dentro de un local, al salir se vuelve a su home.
+  const local = useLocalOpcional()
   return (
     <form action={logoutAction} className="w-full">
+      {local && <input type="hidden" name="local" value={local.slug} />}
       <SubmitButton />
     </form>
   )

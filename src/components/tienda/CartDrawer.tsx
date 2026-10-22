@@ -3,9 +3,12 @@
 import Link from 'next/link'
 import { useCart } from '@/lib/cart-context'
 import { formatPrecio } from '@/lib/format'
+import { useLocal } from '@/components/local/LocalProvider'
+import { rutaLocal } from '@/lib/local-datos'
 
 export function CartDrawer() {
   const { items, isOpen, count, total, removeItem, updateCantidad, closeCart } = useCart()
+  const local = useLocal()
 
   return (
     <>
@@ -131,7 +134,7 @@ export function CartDrawer() {
 
               {/* CTAs */}
               <Link
-                href="/checkout"
+                href={rutaLocal(local.slug, '/checkout')}
                 onClick={closeCart}
                 className="block w-full bg-amber-500 hover:bg-amber-400 text-black font-bold text-sm py-3 rounded-xl text-center transition-colors"
               >

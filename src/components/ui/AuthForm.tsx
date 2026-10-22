@@ -12,10 +12,22 @@ export type AuthFormState = {
 type AuthFormProps = {
   type: 'login' | 'register'
   action: (state: AuthFormState, formData: FormData) => Promise<AuthFormState>
+  /** A qué página volver después de entrar (por ejemplo /roble/reservar). */
+  volver?: string | null
+  /** De qué local llegó la persona (por ejemplo "roble"). */
+  local?: string | null
 }
 
-export function AuthForm({ type, action }: AuthFormProps) {
+export function AuthForm({ type, action, volver, local }: AuthFormProps) {
   const [state, formAction, isPending] = useActionState(action, {})
+
+  // El login es uno solo para todos los locales: a dónde volver y de qué local
+  // viene viajan con el formulario, y también al pasar entre "entrar" y
+  // "crear cuenta", para no perderlos en el camino.
+  const consulta = new URLSearchParams()
+  if (volver) consulta.set('next', volver)
+  if (local) consulta.set('local', local)
+  const sufijo = consulta.size ? `?${consulta.toString()}` : ''
 
   return (
     <div className="w-full max-w-md p-8 rounded-2xl bg-zinc-900/80 backdrop-blur-xl border border-zinc-800 shadow-2xl">
@@ -25,12 +37,14 @@ export function AuthForm({ type, action }: AuthFormProps) {
         </h2>
         <p className="mt-2 text-sm text-zinc-400">
           {type === 'login'
-            ? 'Ingresa a tu panel de reservas'
-            : 'Regístrate para reservar tu turno'}
+            ? 'Entrá a tu panel de reservas'
+            : 'Registrate para reservar tu turno'}
         </p>
       </div>
 
       <form action={formAction} className="space-y-5">
+        {volver && <input type="hidden" name="next" value={volver} />}
+        {local && <input type="hidden" name="local" value={local} />}
         {state.error && (
           <div className="p-4 rounded-lg bg-red-950/30 border border-red-800/50 text-red-400 text-sm flex items-center gap-2">
             <svg className="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -95,7 +109,7 @@ export function AuthForm({ type, action }: AuthFormProps) {
         <span className="text-zinc-400">
           {type === 'login' ? '¿No tenés cuenta? ' : '¿Ya tenés cuenta? '}
         </span>
-        <Link href={type === 'login' ? '/register' : '/login'} className="font-bold text-white hover:text-zinc-300 transition-colors">
+        <Link href={(type === 'login' ? '/register' : '/login') + sufijo} className="font-bold text-white hover:text-zinc-300 transition-colors">
           {type === 'login' ? 'Crear cuenta' : 'Iniciar sesión'}
         </Link>
       </div>

@@ -1,9 +1,16 @@
 'use server'
 
 import { createClient } from '@/lib/supabase'
-import { requireAdmin } from '@/lib/auth'
+import { exigirPermiso, requireProfile } from '@/lib/auth'
 import { sendConfirmacionTurno, sendCancelacionTurno } from '@/lib/resend'
-import { revalidatePath } from 'next/cache'
+import { localDeAccion } from '@/lib/local'
+import { refrescarLocales } from '@/lib/refrescar'
+
+// Panel de administración de UN local. Las que listan o crean reciben el
+// nombre corto del local (el de la dirección) y revisan el permiso ahí. Las
+// que trabajan sobre un turno o un servicio por id no lo necesitan: la base
+// solo deja tocar filas de un local donde tenés permiso (Fase 2), y si no tocó
+// ninguna fila se avisa, en vez de decir "listo".
 
 function formatHora(horaSql: string) {
   return horaSql.slice(0, 5)
@@ -17,11 +24,12 @@ function localDateISO(date: Date): string {
   return `${y}-${m}-${d}`
 }
 
-export async function adminGetTurnos(filters?: {
+export async function adminGetTurnos(slug: string, filters?: {
   estado?: string
   fechaFiltro?: 'hoy' | 'semana' | 'todos'
 }) {
-  await requireAdmin()
+  const local = await localDeAccion(slug)
+  await exigirPermiso(local, 'operaPrivado')
   const supabase = await createClient()
 
   let query = supabase
@@ -39,6 +47,7 @@ export async function adminGetTurnos(filters?: {
       barberos ( nombre, apellido ),
       servicios ( nombre, duracion_minutos, precio )
     `)
+    .eq('local_id', local.id)
 
   if (filters?.estado && filters.estado !== 'todos') {
     query = query.eq('estado', filters.estado)
@@ -72,13 +81,13 @@ export async function adminGetTurnos(filters?: {
 }
 
 export async function adminConfirmarTurno(turnoId: string) {
-  const adminProfile = await requireAdmin()
+  const adminProfile = await requireProfile()
   const supabase = await createClient()
 
   const { data: turno, error: getErr } = await supabase
     .from('turnos')
     .select(`
-      id, fecha, hora, estado,
+      id, local_id, fecha, hora, estado,
       profiles ( nombre, apellido, email ),
       barberos ( nombre, apellido ),
       servicios ( nombre, precio )
@@ -89,12 +98,14 @@ export async function adminConfirmarTurno(turnoId: string) {
   if (getErr || !turno) return { error: 'Turno no encontrado' }
   if (turno.estado !== 'pendiente') return { error: 'Solo se pueden confirmar turnos pendientes' }
 
-  const { error: updErr } = await supabase
+  const { data: confirmados, error: updErr } = await supabase
     .from('turnos')
     .update({ estado: 'confirmado' })
     .eq('id', turnoId)
+    .select('id')
 
   if (updErr) return { error: updErr.message }
+  if (!confirmados?.length) return { error: 'No tenés permiso para confirmar este turno.' }
 
   const [year, month, day] = turno.fecha.split('-')
   const fechaLegible = `${day}/${month}/${year}`
@@ -120,6 +131,7 @@ export async function adminConfirmarTurno(turnoId: string) {
 
   if (!txExistente) {
     await supabase.from('transacciones').insert({
+      local_id:    turno.local_id,
       tipo:        'ingreso',
       categoria:   'servicios',
       monto:       servicio.precio,
@@ -131,9 +143,7 @@ export async function adminConfirmarTurno(turnoId: string) {
     })
   }
 
-  revalidatePath('/admin/turnos')
-  revalidatePath('/turnos')
-  revalidatePath('/admin/finanzas')
+  refrescarLocales()
   return { success: true }
 }
 
@@ -142,7 +152,7 @@ export async function adminConfirmarTurno(turnoId: string) {
  * mano por el admin). Confirma el turno si estaba pendiente. Idempotente.
  */
 export async function adminConfirmarSena(turnoId: string) {
-  await requireAdmin()
+  await requireProfile()
   const supabase = await createClient()
 
   const { data: turno, error: getErr } = await supabase
@@ -154,23 +164,24 @@ export async function adminConfirmarSena(turnoId: string) {
   if (getErr || !turno) return { error: 'Turno no encontrado' }
   if (turno.sena_estado === 'pagada') return { success: true }
 
-  const { error: updErr } = await supabase
+  const { data: cambiados, error: updErr } = await supabase
     .from('turnos')
     .update({
       sena_estado: 'pagada',
       ...(turno.estado === 'pendiente' ? { estado: 'confirmado' } : {}),
     })
     .eq('id', turnoId)
+    .select('id')
 
   if (updErr) return { error: updErr.message }
+  if (!cambiados?.length) return { error: 'No tenés permiso para cambiar este turno.' }
 
-  revalidatePath('/admin/turnos')
-  revalidatePath('/turnos')
+  refrescarLocales()
   return { success: true }
 }
 
 export async function adminCancelarTurno(turnoId: string) {
-  await requireAdmin()
+  await requireProfile()
   const supabase = await createClient()
 
   const { data: turno, error: getErr } = await supabase
@@ -187,12 +198,14 @@ export async function adminCancelarTurno(turnoId: string) {
   if (getErr || !turno) return { error: 'Turno no encontrado' }
   if (turno.estado === 'cancelado') return { error: 'El turno ya está cancelado' }
 
-  const { error: updErr } = await supabase
+  const { data: cancelados, error: updErr } = await supabase
     .from('turnos')
     .update({ estado: 'cancelado' })
     .eq('id', turnoId)
+    .select('id')
 
   if (updErr) return { error: updErr.message }
+  if (!cancelados?.length) return { error: 'No tenés permiso para cancelar este turno.' }
 
   const [year, month, day] = turno.fecha.split('-')
   const fechaLegible = `${day}/${month}/${year}`
@@ -209,18 +222,19 @@ export async function adminCancelarTurno(turnoId: string) {
     hora: formatHora(turno.hora)
   })
 
-  revalidatePath('/admin/turnos')
-  revalidatePath('/turnos')
+  refrescarLocales()
   return { success: true }
 }
 
-export async function adminGetServicios() {
-  await requireAdmin()
+export async function adminGetServicios(slug: string) {
+  const local = await localDeAccion(slug)
+  await exigirPermiso(local, 'editaCatalogo')
   const supabase = await createClient()
 
   const { data, error } = await supabase
     .from('servicios')
     .select('*')
+    .eq('local_id', local.id)
     .order('nombre')
 
   if (error) throw new Error(error.message)
@@ -228,7 +242,8 @@ export async function adminGetServicios() {
 }
 
 export async function adminCrearServicio(formData: FormData) {
-  await requireAdmin()
+  const local = await localDeAccion(formData.get('local'))
+  await exigirPermiso(local, 'editaCatalogo')
 
   const nombre = formData.get('nombre') as string
   const descripcion = formData.get('descripcion') as string
@@ -244,6 +259,7 @@ export async function adminCrearServicio(formData: FormData) {
   const { data, error } = await supabase
     .from('servicios')
     .insert({
+      local_id: local.id,
       nombre,
       descripcion,
       precio: parseFloat(precio),
@@ -255,13 +271,12 @@ export async function adminCrearServicio(formData: FormData) {
 
   if (error) return { error: error.message }
 
-  revalidatePath('/admin/servicios')
-  revalidatePath('/reservar')
+  refrescarLocales()
   return { success: true, servicio: data }
 }
 
 export async function adminActualizarServicio(formData: FormData) {
-  await requireAdmin()
+  await requireProfile()
 
   const id = formData.get('id') as string
   const nombre = formData.get('nombre') as string
@@ -285,17 +300,16 @@ export async function adminActualizarServicio(formData: FormData) {
     })
     .eq('id', id)
     .select()
-    .single()
 
   if (error) return { error: error.message }
+  if (!data?.length) return { error: 'No se encontró el servicio o no tenés permiso para cambiarlo.' }
 
-  revalidatePath('/admin/servicios')
-  revalidatePath('/reservar')
-  return { success: true, servicio: data }
+  refrescarLocales()
+  return { success: true, servicio: data[0] }
 }
 
 export async function adminToggleServicio(servicioId: string) {
-  await requireAdmin()
+  await requireProfile()
   const supabase = await createClient()
 
   const { data: servicio, error: getErr } = await supabase
@@ -306,20 +320,22 @@ export async function adminToggleServicio(servicioId: string) {
 
   if (getErr || !servicio) return { error: 'Servicio no encontrado' }
 
-  const { error: updErr } = await supabase
+  const { data: cambiados, error: updErr } = await supabase
     .from('servicios')
     .update({ activo: !servicio.activo })
     .eq('id', servicioId)
+    .select('id')
 
   if (updErr) return { error: updErr.message }
+  if (!cambiados?.length) return { error: 'No tenés permiso para cambiar este servicio.' }
 
-  revalidatePath('/admin/servicios')
-  revalidatePath('/reservar')
+  refrescarLocales()
   return { success: true, activo: !servicio.activo }
 }
 
-export async function adminGetCalendario(fechaInicio: string, fechaFin: string) {
-  await requireAdmin()
+export async function adminGetCalendario(slug: string, fechaInicio: string, fechaFin: string) {
+  const local = await localDeAccion(slug)
+  await exigirPermiso(local, 'operaPrivado')
   const supabase = await createClient()
 
   const { data, error } = await supabase
@@ -334,6 +350,7 @@ export async function adminGetCalendario(fechaInicio: string, fechaFin: string) 
       barberos ( id, nombre, apellido ),
       servicios ( nombre, duracion_minutos, precio )
     `)
+    .eq('local_id', local.id)
     .gte('fecha', fechaInicio)
     .lte('fecha', fechaFin)
     .neq('estado', 'cancelado')
@@ -350,22 +367,31 @@ export async function adminGetCalendario(fechaInicio: string, fechaFin: string) 
   })) ?? []
 }
 
-export async function adminGetClientes() {
-  await requireAdmin()
+/**
+ * Los clientes de ESTE local: quienes reservaron o compraron ahí (membresía
+ * "cliente", Fase 2). Antes eran todos los perfiles "client" de la plataforma.
+ */
+export async function adminGetClientes(slug: string) {
+  const local = await localDeAccion(slug)
+  await exigirPermiso(local, 'operaPrivado')
   const supabase = await createClient()
 
   const { data, error } = await supabase
-    .from('profiles')
-    .select('id, nombre, apellido, email')
-    .eq('role', 'client')
-    .order('apellido')
+    .from('membresias')
+    .select('profiles ( id, nombre, apellido, email )')
+    .eq('local_id', local.id)
+    .eq('rol', 'cliente')
 
   if (error) throw new Error(error.message)
-  return data
+  return (data ?? [])
+    .map((m) => (Array.isArray(m.profiles) ? m.profiles[0] : m.profiles) as { id: string; nombre: string; apellido: string; email: string } | null)
+    .filter((p): p is { id: string; nombre: string; apellido: string; email: string } => !!p)
+    .sort((a, b) => (a.apellido || '').localeCompare(b.apellido || ''))
 }
 
 export async function adminCrearTurno(formData: FormData) {
-  const adminProfile = await requireAdmin()
+  const local = await localDeAccion(formData.get('local'))
+  const adminProfile = await exigirPermiso(local, 'operaPrivado')
 
   const cliente_id = formData.get('cliente_id') as string
   const barbero_id = formData.get('barbero_id') as string
@@ -381,13 +407,15 @@ export async function adminCrearTurno(formData: FormData) {
 
   const [{ data: cliente }, { data: barbero }, { data: servicio }] = await Promise.all([
     supabase.from('profiles').select('nombre, apellido, email').eq('id', cliente_id).single(),
-    supabase.from('barberos').select('nombre, apellido').eq('id', barbero_id).single(),
-    supabase.from('servicios').select('nombre, precio').eq('id', servicio_id).single(),
+    supabase.from('barberos').select('nombre, apellido').eq('id', barbero_id).eq('local_id', local.id).single(),
+    supabase.from('servicios').select('nombre, precio').eq('id', servicio_id).eq('local_id', local.id).single(),
   ])
+  if (!barbero || !servicio) return { error: 'Ese servicio o ese profesional no son de este local.' }
 
   const { data, error } = await supabase
     .from('turnos')
     .insert({
+      local_id: local.id,
       cliente_id,
       barbero_id,
       servicio_id,
@@ -422,6 +450,7 @@ export async function adminCrearTurno(formData: FormData) {
   // Auto-registro financiero al crear turno confirmado
   if (servicio) {
     await supabase.from('transacciones').insert({
+      local_id:    local.id,
       tipo:        'ingreso',
       categoria:   'servicios',
       monto:       (servicio as { nombre: string; precio: number }).precio,
@@ -433,14 +462,13 @@ export async function adminCrearTurno(formData: FormData) {
     })
   }
 
-  revalidatePath('/admin/turnos')
-  revalidatePath('/turnos')
-  revalidatePath('/admin/finanzas')
+  refrescarLocales()
   return { success: true, turnoId: data.id }
 }
 
-export async function adminGetStats() {
-  await requireAdmin()
+export async function adminGetStats(slug: string) {
+  const local = await localDeAccion(slug)
+  await exigirPermiso(local, 'editaCatalogo')
   const supabase = await createClient()
 
   // Turnos de hoy
@@ -448,6 +476,7 @@ export async function adminGetStats() {
   const { count: turnosHoy, error: turnosError } = await supabase
     .from('turnos')
     .select('*', { count: 'exact', head: true })
+    .eq('local_id', local.id)
     .eq('fecha', today)
     .in('estado', ['pendiente', 'confirmado'])
 
@@ -455,13 +484,16 @@ export async function adminGetStats() {
   const { count: serviciosActivos, error: serviciosError } = await supabase
     .from('servicios')
     .select('*', { count: 'exact', head: true })
+    .eq('local_id', local.id)
     .eq('activo', true)
 
-  // Total clientes (perfiles con role 'client')
+  // Clientes del local (membresía "cliente"). La comercial, en un local
+  // activo, ve 0: los clientes de un local en producción no son suyos.
   const { count: totalClientes, error: clientesError } = await supabase
-    .from('profiles')
+    .from('membresias')
     .select('*', { count: 'exact', head: true })
-    .eq('role', 'client')
+    .eq('local_id', local.id)
+    .eq('rol', 'cliente')
 
   if (turnosError || serviciosError || clientesError) {
     throw new Error('Error al obtener estadísticas')

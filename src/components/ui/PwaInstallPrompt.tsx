@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { SITE } from '@/lib/site'
+import { useLocal } from '@/components/local/LocalProvider'
+import { iniciales } from '@/lib/icono'
 
 interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>
@@ -10,7 +11,9 @@ interface BeforeInstallPromptEvent extends Event {
 
 const DISMISSED_KEY = 'pwa-install-dismissed'
 
+// Ofrece instalar la app del local de la página (su nombre, sus iniciales).
 export function PwaInstallPrompt() {
+  const local = useLocal()
   const [prompt, setPrompt] = useState<BeforeInstallPromptEvent | null>(null)
   const [visible, setVisible] = useState(false)
 
@@ -67,13 +70,13 @@ export function PwaInstallPrompt() {
           <div className="flex items-start gap-3">
             {/* Ícono */}
             <div className="w-12 h-12 rounded-xl bg-zinc-950 border border-zinc-800 flex items-center justify-center shrink-0">
-              <span className="text-amber-400 font-black text-lg leading-none tracking-tighter">FB</span>
+              <span className="text-amber-400 font-black text-lg leading-none tracking-tighter">{iniciales(local.nombre)}</span>
             </div>
 
             {/* Texto */}
             <div className="flex-1 min-w-0">
               <p className="text-white font-semibold text-sm leading-tight">
-                Instalar {SITE.nombre}
+                Instalar {local.nombre}
               </p>
               <p className="text-zinc-400 text-xs mt-0.5 leading-snug">
                 Añadí la app a tu pantalla de inicio para acceder más rápido.

@@ -3,11 +3,17 @@
 import { MercadoPagoConfig, Preference, Payment } from 'mercadopago'
 import { createClient, createServiceClient } from '@/lib/supabase'
 import { getAccessTokenComercio } from '@/lib/mp-oauth'
-import { revalidatePath } from 'next/cache'
+import { localDeAccion } from '@/lib/local'
+import { localVisible, rutaLocal } from '@/lib/local-datos'
+import { refrescarLocales } from '@/lib/refrescar'
 
 type ItemCarritoRaw = { id: string; cantidad: number }
 
 export async function crearPedido(formData: FormData) {
+  // El pedido es de la tienda de un local: el de la página donde se compró.
+  const local = await localDeAccion(formData.get('local'))
+  if (!localVisible(local)) return { error: 'Esta tienda no está vendiendo por ahora.' }
+
   const itemsRaw     = formData.get('items') as string
   const tipoEntrega  = formData.get('tipo_entrega') as string
   const direccionRaw = (formData.get('direccion_envio') as string | null) ?? ''
@@ -42,11 +48,15 @@ export async function crearPedido(formData: FormData) {
   if (!itemsCarrito.length) return { error: 'El carrito está vacío' }
 
   // Service role: validamos e insertamos server-side (sin debilitar el RLS).
+  // Como la llave del servidor no pasa por las reglas de la base, acá se
+  // filtra a mano: solo productos de ESTE local (si el carrito trae uno de
+  // otro, no aparece y el pedido se frena abajo con "ya no está disponible").
   const supabase = createServiceClient()
   const ids = itemsCarrito.map(i => i.id)
   const { data: productos, error: prodError } = await supabase
     .from('productos')
     .select('id, nombre, precio, stock, activo')
+    .eq('local_id', local.id)
     .in('id', ids)
 
   if (prodError || !productos) return { error: 'Error al validar productos' }
@@ -69,6 +79,7 @@ export async function crearPedido(formData: FormData) {
   const { data: pedido, error: pedidoError } = await supabase
     .from('pedidos')
     .insert({
+      local_id:         local.id,
       user_id:          user?.id ?? null,
       estado:           'pendiente',
       tipo_entrega:     tipoEntrega,
@@ -87,6 +98,7 @@ export async function crearPedido(formData: FormData) {
     itemsCarrito.map(item => {
       const prod = productos.find(p => p.id === item.id)!
       return {
+        local_id:    local.id,
         pedido_id:   pedido.id,
         producto_id: item.id,
         nombre:      prod.nombre,
@@ -121,9 +133,9 @@ export async function crearPedido(formData: FormData) {
     }),
     payer:              { email: emailContacto || '' },
     back_urls: {
-      success: `${appUrl}/checkout/success`,
-      failure: `${appUrl}/checkout/failure`,
-      pending: `${appUrl}/checkout/success`,
+      success: `${appUrl}${rutaLocal(local.slug, '/checkout/success')}`,
+      failure: `${appUrl}${rutaLocal(local.slug, '/checkout/failure')}`,
+      pending: `${appUrl}${rutaLocal(local.slug, '/checkout/success')}`,
     },
     ...(!appUrl.includes('localhost') && { auto_return: 'approved' as const }),
     external_reference: pedido.id,
@@ -155,7 +167,7 @@ export async function actualizarEstadoPedido(pedidoId: string, paymentId: string
 
   const { data: pedido } = await supabase
     .from('pedidos')
-    .select('id, estado, total, user_id')
+    .select('id, estado, total, user_id, local_id')
     .eq('id', pedidoId)
     .single()
 
@@ -189,6 +201,7 @@ export async function actualizarEstadoPedido(pedidoId: string, paymentId: string
     const hoy = new Date()
     const fechaHoy = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`
     await supabase.from('transacciones').insert({
+      local_id:    pedido.local_id,
       tipo:        'ingreso',
       categoria:   'productos',
       monto:       pedido.total,
@@ -202,6 +215,6 @@ export async function actualizarEstadoPedido(pedidoId: string, paymentId: string
     console.error('[checkout] No se registró la transacción del pedido:', err)
   }
 
-  revalidatePath('/admin/finanzas')
+  refrescarLocales()
   return { success: true }
 }

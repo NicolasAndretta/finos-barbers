@@ -1,6 +1,7 @@
 'use client'
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import { useLocal } from '@/components/local/LocalProvider'
 
 export type CartItem = {
   id: string
@@ -27,6 +28,10 @@ type CartContextType = {
 const CartContext = createContext<CartContextType | null>(null)
 
 export function CartProvider({ children }: { children: ReactNode }) {
+  // Un carrito por local: lo que se agrega en la tienda de Roble no aparece en
+  // la de otro local (y su checkout lo rechazaría). Se guarda en el navegador.
+  const local = useLocal()
+  const clave = `carrito-${local.slug}`
   const [items, setItems]     = useState<CartItem[]>([])
   const [isOpen, setIsOpen]   = useState(false)
   const [hydrated, setHydrated] = useState(false)
@@ -35,19 +40,21 @@ export function CartProvider({ children }: { children: ReactNode }) {
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     try {
-      const stored = localStorage.getItem('roble-cart')
+      // Roble usaba la clave "roble-cart" antes de la Fase 3a: se lee una vez
+      // para que nadie pierda lo que tenía cargado.
+      const stored = localStorage.getItem(clave) ?? (local.slug === 'roble' ? localStorage.getItem('roble-cart') : null)
       if (stored) setItems(JSON.parse(stored))
     } catch {}
     setHydrated(true)
-  }, [])
+  }, [clave, local.slug])
   /* eslint-enable react-hooks/set-state-in-effect */
 
   // Persistir en localStorage cuando cambia
   useEffect(() => {
     if (hydrated) {
-      localStorage.setItem('roble-cart', JSON.stringify(items))
+      try { localStorage.setItem(clave, JSON.stringify(items)) } catch {}
     }
-  }, [items, hydrated])
+  }, [items, hydrated, clave])
 
   const addItem = (item: Omit<CartItem, 'cantidad'>) => {
     setItems(prev => {
