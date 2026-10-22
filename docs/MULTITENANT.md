@@ -800,6 +800,13 @@ y se cerraron los dos, en `src/app/actions/reservas.ts` y
   `main`. Se publica con Nico presente, verificando enseguida el chequeo de la demo,
   la reserva con una cuenta real y 369.
 
+**Actualización del 22/10:** la rama a publicar ahora es `arreglo/next-16-4`
+(commit `9413522`): trae este arreglo y, encima, Next 16.4.2 con build por
+webpack (la falla crítica de Next, ver "Fase 3 — Plan aprobado"). Sale de
+`main`, así que publicarla sigue siendo solo avanzar `main`. El paso 2 de abajo
+queda: `git push origin 9413522:main` (lo corre Nico: el modo automático no
+deja que Claude publique en `main`).
+
 **Cómo se publica en la demo (con Nico, unos 10 minutos)**
 1. La base no cambia: no hace falta copia de seguridad.
 2. `git push origin arreglo/turnos-que-se-pisan:main`. La rama sale del último
