@@ -36,16 +36,19 @@ export async function adminGetBarberos(slug: string) {
 
 /**
  * Crea una cuenta de acceso (rol "barbero") vinculada a un barbero del local.
- * Solo quien administra el local (el dueño o el admin de la plataforma): es
- * darle a alguien entrada al sistema. Usa la llave del servidor (crear un
- * usuario ya confirmado), así que acá se revisa todo a mano:
+ * Es darle a alguien entrada al sistema. Pueden hacerlo quien administra el
+ * local (el dueño, el admin de la plataforma) y la comercial mientras el local
+ * está en demo, para dejarlo armado. Una vez entregado (activo), es cosa del
+ * dueño (decisión de Nico, 25/10/2026). Es la misma regla que "opera lo
+ * privado" de la Fase 2. Usa la llave del servidor (crear un usuario ya
+ * confirmado), así que acá se revisa todo a mano:
  *   - el permiso, en el local de la pantalla;
  *   - que el barbero sea de ESE local.
  * La membresía de barbero en el local se crea sola (disparador de la Fase 2).
  */
 export async function adminCrearCuentaBarbero(formData: FormData) {
   const local = await localDeAccion(formData.get('local'))
-  await exigirPermiso(local, 'administra')
+  await exigirPermiso(local, 'operaPrivado')
   const barberoId = formData.get('barbero_id') as string
   const email = ((formData.get('email') as string) || '').trim().toLowerCase()
   const password = (formData.get('password') as string) || ''

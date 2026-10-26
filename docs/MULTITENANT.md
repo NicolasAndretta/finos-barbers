@@ -924,5 +924,6 @@ de `braces`, que solo usa el lint). Lint, build y las 5 pruebas en verde.
 - Mercado Pago por local (`mp_conexion` y el webhook), imágenes por local
   (ya se suben a una carpeta por local), y sacar el mecanismo temporal que crea
   la membresía de barbero desde `profiles.role`.
-- Crear cuentas de barbero quedó para quien administra el local (no la
-  comercial). Revisar si en las demos la comercial también lo necesita.
+- **Decidido (25/10):** las cuentas de barbero las crea quien administra el
+  local y también la comercial mientras el local está en demo ("por si tiene
+  que hacerlo"); una vez entregado, es responsabilidad del dueño. Hecho.
