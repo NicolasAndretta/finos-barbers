@@ -189,7 +189,8 @@ Después de cada cambio en producción:
 | 2 | Membresías y RLS por local (reemplaza `is_admin()`), con prueba de aislamiento | ✅ Hecha en desarrollo el 14/10/2026; OK de Nico el 22/10 (va a producción con el resto, después de la Fase 5) |
 | 3a | El sitio elige el local por la dirección; `SITE` pasa a ser datos del local; panel por local con permisos de la Fase 2; un solo login; rubro y nombre provisorio | ✅ Hecha en desarrollo el 22/10/2026; OK de Nico el 25/10 (va a producción con el resto, después de la Fase 5) |
 | 3b | Horarios reales del local y de cada profesional (la reserva solo ofrece lo abierto) | ✅ Hecha en desarrollo el 25/10/2026; OK de Nico el 26/10 (va a producción con el resto, después de la Fase 5) |
-| 4 | Llamadas con permisos totales filtradas por local; Mercado Pago e imágenes por local | ⏳ |
+| 4a | Cada local cobra en su propia cuenta de Mercado Pago: una conexión por local, el aviso de Mercado Pago como fuente de verdad, las demos no cobran | ⏳ Plan aprobado el 26/10/2026; en construcción |
+| 4b | Imágenes por local; las llamadas con la llave del servidor, revisadas y filtradas por local | ⏳ Plan aprobado el 26/10/2026 |
 | 5 | Prueba automática de aislamiento completa | ⏳ |
 | 6 | Alta de barberías desde el panel (demo → activo), ver la sección de abajo | ⏳ |
 | 7 | Interruptores de plan: turnos, tienda, finanzas | ⏳ |
@@ -1010,3 +1011,76 @@ había cambiado la forma. Mismo resultado final; todavía no fue a producción.
 **Encontrado y arreglado en las pruebas:** después de guardar un horario, el
 aviso "Horario guardado" desaparecía al instante (la pantalla se rearmaba al
 recargar los datos). Ahora queda a la vista.
+
+### Fase 4 — Plan aprobado (26/10/2026)
+
+Nico aprobó el plan con todas las recomendaciones ("hacelo como vos recomendás
+todo"). Se parte en dos, como la 3, y cada parte lleva su OK.
+
+**4a — Cada local cobra en su propia cuenta de Mercado Pago**
+- **Una conexión por local.** Hasta ahora había una sola, y al conectar se
+  borraban todas las demás. La base no va a dejar guardar dos para el mismo local.
+- **Conecta desde el panel de su local quien lo administra** (el dueño o el
+  admin). La comercial no: es la plata del dueño. Hay una sola dirección de
+  vuelta para todos los locales (decisión 1), y el local que conecta viaja en
+  una cookie del servidor, no en la dirección.
+- **El panel muestra con qué cuenta se conectó** y cuándo vence. La comercial
+  ve solo "conectado: sí o no" (la cuenta del dueño es un dato privado).
+- **La conexión se renueva con 30 días de margen**, como en Código Rojo.
+- **Se cobra siempre con la cuenta del local:** se va el token de respaldo del
+  archivo de variables.
+- **El aviso de Mercado Pago pasa a decidir si algo está pagado**, y la página
+  de vuelta hace la misma verificación. Para marcar pagado tienen que coincidir
+  cuatro cosas: que esté aprobado, que lo haya cobrado la cuenta del local, que
+  sea de un turno o pedido de ese local, y que el monto sea el que corresponde.
+  Esto cierra además una falla en la confirmación de pagos que también tiene la
+  demo publicada; el detalle se anota cuando esté cerrada en producción (el
+  repo es público).
+- **Devoluciones:** la seña queda "devuelta"; el pedido, cancelado, con el stock
+  repuesto y la salida en la caja. Si ya se había enviado, queda para revisarlo
+  a mano.
+- **Un local en demo nunca cobra** (decisión 5). La opción de Mercado Pago se
+  muestra y lleva a una pantalla que explica que en la muestra no se cobra. Lo
+  mismo en la tienda.
+- **Un local activo sin Mercado Pago:** la reserva ofrece solo transferencia, y
+  la tienda queda como catálogo, con "Consultar por WhatsApp".
+- **Confirmar un pago es una sola operación en la base** (entra completa o no
+  entra), y solo la puede usar el servidor.
+- **De paso:** la tienda descuenta el stock cuando cobra (hasta ahora nunca lo
+  hacía); no se crea un pedido si el local no puede cobrar; la referencia del
+  cobro de un turno la guarda el servidor (el error anotado en la Fase 0); se
+  sacan los permisos que la foto le dejó a la clave pública sobre `mp_conexion`;
+  y la librería `mercadopago` se reemplaza por dos llamadas directas, para poder
+  probar contra un Mercado Pago de mentira.
+
+**4b — Imágenes por local y la llave del servidor**
+- **Fotos del celu:** se achican en el navegador antes de subirlas, con el
+  `image-client.ts` de 369 y Código Rojo. Hasta ahora una foto de más de 1 MB
+  fallaba con un error genérico, por el tope de las Server Actions.
+- **El servidor las vuelve a procesar:** acepta solo JPG, PNG o WebP mirando el
+  contenido real, las achica a 1600 px, las guarda en WebP y les borra los datos
+  ocultos (incluida la ubicación GPS).
+- **Carpeta por id del local**, tope de 25 MB por local, y al reemplazar o quitar
+  una foto se borra la vieja (solo del bucket `imagenes` y de la carpeta del
+  local). Se saca la opción de pegar un link.
+- **La llave del servidor, revisada en sus 11 usos.** La agenda y la lista de
+  clientes del barbero pasan a la sesión; la lista queda en "los de sus turnos",
+  como dice el cuadro de la Fase 2. Script nuevo: `verificar-llave-servidor.mjs`.
+- **La membresía de barbero se crea directamente**, y se borra el mecanismo
+  temporal de la Fase 2 (`profiles_sincroniza_barbero` y su función): un
+  disparador, no datos.
+
+**Cómo se verifica:** un Mercado Pago de mentira en la PC
+(`scripts/mp-falso.mjs`), dos pruebas nuevas (`probar-cobros.mjs` y
+`probar-imagenes.mjs`), las de siempre ampliadas, contraprueba, lint y build. Un
+pago real queda para el pase a producción.
+
+**Para más adelante:** la app de Mercado Pago del producto necesita el nombre
+(es lo que ve el dueño al conectar su cuenta); la tienda no tiene una pantalla de
+pedidos en el panel; y un barbero que ya tiene cuenta no puede recibir una cuenta
+de barbero (se resuelve con las invitaciones de la Fase 6).
+
+**La tienda y los planes** (pregunta de Nico): si la tienda va en el plan del
+medio o en el más caro se decide antes de la Fase 7. En el borrador va en el del
+medio, junto con las señas por Mercado Pago. Lo de esta fase sirve para las dos
+opciones.
