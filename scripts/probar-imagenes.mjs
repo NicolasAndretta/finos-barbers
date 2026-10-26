@@ -192,7 +192,8 @@ try {
     await p.waitForFunction((anterior) => { const img = document.querySelector('img[alt="Vista previa"]'); return img && img.getAttribute('src') !== anterior }, primera, { timeout: 60_000 })
     await p.getByRole('button', { name: 'Actualizar' }).click()
     const segunda = await esperar(fotoDelProducto, (v) => !!v && v !== primera)
-    const enCarpeta = await archivosDe(localB)
+    // La foto vieja se borra justo después de guardar el cambio: se espera a que no esté.
+    const enCarpeta = await esperar(() => archivosDe(localB), (lista) => !lista.includes(rutaDe(primera)))
     anotar(segunda !== primera && enCarpeta.includes(rutaDe(segunda)), 'el producto quedó con la foto nueva')
     anotar(!enCarpeta.includes(rutaDe(primera)), 'y la vieja ya no está en el bucket (no ocupa espacio)')
 
@@ -201,7 +202,8 @@ try {
     await p.getByRole('button', { name: 'Quitar' }).click()
     await p.getByRole('button', { name: 'Actualizar' }).click()
     const sinFoto = await esperar(fotoDelProducto, (v) => v === null)
-    anotar(sinFoto === null && (await archivosDe(localB)).length === 0, 'al quitarla, el producto queda sin foto y la carpeta del local, vacía')
+    const vacia = await esperar(() => archivosDe(localB), (lista) => lista.length === 0)
+    anotar(sinFoto === null && vacia.length === 0, 'al quitarla, el producto queda sin foto y la carpeta del local, vacía')
   }
 
   // ─── 3. Lo que no es una foto, rechazado por el servidor ──────────────────
@@ -295,7 +297,7 @@ try {
     await p.waitForFunction((anterior) => { const img = document.querySelector('img[alt="Vista previa"]'); return img && img.getAttribute('src') !== anterior }, una, { timeout: 60_000 })
     await p.getByRole('button', { name: 'Actualizar' }).click()
     const otra = await esperar(fotoBarbero, (v) => !!v && v !== una)
-    const enCarpeta = await archivosDe(localB)
+    const enCarpeta = await esperar(() => archivosDe(localB), (lista) => !lista.includes(rutaDe(una)))
     anotar(otra !== una && enCarpeta.includes(rutaDe(otra)) && !enCarpeta.includes(rutaDe(una)), 'y al cambiarla, la vieja se borra')
   }
 

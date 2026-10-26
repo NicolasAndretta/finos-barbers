@@ -191,7 +191,7 @@ Después de cada cambio en producción:
 | 3b | Horarios reales del local y de cada profesional (la reserva solo ofrece lo abierto) | ✅ Hecha en desarrollo el 25/10/2026; OK de Nico el 26/10 (va a producción con el resto, después de la Fase 5) |
 | 4a | Cada local cobra en su propia cuenta de Mercado Pago: una conexión por local, el aviso de Mercado Pago como fuente de verdad, las demos no cobran | ✅ Hecha en desarrollo el 26/10/2026; OK de Nico el 26/10 (va a producción con el resto, después de la Fase 5) |
 | 4b | Imágenes por local; las llamadas con la llave del servidor, revisadas y filtradas por local | ✅ Hecha en desarrollo el 26/10/2026, aprobada de antemano por Nico (va a producción con el resto, después de la Fase 5) |
-| 5 | Prueba automática de aislamiento completa | ⏳ |
+| 5 | Prueba automática de aislamiento completa | ✅ Hecha en desarrollo el 26/10/2026, aprobada de antemano por Nico. Sigue el pase a producción de todo junto (lo corre Nico: `docs/PASE-A-PRODUCCION.md`) |
 | 6 | Alta de barberías desde el panel (demo → activo), ver la sección de abajo | ⏳ |
 | 7 | Interruptores de plan: turnos, tienda, finanzas | ⏳ |
 
@@ -1264,3 +1264,45 @@ prefijo (`_1_imagen_url`). Corregida, la prueba agarra el rechazo de verdad.
 quedan sin uso (es borrar: con el OK de Nico). Las fotos de afuera que ya estaban
 cargadas (por ejemplo, en el catálogo de ejemplo de Roble) siguen andando; si se
 cambian, la nueva tiene que subirse por el panel.
+
+### Fase 5 — La prueba completa de aislamiento, hecha en desarrollo (26/10/2026)
+
+**El plan** (aprobado de antemano por Nico, "todo aprobado"): que la prueba deje de
+depender de los casos que a alguien se le ocurrió probar, y recorra TODO lo que existe:
+cada tabla, cada tipo de cuenta, cada operación. Y que lo nuevo que aparezca sin
+decidir (una tabla, una función expuesta) haga fallar.
+
+**Qué se hizo**
+
+| Pieza | En simple |
+|---|---|
+| `scripts/probar-matriz.mjs` (nuevo) | La matriz completa: las 13 tablas con local × 8 tipos de cuenta (visitante, cliente, ajeno, barbero, dueño de otro local, dueña del local, comercial, admin) × 3 locales que no son suyos (activo, demo, suspendido) × 4 operaciones (ver, cambiar, crear, borrar). El cuadro de la Fase 2 está escrito como reglas, y para "ver" se compara fila por fila. Lo que se crea con permiso se borra enseguida, y lo que la respuesta dice que no se confirma en la base. Tarda unos 10 segundos |
+| Tablas sin decidir | Toda tabla con local tiene que tener sus reglas en la matriz: una nueva sin decidir hace fallar |
+| Funciones expuestas | Las 14 funciones que pueden usar la clave pública o una sesión, revisadas una por una (qué devuelven y por qué es seguro). Una nueva expuesta sin revisar hace fallar: fue el agujero de `mark_order_paid` en Código Rojo. Y las cuatro que marcan pagos, comprobadas fuera de esa lista |
+| Storage | Sin reglas de escritura: ni el visitante, ni el dueño, ni el admin con su sesión suben, listan o borran fotos. Solo el servidor |
+| `0013_permisos_minimos.sql` | La matriz encontró que la clave pública tenía, en las tablas viejas de la barbería, todos los permisos de Postgres (lo que Supabase da por defecto), incluido TRUNCATE, que no pasa por RLS. No era un agujero abierto (no se puede pedir por la API), pero ahora es una segunda cerradura: la clave pública solo lee, y nadie tiene truncate, trigger ni references. Lo que ve cada uno lo siguen decidiendo las políticas. Las tres tablas de 369 no se tocan (regla) |
+| `npm run probar` (`scripts/probar-todo.mjs`, nuevo) | Todas las pruebas con un solo comando, y un resumen: las de la base siempre, las de navegador si la app está levantada. Termina con error si algo falló o si no se pudo correr todo |
+
+**Cómo se verificó**
+- La `0013` corre dos veces, y la cadena entera (0000 a 0013) también.
+- `probar-matriz` 66 ✓.
+- **Contraprueba:** se abrieron a propósito tres agujeros en la base de desarrollo:
+  una política que deja a cualquiera con sesión ver todos los turnos, permiso de
+  escritura para la clave pública en reseñas, y una función nueva expuesta. La matriz
+  marcó exactamente tres fallas, cada una donde estaba el agujero (en turnos, las 16
+  combinaciones de cuenta y local que no tienen que ver esas filas). Se cerraron
+  (volviendo a pasar las migraciones y borrando la función) y pasa de nuevo.
+- **`npm run probar`: 11 pruebas, 500 controles, todo en verde** (`verificar-locales`
+  77, `verificar-llave-servidor` 16, `probar-seguridad` 50, `probar-aislamiento` 129,
+  `probar-matriz` 66, `probar-reservas` 7, `probar-locales` 31, `probar-horarios` 18,
+  `probar-imagenes` 29, `probar-panel-barbero` 12, `probar-cobros` 65).
+- `npm run lint` (0 errores, las 6 advertencias viejas) y `npm run build` en verde.
+
+**Encontrado y arreglado:** al correr todo junto, `probar-imagenes` falló dos veces en
+"la foto vieja se borró": la base guarda la foto nueva y la vieja se borra un instante
+después, y la prueba miraba el bucket antes. No era la app (el registro no tenía
+ningún error de borrado): ahora la prueba espera a que la vieja desaparezca.
+
+**Para más adelante (anotado):** las tres tablas de 369 tienen los mismos permisos
+amplios por defecto. Hoy las cierra RLS sin políticas; ajustarlas sería tocar lo de
+369, así que queda para cuando se revise esa web.

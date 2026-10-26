@@ -14,7 +14,8 @@ Todo lo que describe la base de datos vive acá, versionado junto con el código
 | `migrations/0010_horarios.sql` | Fase 3b: horarios reales (tablas `horarios` y `ausencias`, `guardar_horarios`), reglas de reserva de cada local (anticipación, días adelante, zona horaria) y Roble de lunes a sábado de 10 a 20. |
 | `migrations/0011_cobros_por_local.sql` | Fase 4a: una conexión de Mercado Pago por local (con qué cuenta), la seña "devuelta", la caja acepta ventas de invitados, y las cuatro funciones que aplican un pago ya verificado (solo el servidor). En producción va ANTES de publicar el código de la Fase 4a. |
 | `migrations/0012_sin_mecanismo_temporal.sql` | Fase 4b: saca el disparador temporal de la Fase 2 que copiaba la membresía de barbero desde el perfil (el código ya la crea directamente). No borra datos. |
-| `migrations/0013` en adelante | Los cambios que siguen. Cada uno se prueba primero en desarrollo. |
+| `migrations/0013_permisos_minimos.sql` | Fase 5: segunda cerradura en los permisos de Postgres de las tablas de la barbería (la clave pública solo lee; nadie tiene truncate, trigger ni references). No toca lo de 369 ni borra datos. |
+| `migrations/0014` en adelante | Los cambios que siguen. Cada uno se prueba primero en desarrollo. |
 | `seed-desarrollo.sql` | Datos de ejemplo: el catálogo de Roble, el local de demostración (servicios, barberos, productos, categorías, reseñas). Sin cuentas, turnos, pedidos ni tokens. |
 | `esquema-reporte.md` | Resumen legible de la foto, con alertas de seguridad. Se regenera con cada exportación. |
 | `config.toml` | Configuración del Supabase local (desarrollo). La crea `npx supabase init`. |
@@ -54,8 +55,16 @@ node scripts/verificar-locales.mjs
 # Probar la base como alguien que no usa la app (solo desarrollo)
 node scripts/probar-seguridad.mjs
 
+# TODAS las pruebas con un solo comando, con un resumen (solo desarrollo; las de
+# navegador corren si la app está levantada)
+npm run probar
+
 # Probar que cada cuenta ve y toca solo lo de su local (solo desarrollo)
 node scripts/probar-aislamiento.mjs
+
+# La matriz completa: cada tabla × cada tipo de cuenta × cada operación, más los
+# permisos de Postgres, las funciones expuestas y el Storage (solo desarrollo)
+node scripts/probar-matriz.mjs
 
 # Probar la reserva de turnos con un navegador, como un cliente (solo desarrollo;
 # la app tiene que estar levantada: npm run build && npx next start -H 127.0.0.1)
