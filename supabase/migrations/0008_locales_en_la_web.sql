@@ -55,7 +55,11 @@ alter table public.locales add constraint locales_slug_no_reservado
 -- quién lo activó. Devuelve el estado para que la web sepa si mostrarlo
 -- (demo y activo se muestran; suspendido y archivado, un aviso).
 
-create or replace function public.datos_del_local(p_slug text)
+-- Se borra antes de crearla porque la 0010 cambia lo que devuelve: al volver a
+-- correr todas las migraciones (preparar-desarrollo), "create or replace" no
+-- puede cambiar esa forma. Es código, no datos; la 0010 la vuelve a crear.
+drop function if exists public.datos_del_local(text);
+create function public.datos_del_local(p_slug text)
 returns table (
   id uuid, slug text, nombre text, estado text, rubro text,
   nombre_corto text, lema text, descripcion text,

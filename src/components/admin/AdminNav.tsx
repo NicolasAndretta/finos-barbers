@@ -27,6 +27,7 @@ export function AdminNav({ permisos }: { permisos: { administra: boolean; operaP
   const LINKS = [
     { href: ruta('/admin/dashboard'), label: 'Inicio', ver: true },
     { href: ruta('/admin/servicios'), label: 'Servicios', ver: true },
+    { href: ruta('/admin/horarios'), label: 'Horarios', ver: true },
     { href: ruta('/admin/turnos'), label: 'Turnos', ver: permisos.operaPrivado },
     { href: ruta('/admin/calendario'), label: 'Calendario', ver: permisos.operaPrivado },
     { href: ruta('/admin/productos'), label: 'Productos', ver: true },

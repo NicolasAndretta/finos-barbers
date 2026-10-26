@@ -8,6 +8,10 @@ import { sendConfirmacionTurno, sendCancelacionTurno } from '@/lib/resend'
 import { localDeAccion } from '@/lib/local'
 import { localVisible, rutaLocal } from '@/lib/local-datos'
 import { refrescarLocales } from '@/lib/refrescar'
+import {
+  ahoraEnZona, aHora, aMinutos, diaDeLaSemana, horariosLibres, interseccion, sumarDias,
+  MENSAJE_SIN_HORARIOS, type MotivoSinHorarios,
+} from '@/lib/horarios'
 
 // La seña se paga siempre por adelantado (online), nunca en el local.
 export type MetodoPago = 'mercadopago' | 'transferencia'
@@ -15,17 +19,6 @@ export type MetodoPago = 'mercadopago' | 'transferencia'
 // Formatear hora de 'HH:mm:ss' a 'HH:mm'
 function formatHora(horaSql: string) {
   return horaSql.slice(0, 5)
-}
-
-// Sumar minutos a una hora 'HH:mm'
-function addMinutesToTime(time: string, mins: number) {
-  const [h, m] = time.split(':').map(Number)
-  const date = new Date()
-  date.setHours(h, m, 0, 0)
-  date.setMinutes(date.getMinutes() + mins)
-  const newH = date.getHours().toString().padStart(2, '0')
-  const newM = date.getMinutes().toString().padStart(2, '0')
-  return `${newH}:${newM}`
 }
 
 // Las acciones reciben el nombre corto del local (el de la dirección, "roble")
@@ -64,39 +57,92 @@ export async function getBarberos(slug: string) {
 const esId = (v: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v)
 const esFecha = (v: string) => /^\d{4}-\d{2}-\d{2}$/.test(v)
 
-export async function getHorariosDisponibles(barberoId: string, fecha: string, servicioId: string) {
+export type Disponibilidad = { horarios: string[]; motivo?: MotivoSinHorarios }
+
+const ZONA_POR_DEFECTO = 'America/Argentina/Buenos_Aires'
+
+/**
+ * Qué horarios se pueden ofrecer para un servicio, con un profesional, un día
+ * (Fase 3b). Si no hay ninguno, dice por qué, para que la pantalla lo explique.
+ *
+ *  1. El servicio: cuánto dura y de qué local es.
+ *  2. Las reglas del local: anticipación mínima, hasta cuántos días adelante y
+ *     su zona horaria ("hoy" y "ya pasó" se miden en la hora del local).
+ *  3. Los horarios de ese día de la semana: los del local y, si el profesional
+ *     tiene propios, los que tienen en común (el local abierto Y él trabajando).
+ *  4. Las ausencias de ese día: feriado del local o licencia del profesional.
+ *  5. Los turnos ya tomados por cualquiera.
+ *  6. Los horarios libres: entran completos en un tramo (no se meten en el
+ *     hueco del mediodía), no se pisan con nada y, si es hoy, empiezan después
+ *     de ahora + la anticipación.
+ *
+ * Lo que no es público (las reglas, las ausencias, los turnos de otros) se lee
+ * con la llave del servidor, y de acá solo sale la lista de horarios: ningún
+ * dato de otros clientes ni el motivo de una ausencia.
+ */
+export async function getDisponibilidad(barberoId: string, fecha: string, servicioId: string): Promise<Disponibilidad> {
   // Solo con sesión iniciada y con datos que tengan forma válida: la pantalla
   // de reserva ya lo exige, pero esta función también se puede llamar directo.
-  if (!(await getUser())) return []
-  if (!esId(barberoId) || !esId(servicioId) || !esFecha(fecha)) return []
+  if (!(await getUser())) return { horarios: [] }
+  if (!esId(barberoId) || !esId(servicioId) || !esFecha(fecha)) return { horarios: [] }
 
   const supabase = await createClient()
 
-  // 1. Obtener la duración del servicio solicitado
+  // 1. El servicio. Con la sesión: si el local no es público, no aparece.
   const { data: servicio, error: sErr } = await supabase
     .from('servicios')
-    .select('duracion_minutos')
+    .select('duracion_minutos, local_id')
     .eq('id', servicioId)
     .single()
-    
   if (sErr || !servicio) throw new Error('Servicio no encontrado')
-  const duracionSolicitada = servicio.duracion_minutos
 
-  // 2. Obtener turnos existentes del barbero en la fecha
-  //    Con la llave del servidor: con la sesión del cliente, la base solo le
-  //    muestra SUS turnos, y los que ocuparon otros aparecían libres (se podían
-  //    reservar dos turnos que se pisan). Se leen solo la hora y la duración, y
-  //    de acá sale únicamente la lista de horarios libres: ningún dato de otros
-  //    clientes. El barbero es de un solo local, así que no mezcla locales.
-  //    Si al servidor le falta la llave (en Hostinger un redeploy puede borrar
-  //    las variables), se usa la sesión como antes: vuelve el error viejo,
-  //    pero las reservas no se cortan. Queda escrito en el registro del servidor.
+  // Si al servidor le falta la llave (en Hostinger un redeploy puede borrar
+  // las variables), se usa la sesión: las reglas quedan en sus valores por
+  // defecto y los turnos de otros podrían aparecer libres, pero las reservas
+  // no se cortan. Queda escrito en el registro del servidor.
   let servidor = supabase
   try {
     servidor = createServiceClient()
   } catch {
-    console.error('[horarios] Falta SUPABASE_SERVICE_ROLE_KEY: los turnos de otros clientes pueden aparecer libres.')
+    console.error('[horarios] Falta SUPABASE_SERVICE_ROLE_KEY: horarios calculados sin las reglas privadas del local.')
   }
+
+  // 2. Las reglas del local, y que el profesional sea de ese mismo local.
+  const [{ data: reglas }, { data: barbero }] = await Promise.all([
+    servidor.from('locales').select('anticipacion_minutos, dias_reserva, zona_horaria').eq('id', servicio.local_id).maybeSingle(),
+    servidor.from('barberos').select('id').eq('id', barberoId).eq('local_id', servicio.local_id).maybeSingle(),
+  ])
+  if (!barbero) return { horarios: [] }
+  const anticipacion = reglas?.anticipacion_minutos ?? 60
+  const diasReserva = reglas?.dias_reserva ?? 60
+  const ahora = ahoraEnZona(reglas?.zona_horaria || ZONA_POR_DEFECTO)
+
+  if (fecha < ahora.fecha) return { horarios: [], motivo: 'pasado' }
+  if (fecha > sumarDias(ahora.fecha, diasReserva)) return { horarios: [], motivo: 'muy_adelante' }
+
+  // 3 y 4. Horarios de ese día de la semana, ausencias de esa fecha, y si el
+  //        profesional tiene horario propio (en cualquier día).
+  const dia = diaDeLaSemana(fecha)
+  const [{ data: filas, error: hErr }, { data: ausencias }, { count: tramosPropios }] = await Promise.all([
+    servidor.from('horarios').select('barbero_id, desde, hasta').eq('local_id', servicio.local_id).eq('dia_semana', dia),
+    servidor.from('ausencias').select('barbero_id').eq('local_id', servicio.local_id).lte('desde', fecha).gte('hasta', fecha),
+    servidor.from('horarios').select('id', { count: 'exact', head: true }).eq('local_id', servicio.local_id).eq('barbero_id', barberoId),
+  ])
+  if (hErr) throw new Error(hErr.message)
+
+  const delLocal = (filas ?? []).filter((f) => f.barbero_id === null).map((f) => ({ desde: f.desde, hasta: f.hasta }))
+  if (!delLocal.length || (ausencias ?? []).some((a) => a.barbero_id === null)) return { horarios: [], motivo: 'cerrado' }
+
+  const propios = (filas ?? []).filter((f) => f.barbero_id === barberoId).map((f) => ({ desde: f.desde, hasta: f.hasta }))
+  if ((tramosPropios ?? 0) > 0 && !propios.length) return { horarios: [], motivo: 'no_atiende' }
+  if ((ausencias ?? []).some((a) => a.barbero_id === barberoId)) return { horarios: [], motivo: 'ausente' }
+
+  const tramos = propios.length ? interseccion(delLocal, propios) : delLocal
+  if (!tramos.length) return { horarios: [], motivo: 'no_atiende' }
+
+  // 5. Turnos ya tomados por cualquiera, con ese profesional ese día. Con la
+  //    sesión del cliente la base solo le mostraría SUS turnos y los de otros
+  //    aparecerían libres (se podían pisar dos turnos: arreglo del 14/10).
   const { data: turnos, error: tErr } = await servidor
     .from('turnos')
     .select(`
@@ -106,44 +152,23 @@ export async function getHorariosDisponibles(barberoId: string, fecha: string, s
     .eq('barbero_id', barberoId)
     .eq('fecha', fecha)
     .in('estado', ['pendiente', 'confirmado'])
-
   if (tErr) throw new Error(tErr.message)
 
-  // Parsear turnos ocupados: { inicio: 'HH:mm', fin: 'HH:mm' }
-  const ocupados = (turnos || []).map((t: { hora: string; servicios: { duracion_minutos: number }[] }) => {
-    const inicio = formatHora(t.hora)
-    const servicio = Array.isArray(t.servicios) ? t.servicios[0] : t.servicios
-    const fin = addMinutesToTime(inicio, servicio.duracion_minutos)
-    return { inicio, fin }
+  const ocupados = (turnos || []).map((t: { hora: string; servicios: { duracion_minutos: number }[] | { duracion_minutos: number } }) => {
+    const s = Array.isArray(t.servicios) ? t.servicios[0] : t.servicios
+    const inicio = aMinutos(t.hora)
+    return { inicio: aHora(inicio), fin: aHora(inicio + (s?.duracion_minutos ?? 0)) }
   })
 
-  // 3. Generar franjas horarias (09:00 a 20:00) cada 15 min
-  const horarios = []
-  let horaActual = '09:00'
-  const horaCierre = '20:00'
+  // 6. Los libres. Si es hoy, desde ahora + la anticipación del local.
+  const desdeMinuto = fecha === ahora.fecha ? ahora.minutos + anticipacion : 0
+  const horarios = horariosLibres({ tramos, ocupados, duracion: servicio.duracion_minutos, desdeMinuto })
+  return horarios.length ? { horarios } : { horarios, motivo: 'sin_lugar' }
+}
 
-  while (horaActual < horaCierre) {
-    const finEstimado = addMinutesToTime(horaActual, duracionSolicitada)
-    
-    // Si el servicio termina después del cierre, no es válido
-    if (finEstimado > horaCierre) {
-      break
-    }
-
-    // Verificar si hay solapamiento con algún turno ocupado
-    const haySolapamiento = ocupados.some((o) => {
-      // Un turno se solapa si (inicio1 < fin2) AND (fin1 > inicio2)
-      return horaActual < o.fin && finEstimado > o.inicio
-    })
-
-    if (!haySolapamiento) {
-      horarios.push(horaActual)
-    }
-
-    horaActual = addMinutesToTime(horaActual, 15) // Incrementar de a 15 min
-  }
-
-  return horarios
+/** Solo la lista de horarios (la usan crearReserva y el turno a mano del panel). */
+export async function getHorariosDisponibles(barberoId: string, fecha: string, servicioId: string): Promise<string[]> {
+  return (await getDisponibilidad(barberoId, fecha, servicioId)).horarios
 }
 
 export async function crearReserva(formData: FormData) {
@@ -164,36 +189,20 @@ export async function crearReserva(formData: FormData) {
     return { error: 'Método de pago inválido' }
   }
 
-  // Validar que la fecha esté dentro del rango permitido (hoy a 60 días)
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  const maxDate = new Date()
-  maxDate.setDate(maxDate.getDate() + 60)
-  maxDate.setHours(23, 59, 59, 999)
-  
-  const fechaDate = new Date(fecha)
-  fechaDate.setHours(12, 0, 0, 0) // Normalizar a mediodía para evitar problemas de zona horaria
-
-  if (fechaDate < today) {
-    return { error: 'La fecha debe ser hoy o una fecha futura' }
-  }
-  
-  if (fechaDate > maxDate) {
-    return { error: 'La fecha no puede ser mayor a 60 días desde hoy' }
-  }
-
   // El horario se vuelve a revisar al guardar, no solo al mostrar la lista:
   // entre que el cliente la vio y apretó el botón, otro pudo reservar un
-  // horario que se pisa con este. La base solo frena dos turnos que EMPIEZAN
-  // a la misma hora; uno a las 10:00 y otro a las 10:15 con el mismo barbero
-  // pasaban los dos.
-  let libres: string[]
+  // horario que se pisa con este (la base solo frena dos turnos que EMPIEZAN a
+  // la misma hora). Esta misma cuenta revisa también el horario del local, la
+  // fecha (en la hora del local, no la del servidor) y la anticipación.
+  let disponibilidad: Disponibilidad
   try {
-    libres = await getHorariosDisponibles(barbero_id, fecha, servicio_id)
+    disponibilidad = await getDisponibilidad(barbero_id, fecha, servicio_id)
   } catch {
     return { error: 'No pudimos revisar el horario. Probá de nuevo en un momento.' }
   }
-  if (!libres.includes(hora)) {
+  if (!disponibilidad.horarios.includes(hora)) {
+    const motivo = disponibilidad.motivo
+    if (motivo && motivo !== 'sin_lugar') return { error: MENSAJE_SIN_HORARIOS[motivo] }
     return { error: 'El horario que elegiste ya no está libre. Elegí otro de la lista.', horarioOcupado: true }
   }
 

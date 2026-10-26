@@ -11,7 +11,8 @@ Todo lo que describe la base de datos vive acá, versionado junto con el código
 | `migrations/0007_permisos_por_local.sql` | Fase 2: equipo, membresías y las políticas por local (el cuadro de quién ve qué). |
 | `migrations/0008_locales_en_la_web.sql` | Fase 3a: el rubro de cada local, las direcciones reservadas, los datos públicos de un local (`datos_del_local`) y qué puede hacer cada uno en un local (`permisos_en_local`). |
 | `migrations/0009_sin_local_por_defecto.sql` | Fase 3a: se termina el "Roble por defecto" (salvo `mp_conexion`, hasta la Fase 4). En producción va DESPUÉS de publicar el código de la Fase 3a. |
-| `migrations/0010` en adelante | Los cambios que siguen. Cada uno se prueba primero en desarrollo. |
+| `migrations/0010_horarios.sql` | Fase 3b: horarios reales (tablas `horarios` y `ausencias`, `guardar_horarios`), reglas de reserva de cada local (anticipación, días adelante, zona horaria) y Roble de lunes a sábado de 10 a 20. |
+| `migrations/0011` en adelante | Los cambios que siguen. Cada uno se prueba primero en desarrollo. |
 | `seed-desarrollo.sql` | Datos de ejemplo: el catálogo de Roble, el local de demostración (servicios, barberos, productos, categorías, reseñas). Sin cuentas, turnos, pedidos ni tokens. |
 | `esquema-reporte.md` | Resumen legible de la foto, con alertas de seguridad. Se regenera con cada exportación. |
 | `config.toml` | Configuración del Supabase local (desarrollo). La crea `npx supabase init`. |
@@ -61,6 +62,10 @@ node scripts/probar-reservas.mjs
 # Probar dos locales en la misma web con un navegador: cada uno ve y toca solo
 # lo suyo (solo desarrollo; con la app levantada, igual que la de arriba)
 node scripts/probar-locales.mjs
+
+# Probar los horarios con un navegador: horario cortado, profesional con horario
+# propio, licencias, feriados, la anticipación y el panel (solo desarrollo; con la app levantada)
+node scripts/probar-horarios.mjs
 
 # El equipo de la plataforma (Nico admin, Delfina comercial)
 node scripts/equipo.mjs listar

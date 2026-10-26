@@ -130,14 +130,17 @@ try {
   // ─── 1. La lista no ofrece los horarios que ocupó otro ─────────────────────
   {
     const fecha = proximo(1, 3)
-    console.log(`\n1. Lista de horarios (Leandro, ${fecha}: otra persona tiene 10:00 a 10:45)`)
+    console.log(`\n1. Lista de horarios (Leandro, ${fecha}: otra persona tiene 11:00 a 11:45; Roble abre de 10 a 20)`)
     const otra = await crearCuenta('otra-lista')
-    await turnoDeOtro(otra.id, fecha, '10:00')
+    await turnoDeOtro(otra.id, fecha, '11:00')
     const p = await abrirReserva(await crearCuenta('cliente-lista'), fecha, 'compu')
     const horarios = await horariosEnPantalla(p)
-    const pisan = ['09:45', '10:00', '10:15', '10:30'].filter((h) => horarios.includes(h))
+    const pisan = ['10:45', '11:00', '11:15', '11:30'].filter((h) => horarios.includes(h))
     anotar(pisan.length === 0, pisan.length ? `ofrece ${pisan.join(', ')}, que se pisan con el turno de otra persona` : 'no ofrece ningún horario que se pise')
-    anotar(horarios.includes('09:30') && horarios.includes('10:45'), 'sí ofrece 09:30 y 10:45, que no se pisan')
+    anotar(horarios.includes('10:30') && horarios.includes('11:45'), 'sí ofrece 10:30 y 11:45, que no se pisan')
+    // Fase 3b: Roble abre de 10 a 20 (antes se ofrecía desde las 9).
+    anotar(horarios[0] === '10:00' && horarios[horarios.length - 1] === '19:30',
+      `respeta el horario del local: de 10:00 a 19:30 (ofrece de ${horarios[0]} a ${horarios[horarios.length - 1]})`)
     await p.context().close()
   }
 
@@ -166,11 +169,11 @@ try {
       const visto = !!caja && caja.y >= 0 && caja.y + caja.height <= 844 &&
         await aviso.evaluate((el, [x, y]) => el.contains(document.elementFromPoint(x, y)), [caja.x + caja.width / 2, caja.y + caja.height / 2])
       anotar(visto, 'en el celu el aviso queda a la vista, sin que lo tape el menú')
-      // Con 30 minutos, 09:45 termina 10:15 (justo cuando empieza el otro): no se pisa.
+      // Antes de las 10 Roble está cerrado; desde las 11:00 ya no se pisa con el turno de 10:15 a 11:00.
       const horarios = await horariosEnPantalla(p)
       const pisan = ['10:00', '10:15', '10:30', '10:45'].filter((h) => horarios.includes(h))
-      anotar(pisan.length === 0 && horarios.includes('09:45') && horarios.includes('11:00'),
-        pisan.length ? `la lista nueva todavía ofrece ${pisan.join(', ')}` : 'la lista se actualizó sola (ofrece 09:45 y 11:00, no 10:00 a 10:45)')
+      anotar(pisan.length === 0 && !horarios.includes('09:45') && horarios.includes('11:00'),
+        pisan.length ? `la lista nueva todavía ofrece ${pisan.join(', ')}` : 'la lista se actualizó sola (ofrece 11:00; no 10:00 a 10:45 ni antes de abrir)')
     }
     await p.context().close()
   }

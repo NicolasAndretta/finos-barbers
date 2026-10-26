@@ -107,6 +107,8 @@ try {
              'Uñas prolijas, sin apuro', 'Local de prueba para la Fase 3a.') returning id`, [SLUG, NOMBRE]))[0].id
   await q(`insert into public.barberos (nombre, apellido, dias, local_id) values ('Mica', 'Prueba', array['Lunes'], $1)`, [localB])
   await q(`insert into public.servicios (nombre, descripcion, precio, duracion_minutos, local_id) values ('Esmaltado semipermanente', 'Prueba', 9000, 60, $1)`, [localB])
+  // Fase 3b: sin horarios, un local está cerrado. Lunes a sábado de 10 a 20.
+  await q(`insert into public.horarios (local_id, dia_semana, desde, hasta) select $1, d, '10:00', '20:00' from generate_series(1, 6) d`, [localB])
   await q(`insert into public.productos (nombre, descripcion, precio, stock, local_id) values ('Aceite de cutículas Prueba', 'x', 5000, 5, $1)`, [localB])
   await q(`insert into public.resenas (nombre, texto, rating, visible, local_id) values ('Clienta B', 'Reseña del local de prueba', 5, true, $1)`, [localB])
   const duenaB = await crearCuenta('duena-b')
@@ -242,7 +244,7 @@ try {
   await navegador.close()
   const ids = cuentas.filter(Boolean)
   if (localB) {
-    for (const tabla of ['turnos', 'items_pedido', 'pedidos', 'transacciones', 'membresias', 'resenas', 'productos', 'servicios', 'barberos', 'categorias']) {
+    for (const tabla of ['horarios', 'ausencias', 'turnos', 'items_pedido', 'pedidos', 'transacciones', 'membresias', 'resenas', 'productos', 'servicios', 'barberos', 'categorias']) {
       await db.query(`delete from public.${tabla} where local_id = $1`, [localB])
     }
   }

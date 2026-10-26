@@ -188,7 +188,7 @@ Después de cada cambio en producción:
 | 1 | Tabla `locales` y columna `local_id` en todas las tablas de la barbería; lo que existe hoy pasa a ser Roble, el local de demostración (sin cortar la demo ni tocar lo de 369) | ✅ Hecha en desarrollo el 10/10/2026; OK de Nico el 14/10 (va a producción con el resto, después de la Fase 5) |
 | 2 | Membresías y RLS por local (reemplaza `is_admin()`), con prueba de aislamiento | ✅ Hecha en desarrollo el 14/10/2026; OK de Nico el 22/10 (va a producción con el resto, después de la Fase 5) |
 | 3a | El sitio elige el local por la dirección; `SITE` pasa a ser datos del local; panel por local con permisos de la Fase 2; un solo login; rubro y nombre provisorio | ✅ Hecha en desarrollo el 22/10/2026; OK de Nico el 25/10 (va a producción con el resto, después de la Fase 5) |
-| 3b | Horarios reales del local y de cada profesional (la reserva solo ofrece lo abierto) | ⏳ |
+| 3b | Horarios reales del local y de cada profesional (la reserva solo ofrece lo abierto) | 🟡 Hecha en desarrollo el 25/10/2026; falta el OK de Nico |
 | 4 | Llamadas con permisos totales filtradas por local; Mercado Pago e imágenes por local | ⏳ |
 | 5 | Prueba automática de aislamiento completa | ⏳ |
 | 6 | Alta de barberías desde el panel (demo → activo), ver la sección de abajo | ⏳ |
@@ -959,3 +959,54 @@ domingos cerrado). Pruebas con navegador y contraprueba.
 Pregunta de Nico, para el futuro: Roble muestra más que el plan Básico (es la
 vidriera del Premium). Con los planes (Fase 7), conviene que la demo se pueda
 mostrar en cada plan con un interruptor.
+
+### Fase 3b — Horarios reales, hecha en desarrollo (25/10/2026)
+
+**Qué cambió, en simple**
+
+| Antes | Ahora |
+|---|---|
+| La reserva ofrecía todos los días, de 9 a 20, aunque la web dijera "domingos cerrado" | Ofrece solo lo que está abierto, según el horario de cada local |
+| Un horario por día | Varios tramos por día (horario cortado): en el hueco del mediodía no se reserva |
+| Todos los profesionales en el horario del local | Cada uno puede tener su horario propio; se ofrece lo que tienen en común con el local |
+| Vacaciones y feriados: nada | Ausencias: licencias de un profesional o feriados del local, de una fecha a otra |
+| Para hoy ofrecía horas que ya habían pasado | Para hoy, nada antes de "ahora + la anticipación" (1 hora, cada local la cambia) |
+| Siempre 60 días adelante | 60 por defecto, cada local lo cambia |
+| La hora del servidor | La hora de la zona del local |
+| La web mostraba un texto aparte | La web muestra los mismos horarios que usa la reserva |
+| La pantalla decía "No hay horarios" | Explica por qué: cerrado, no atiende, de licencia, todavía no se puede, ya no quedan |
+
+En el panel hay una pantalla nueva, **Horarios**: reglas, horario del local día
+por día, horario de cada profesional y ausencias. La ven todos los que entran
+al panel (dueño, admin, comercial).
+
+**La base:** `0010_horarios.sql`. Roble arranca de lunes a sábado de 10 a 20,
+como ya decía su web. La columna vieja `locales.horarios` (el texto) quedó sin
+uso; sacarla es borrar, así que va aparte y con el OK de Nico.
+Además, la `0008` ahora borra y vuelve a crear `datos_del_local` (en vez de
+"create or replace"): al volver a correr todas las migraciones, la `0010` ya le
+había cambiado la forma. Mismo resultado final; todavía no fue a producción.
+
+**Cómo se verificó**
+- Las cuentas de horarios (`src/lib/horarios.ts`) probadas sueltas: 10 casos
+  con resultado conocido (horario cortado, turnos tomados, anticipación, cambio
+  de año, zona horaria).
+- **`scripts/probar-horarios.mjs` (nuevo), 18 ✓**: un local de prueba con lunes
+  cortado, un profesional con horario propio, una licencia, un feriado y 14 días
+  para reservar. Revisa cada caso en la reserva, el límite de "hoy" (en una
+  zona horaria donde sea de día, para que pruebe algo a cualquier hora), la web,
+  y el panel: cerrar un día, que frene tramos que se pisan, cargar un feriado.
+  En celu y en compu.
+- **Contraprueba:** se volvió a poner a propósito el horario fijo de 9 a 20 y
+  las pruebas marcaron 4 fallas (el hueco del mediodía, el horario propio de
+  Beto, la apertura de Roble a las 10). Se restauró (archivo idéntico) y pasan.
+- `probar-aislamiento` suma 11 controles de horarios y ausencias (nadie toca los
+  de otro local, el público no ve las ausencias): 112 ✓. `verificar-locales`
+  74 ✓, `probar-seguridad` 43 ✓, `probar-reservas` 7 ✓ (ahora espera de 10:00 a
+  19:30), `probar-locales` 31 ✓.
+- `preparar-desarrollo` arma la base de cero (0000 a 0010), dos veces seguidas.
+- `npm run lint` (0 errores, las 6 advertencias viejas) y `npm run build` en verde.
+
+**Encontrado y arreglado en las pruebas:** después de guardar un horario, el
+aviso "Horario guardado" desaparecía al instante (la pantalla se rearmaba al
+recargar los datos). Ahora queda a la vista.

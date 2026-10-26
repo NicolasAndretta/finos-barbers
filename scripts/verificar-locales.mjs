@@ -40,6 +40,7 @@ const CON_LOCAL = [
   'barberos', 'categorias', 'servicios', 'productos', 'resenas',
   'turnos', 'pedidos', 'items_pedido', 'transacciones', 'mp_conexion',
   'membresias', // Fase 2: qué es cada persona en cada local
+  'horarios', 'ausencias', // Fase 3b: horarios reales de cada local
 ]
 
 /** Tablas de la plataforma, que no pertenecen a un local (y por qué). */

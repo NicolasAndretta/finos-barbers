@@ -2,7 +2,8 @@
 
 import React, { useState, useTransition, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { getHorariosDisponibles, crearReserva, type MetodoPago } from '@/app/actions/reservas'
+import { getDisponibilidad, crearReserva, type MetodoPago } from '@/app/actions/reservas'
+import { ahoraEnZona, sumarDias, MENSAJE_SIN_HORARIOS, type MotivoSinHorarios } from '@/lib/horarios'
 import { Spinner } from '@/components/ui/Spinner'
 import { useLocal } from '@/components/local/LocalProvider'
 import { rutaLocal } from '@/lib/local-datos'
@@ -22,6 +23,8 @@ export function ReservaForm({ servicios, barberos }: { servicios: Servicio[], ba
   const [barberoSeleccionado, setBarberoSeleccionado] = useState<Barbero | null>(null)
   const [fecha, setFecha] = useState<string>('')
   const [horarios, setHorarios] = useState<string[]>([])
+  // Por qué no hay horarios ese día (cerrado, de licencia...), para explicarlo.
+  const [motivo, setMotivo] = useState<MotivoSinHorarios | undefined>()
   const [horaSeleccionada, setHoraSeleccionada] = useState<string>('')
   const [isPending, startTransition] = useTransition()
   const [isLoadingHorarios, setIsLoadingHorarios] = useState(false)
@@ -41,18 +44,18 @@ export function ReservaForm({ servicios, barberos }: { servicios: Servicio[], ba
     if (step === 3 && fecha && barberoSeleccionado && servicioSeleccionado) {
       setHoraSeleccionada('')
       setIsLoadingHorarios(true)
-      getHorariosDisponibles(barberoSeleccionado.id, fecha, servicioSeleccionado.id)
-        .then((h) => setHorarios(h))
-        .catch(() => setHorarios([]))
+      getDisponibilidad(barberoSeleccionado.id, fecha, servicioSeleccionado.id)
+        .then((d) => { setHorarios(d.horarios); setMotivo(d.motivo) })
+        .catch(() => { setHorarios([]); setMotivo(undefined) })
         .finally(() => setIsLoadingHorarios(false))
     }
   }, [fecha, barberoSeleccionado, servicioSeleccionado, step])
   /* eslint-enable react-hooks/set-state-in-effect */
 
-  const now = new Date()
-  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
-  const maxDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 60)
-  const maxDateStr = `${maxDate.getFullYear()}-${String(maxDate.getMonth() + 1).padStart(2, '0')}-${String(maxDate.getDate()).padStart(2, '0')}`
+  // Qué días se pueden elegir: de hoy hasta los días adelante que permite el
+  // local, contando en la hora del local (no la del celular de quien reserva).
+  const today = ahoraEnZona(local.zonaHoraria).fecha
+  const maxDateStr = sumarDias(today, local.diasReserva)
 
   async function handleConfirmar(formData: FormData) {
     setErrorMsg('')
@@ -64,9 +67,9 @@ export function ReservaForm({ servicios, barberos }: { servicios: Servicio[], ba
         // pedir la lista para que elija entre los que de verdad quedan libres.
         if ('horarioOcupado' in res && barberoSeleccionado && servicioSeleccionado) {
           setHoraSeleccionada('')
-          getHorariosDisponibles(barberoSeleccionado.id, fecha, servicioSeleccionado.id)
-            .then((h) => setHorarios(h))
-            .catch(() => setHorarios([]))
+          getDisponibilidad(barberoSeleccionado.id, fecha, servicioSeleccionado.id)
+            .then((d) => { setHorarios(d.horarios); setMotivo(d.motivo) })
+            .catch(() => { setHorarios([]); setMotivo(undefined) })
         }
         return
       }
@@ -203,7 +206,7 @@ export function ReservaForm({ servicios, barberos }: { servicios: Servicio[], ba
                 </div>
               ) : (
                 <div className="p-4 bg-zinc-900/50 rounded-lg border border-zinc-800 text-center text-sm text-zinc-500">
-                  No hay horarios disponibles para esta fecha.
+                  {motivo ? MENSAJE_SIN_HORARIOS[motivo] : 'No hay horarios disponibles para esta fecha.'}
                 </div>
               )}
             </div>

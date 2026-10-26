@@ -10,6 +10,7 @@ import { formatPrecio } from "@/lib/format";
 import { getBarberos } from "@/app/actions/barberos";
 import { getResenasVisibles } from "@/app/actions/resenas";
 import { getServicios } from "@/app/actions/reservas";
+import { getHorariosSemana } from "@/app/actions/horarios";
 import { Logo } from "@/components/ui/Logo";
 import { WhatsappFloat } from "@/components/ui/WhatsappFloat";
 import { MobileMenu } from "@/components/ui/MobileMenu";
@@ -52,10 +53,12 @@ export default async function HomePage({ params }: { params: Promise<{ local: st
   type BarberoRow = { nombre: string; apellido: string | null; especialidad: string | null; bio: string | null; dias: string[] | null };
   type ResenaRow = { nombre: string; texto: string; rating: number };
 
-  const [serviciosDb, barberosDb, resenasDb] = await Promise.all([
+  const [serviciosDb, barberosDb, resenasDb, horarios] = await Promise.all([
     getServicios(local.slug).catch(() => [] as ServicioRow[]),
     getBarberos(local.slug).catch(() => [] as BarberoRow[]),
     getResenasVisibles(local.slug).catch(() => [] as ResenaRow[]),
+    // Los mismos horarios que usa la reserva (Fase 3b): no pueden decir otra cosa.
+    getHorariosSemana(local.slug).catch(() => [] as { dia: string; horas: string }[]),
   ]);
 
   const servicios = (serviciosDb as ServicioRow[]).slice(0, 6);
@@ -489,7 +492,10 @@ export default async function HomePage({ params }: { params: Promise<{ local: st
                   <span className="text-zinc-500 block text-xs uppercase tracking-wide mb-1">
                     Horarios
                   </span>
-                  {local.horarios.map((h) => (
+                  {horarios.length === 0 && (
+                    <p className="text-zinc-400 py-1.5">Consultanos por WhatsApp.</p>
+                  )}
+                  {horarios.map((h) => (
                     <div
                       key={h.dia}
                       className="flex justify-between max-w-xs border-b border-white/5 py-1.5"

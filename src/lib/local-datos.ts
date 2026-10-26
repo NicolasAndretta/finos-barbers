@@ -13,8 +13,6 @@
 
 import { palabrasDe, type Palabras } from '@/lib/rubros'
 
-export type HorarioTexto = { dia: string; horas: string }
-
 export type LocalPublico = {
   id: string
   /** El nombre en la dirección: sitio.com/<slug> */
@@ -43,7 +41,12 @@ export type LocalPublico = {
   aliasPago: string
   senaPorcentaje: number
   mediosPago: string[]
-  horarios: HorarioTexto[]
+  /** Con cuánta anticipación mínima se puede reservar para hoy (Fase 3b). */
+  anticipacionMinutos: number
+  /** Hasta cuántos días adelante se puede reservar. */
+  diasReserva: number
+  /** La zona horaria del local: "qué hora es" se calcula ahí, no en el servidor. */
+  zonaHoraria: string
 }
 
 /** Una fila de `datos_del_local(slug)` (migración 0008), tal como llega. */
@@ -52,7 +55,8 @@ export type FilaLocal = {
   nombre_corto: string | null; lema: string | null; descripcion: string | null
   direccion: string | null; ciudad: string | null; mapa_query: string | null; email: string | null
   whatsapp: string | null; whatsapp_mensaje: string | null; instagram: string | null; tiktok: string | null
-  alias_pago: string | null; sena_porcentaje: number; medios_pago: string[] | null; horarios: unknown
+  alias_pago: string | null; sena_porcentaje: number; medios_pago: string[] | null
+  anticipacion_minutos: number; dias_reserva: number; zona_horaria: string
 }
 
 /** "5491157641147" → "+54 9 11 5764-1147". Si no reconoce la forma, lo deja con "+". */
@@ -64,9 +68,6 @@ export function formatearWhatsapp(numero: string): string {
 
 /** Pasa la fila de la base a la forma que usa la web, con valores por defecto. */
 export function aLocalPublico(f: FilaLocal): LocalPublico {
-  const horarios = Array.isArray(f.horarios)
-    ? (f.horarios as HorarioTexto[]).filter((h) => h && typeof h.dia === 'string' && typeof h.horas === 'string')
-    : []
   const nombreCorto = f.nombre_corto?.trim() || f.nombre
   return {
     id: f.id,
@@ -92,7 +93,9 @@ export function aLocalPublico(f: FilaLocal): LocalPublico {
     aliasPago: f.alias_pago ?? '',
     senaPorcentaje: f.sena_porcentaje,
     mediosPago: f.medios_pago ?? [],
-    horarios,
+    anticipacionMinutos: f.anticipacion_minutos,
+    diasReserva: f.dias_reserva,
+    zonaHoraria: f.zona_horaria || 'America/Argentina/Buenos_Aires',
   }
 }
 

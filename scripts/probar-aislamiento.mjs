@@ -290,6 +290,35 @@ try {
     'el dueño de Roble NO puede cambiar el estado de su local (eso es del equipo)')
   anotar(!(await intentar('duenoA', 'PATCH', `/rest/v1/locales?id=eq.${localB}`, { nombre: 'Hackeado' })),
     'el dueño de Roble NO puede editar B')
+  // Horarios y ausencias (Fase 3b). Va antes de que la comercial suspenda B.
+  titulo('2b. Horarios y ausencias (Fase 3b)')
+  const tramoB = (await uno(`insert into public.horarios (local_id, dia_semana, desde, hasta) values ($1, 1, '09:00', '18:00') returning id`, [localB])).id
+  const ausenciaB = (await uno(`insert into public.ausencias (local_id, desde, hasta, motivo) values ($1, '2031-04-01', '2031-04-02', 'motivo privado de B') returning id`, [localB])).id
+  const veHorarioB = async (quien) => (await pedir('GET', `/rest/v1/horarios?id=eq.${tramoB}&select=id`, { token: c[quien].token })).datos?.length === 1
+  const veAusenciaB = async (quien) => (await pedir('GET', `/rest/v1/ausencias?id=eq.${ausenciaB}&select=id`, { token: c[quien].token })).datos?.length === 1
+  anotar(await veHorarioB('visitante'), 'el visitante ve el horario de B (la web lo muestra)')
+  anotar(!(await veAusenciaB('visitante')) && !(await veAusenciaB('cliente')), 'ni el visitante ni un cliente ven las ausencias de B (el motivo es privado)')
+  anotar(await veAusenciaB('duenoB'), 'la dueña de B ve sus ausencias')
+  anotar(!(await veAusenciaB('duenoA')), 'el dueño de Roble NO ve las ausencias de B')
+  anotar(!(await intentar('duenoA', 'POST', '/rest/v1/horarios', { local_id: localB, dia_semana: 2, desde: '10:00', hasta: '11:00' })),
+    'el dueño de Roble NO puede cargar horarios en B')
+  anotar(!(await intentar('duenoA', 'PATCH', `/rest/v1/horarios?id=eq.${tramoB}`, { hasta: '23:00' })),
+    'el dueño de Roble NO puede cambiar el horario de B')
+  anotar(!(await intentar('cliente', 'POST', '/rest/v1/horarios', { local_id: ROBLE, dia_semana: 0, desde: '10:00', hasta: '11:00' })),
+    'un cliente NO puede abrir Roble el domingo')
+  anotar(await intentar('duenoB', 'POST', '/rest/v1/horarios', { local_id: localB, dia_semana: 2, desde: '10:00', hasta: '11:00' }),
+    'la dueña de B carga un horario en B')
+  anotar(await intentar('comercial', 'POST', '/rest/v1/ausencias', { local_id: localB, desde: '2031-05-01', hasta: '2031-05-01' }),
+    'la comercial carga un feriado (edita el catálogo)')
+  anotar(!(await intentar('duenoA', 'POST', '/rest/v1/ausencias', { local_id: localB, desde: '2031-05-02', hasta: '2031-05-02' })),
+    'el dueño de Roble NO puede cargar ausencias en B')
+  {
+    // guardar_horarios corre con los permisos de quien llama: no le sirve a otro local.
+    await pedir('POST', '/rest/v1/rpc/guardar_horarios', { token: c.duenoA.token, cuerpo: { p_local: localB, p_barbero: null, p_tramos: [] } })
+    const quedan = (await uno(`select count(*)::int as n from public.horarios where local_id = $1`, [localB])).n
+    anotar(quedan === 2, `el dueño de Roble NO puede vaciar el horario de B con guardar_horarios (quedan ${quedan} tramos)`)
+  }
+
   anotar(await intentar('comercial', 'POST', '/rest/v1/locales', { slug: `aislamiento-nuevo-${sello}`, nombre: 'Creado por la comercial' }),
     'la comercial crea un local')
   anotar(await intentar('comercial', 'PATCH', `/rest/v1/locales?id=eq.${localB}`, { estado: 'suspendido' }),
@@ -334,7 +363,7 @@ try {
     await q(`delete from public.turnos where cliente_id = any ($1::uuid[])`, [creadas])
   }
   if (localB) {
-    for (const t of ['resenas', 'productos', 'servicios', 'categorias', 'barberos', 'membresias']) {
+    for (const t of ['horarios', 'ausencias', 'resenas', 'productos', 'servicios', 'categorias', 'barberos', 'membresias']) {
       await q(`delete from public.${t} where local_id = $1`, [localB])
     }
     await q(`delete from public.locales where id = $1`, [localB])
