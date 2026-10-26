@@ -5,8 +5,8 @@ import { crearPreferencia } from '@/lib/mercadopago'
 import { cuentaDelLocal } from '@/lib/mp-conexion'
 import { direccionesDelCobro, modoDeCobro, referenciaDe } from '@/lib/cobros'
 import { getUser, requireProfile } from '@/lib/auth'
-import { sendConfirmacionTurno, sendCancelacionTurno } from '@/lib/resend'
-import { localDeAccion } from '@/lib/local'
+import { sendConfirmacionTurno, sendCancelacionTurno, datosDelLocal } from '@/lib/resend'
+import { getLocal, localDeAccion } from '@/lib/local'
 import { localVisible, rutaLocal } from '@/lib/local-datos'
 import { refrescarLocales } from '@/lib/refrescar'
 import {
@@ -264,6 +264,7 @@ export async function crearReserva(formData: FormData) {
     // no está verificado, Resend caído) se registra y se sigue: perder el aviso
     // es molesto, perder la reserva confirmada es inaceptable.
     const envio = await sendConfirmacionTurno({
+      ...datosDelLocal(local),
       nombreCliente: `${profile.nombre} ${profile.apellido}`,
       emailCliente: profile.email,
       nombreBarbero: `${barbero.nombre} ${barbero.apellido}`,
@@ -339,7 +340,7 @@ export async function getTurnosCliente(slug: string) {
   return data
 }
 
-export async function cancelarTurno(turnoId: string) {
+export async function cancelarTurno(turnoId: string, slug?: string) {
   // Por id: la base solo deja ver y cancelar los turnos propios (Fase 2).
   const profile = await requireProfile()
   const supabase = await createClient()
@@ -350,6 +351,7 @@ export async function cancelarTurno(turnoId: string) {
     .select(`
       id,
       cliente_id,
+      local_id,
       fecha,
       hora,
       estado,
@@ -382,15 +384,20 @@ export async function cancelarTurno(turnoId: string) {
 
   // Mismo criterio que en la confirmación: el turno ya se canceló en la base,
   // así que un fallo del mail no puede tirar abajo la operación.
-  const envio = await sendCancelacionTurno({
-    nombreCliente: `${profile.nombre} ${profile.apellido}`,
-    emailCliente: profile.email,
-    nombreBarbero: `${barbero.nombre} ${barbero.apellido}`,
-    servicio: servicio.nombre,
-    fecha: fechaLegible,
-    hora: formatHora(turno.hora)
-  })
-  if (!envio.ok) console.error('[reservas] no se pudo enviar la cancelación:', envio.error)
+  // El local del mail: el de la página, solo si es el del turno.
+  const local = slug ? await getLocal(slug) : null
+  if (local && local.id === turno.local_id) {
+    const envio = await sendCancelacionTurno({
+      ...datosDelLocal(local),
+      nombreCliente: `${profile.nombre} ${profile.apellido}`,
+      emailCliente: profile.email,
+      nombreBarbero: `${barbero.nombre} ${barbero.apellido}`,
+      servicio: servicio.nombre,
+      fecha: fechaLegible,
+      hora: formatHora(turno.hora)
+    })
+    if (!envio.ok) console.error('[reservas] no se pudo enviar la cancelación:', envio.error)
+  }
 
   refrescarLocales()
 

@@ -1,7 +1,11 @@
 /**
  * src/lib/resend.ts
  *
- * Roble Barbería — cliente de Resend y funciones de envío de correo.
+ * Cliente de Resend y funciones de envío de correo de los turnos.
+ *
+ * Cada mail sale con el nombre del local del turno (Fase 6: hasta ahí decían
+ * "Roble Barbería" para cualquier local), y solo si el local está ACTIVO: en
+ * una muestra las reservas son de prueba y no se le escribe a nadie.
  *
  * Este módulo es exclusivamente de servidor (Node.js runtime).
  * NUNCA importarlo en Client Components ("use client") porque expone la API key.
@@ -12,6 +16,8 @@
  */
 
 import { Resend } from 'resend'
+import type { LocalPublico } from '@/lib/local-datos'
+import { conMayuscula } from '@/lib/rubros'
 
 // ─── Variables de entorno ────────────────────────────────────────────────────
 
@@ -27,7 +33,8 @@ export const resend = new Resend(RESEND_API_KEY || 'dummy_key_for_build')
  * envío del mail ocurre SIEMPRE despues de haber tocado la base: si tirara,
  * se caeria una reserva ya confirmada por no poder avisar de ella.
  */
-function motivoParaNoEnviar(): string | null {
+function motivoParaNoEnviar(datos: DatosTurno): string | null {
+  if (datos.estadoLocal !== 'activo') return 'El local no está activo (es una muestra): no se mandan mails.'
   if (!process.env.RESEND_API_KEY) {
     return 'Falta la variable de entorno RESEND_API_KEY. Cargala en .env.local ' +
       'con el valor de https://resend.com/api-keys'
@@ -37,12 +44,26 @@ function motivoParaNoEnviar(): string | null {
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
-/** Dirección del remitente. Reemplazar con el dominio verificado en Resend. */
-// Dominio de la demo: no existe, así que los envíos reales necesitan que
-// Nico ponga acá un dominio verificado en Resend.
-const FROM_ADDRESS = 'Roble Barbería <turnos@roblebarberia.com.ar>'
+/**
+ * La dirección del remitente; el nombre que se ve es el del local.
+ * ⚠️ Este dominio no existe: los envíos de verdad necesitan el dominio del
+ * producto verificado en Resend (cuando tenga nombre), y cambiarlo acá.
+ */
+const DIRECCION_REMITENTE = 'turnos@roblebarberia.com.ar'
+
+/** "El Tano" <turnos@...>, sin los caracteres que romperían el encabezado del mail. */
+function remitente(negocio: string): string {
+  const nombre = negocio.replace(/["<>\r\n]/g, '').trim() || 'Turnos'
+  return `${nombre} <${DIRECCION_REMITENTE}>`
+}
 
 export interface DatosTurno {
+  /** El nombre del local (va como remitente y en el encabezado). */
+  negocio: string
+  /** El estado del local: solo uno activo manda mails. */
+  estadoLocal: string
+  /** Cómo se llama quien atiende en este rubro ("Barbero", "Manicura"...). */
+  profesional: string
   /** Nombre completo del cliente */
   nombreCliente: string
   /** Email del cliente */
@@ -55,6 +76,11 @@ export interface DatosTurno {
   fecha: string
   /** Hora del turno en formato legible, ej: "10:30" */
   hora: string
+}
+
+/** Lo que un mail necesita saber del local del turno. */
+export function datosDelLocal(local: LocalPublico): Pick<DatosTurno, 'negocio' | 'estadoLocal' | 'profesional'> {
+  return { negocio: local.nombre, estadoLocal: local.estado, profesional: conMayuscula(local.palabras.profesional) }
 }
 
 /** Resultado exitoso de un envío */
@@ -94,11 +120,11 @@ export type ResultadoEnvio = EnvioExitoso | EnvioFallido
  * if (!resultado.ok) console.error(resultado.error)
  */
 export async function sendConfirmacionTurno(datos: DatosTurno): Promise<ResultadoEnvio> {
-  const motivo = motivoParaNoEnviar()
+  const motivo = motivoParaNoEnviar(datos)
   if (motivo) return { ok: false, error: motivo }
 
   const { data, error } = await resend.emails.send({
-    from: FROM_ADDRESS,
+    from: remitente(datos.negocio),
     to: datos.emailCliente,
     subject: `✅ Turno confirmado — ${datos.fecha} a las ${datos.hora}`,
     html: buildConfirmacionHtml(datos),
@@ -118,11 +144,11 @@ export async function sendConfirmacionTurno(datos: DatosTurno): Promise<Resultad
  * @returns ResultadoEnvio — union discriminada para manejo seguro de errores
  */
 export async function sendCancelacionTurno(datos: DatosTurno): Promise<ResultadoEnvio> {
-  const motivo = motivoParaNoEnviar()
+  const motivo = motivoParaNoEnviar(datos)
   if (motivo) return { ok: false, error: motivo }
 
   const { data, error } = await resend.emails.send({
-    from: FROM_ADDRESS,
+    from: remitente(datos.negocio),
     to: datos.emailCliente,
     subject: `❌ Turno cancelado — ${datos.fecha} a las ${datos.hora}`,
     html: buildCancelacionHtml(datos),
@@ -158,7 +184,7 @@ function buildConfirmacionHtml(datos: DatosTurno): string {
           <tr>
             <td style="background:#18181b;padding:32px 40px;text-align:center;">
               <h1 style="margin:0;color:#ffffff;font-size:24px;font-weight:700;letter-spacing:-0.5px;">
-                ✂️ Roble Barbería
+                ${escapeHtml(datos.negocio)}
               </h1>
             </td>
           </tr>
@@ -178,7 +204,7 @@ function buildConfirmacionHtml(datos: DatosTurno): string {
                 <tr><td style="padding:24px;">
                   ${buildDetalleRow('📅 Fecha', datos.fecha)}
                   ${buildDetalleRow('🕐 Hora', datos.hora)}
-                  ${buildDetalleRow('✂️ Barbero', datos.nombreBarbero)}
+                  ${buildDetalleRow(`✂️ ${datos.profesional}`, datos.nombreBarbero)}
                   ${buildDetalleRow('💈 Servicio', datos.servicio)}
                 </td></tr>
               </table>
@@ -193,7 +219,7 @@ function buildConfirmacionHtml(datos: DatosTurno): string {
           <tr>
             <td style="background:#f4f4f5;padding:20px 40px;text-align:center;border-top:1px solid #e4e4e7;">
               <p style="margin:0;color:#a1a1aa;font-size:12px;">
-                © ${new Date().getFullYear()} Roble Barbería · Este correo fue generado automáticamente.
+                © ${new Date().getFullYear()} ${escapeHtml(datos.negocio)} · Este correo fue generado automáticamente.
               </p>
             </td>
           </tr>
@@ -226,7 +252,7 @@ function buildCancelacionHtml(datos: DatosTurno): string {
           <tr>
             <td style="background:#18181b;padding:32px 40px;text-align:center;">
               <h1 style="margin:0;color:#ffffff;font-size:24px;font-weight:700;letter-spacing:-0.5px;">
-                ✂️ Roble Barbería
+                ${escapeHtml(datos.negocio)}
               </h1>
             </td>
           </tr>
@@ -246,7 +272,7 @@ function buildCancelacionHtml(datos: DatosTurno): string {
                 <tr><td style="padding:24px;">
                   ${buildDetalleRow('📅 Fecha', datos.fecha)}
                   ${buildDetalleRow('🕐 Hora', datos.hora)}
-                  ${buildDetalleRow('✂️ Barbero', datos.nombreBarbero)}
+                  ${buildDetalleRow(`✂️ ${datos.profesional}`, datos.nombreBarbero)}
                   ${buildDetalleRow('💈 Servicio', datos.servicio)}
                 </td></tr>
               </table>
@@ -261,7 +287,7 @@ function buildCancelacionHtml(datos: DatosTurno): string {
           <tr>
             <td style="background:#f4f4f5;padding:20px 40px;text-align:center;border-top:1px solid #e4e4e7;">
               <p style="margin:0;color:#a1a1aa;font-size:12px;">
-                © ${new Date().getFullYear()} Roble Barbería · Este correo fue generado automáticamente.
+                © ${new Date().getFullYear()} ${escapeHtml(datos.negocio)} · Este correo fue generado automáticamente.
               </p>
             </td>
           </tr>

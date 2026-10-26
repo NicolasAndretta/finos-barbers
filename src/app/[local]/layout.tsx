@@ -9,6 +9,8 @@
  *     administra o edita (dueño, equipo), que lo sigue viendo para arreglarlo.
  *  4. Si está bien → lo pone a disposición de los componentes del navegador
  *     (`LocalProvider`) y muestra la página.
+ *  5. Si es una muestra (Fase 6): el cartel de "Muestra" en la web pública, y
+ *     que Google no la indexe. Solo un local activo aparece en Google.
  */
 
 import type { Metadata } from 'next'
@@ -18,6 +20,7 @@ import { getLocal, getPermisos } from '@/lib/local'
 import { localVisible } from '@/lib/local-datos'
 import { LocalProvider } from '@/components/local/LocalProvider'
 import { PwaInstallPrompt } from '@/components/ui/PwaInstallPrompt'
+import { CartelMuestra } from '@/components/local/CartelMuestra'
 import { PRODUCTO } from '@/lib/producto'
 
 type Props = { children: React.ReactNode; params: Promise<{ local: string }> }
@@ -32,6 +35,8 @@ export async function generateMetadata({ params }: { params: Promise<{ local: st
     appleWebApp: { capable: true, title: local.nombre, statusBarStyle: 'black-translucent' },
     // La app instalable de ESTE local (app/[local]/manifest.webmanifest).
     manifest: `/${local.slug}/manifest.webmanifest`,
+    // Las muestras (y lo suspendido o archivado) no van a Google.
+    ...(local.estado === 'activo' ? {} : { robots: { index: false, follow: false } }),
   }
 }
 
@@ -46,6 +51,7 @@ export default async function LocalLayout({ children, params }: Props) {
 
   return (
     <LocalProvider local={local}>
+      <CartelMuestra />
       {children}
       <PwaInstallPrompt />
     </LocalProvider>

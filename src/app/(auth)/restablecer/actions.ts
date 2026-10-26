@@ -2,6 +2,8 @@
 
 import { createClient } from '@/lib/supabase'
 import { redirect } from 'next/navigation'
+import { destinoDespuesDeEntrar } from '@/lib/auth'
+import { esSlug } from '@/lib/local-datos'
 
 export type ResetPasswordState = { error?: string }
 
@@ -31,5 +33,9 @@ export async function actualizarPassword(
   const { error } = await supabase.auth.updateUser({ password })
   if (error) return { error: error.message }
 
+  // Un dueño invitado (Fase 6) ya tiene la sesión iniciada: entra directo a lo
+  // suyo en ese local. El resto vuelve al login con el aviso de siempre.
+  const local = formData.get('local')
+  if (typeof local === 'string' && esSlug(local)) redirect(await destinoDespuesDeEntrar(supabase, user.id, local))
   redirect('/login?reset=1')
 }

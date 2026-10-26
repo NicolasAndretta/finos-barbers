@@ -114,6 +114,9 @@ export function esSlug(valor: string): boolean {
   return /^[a-z0-9]+(-[a-z0-9]+)*$/.test(valor) && valor.length >= 2 && valor.length <= 40
 }
 
+/** Los medios de pago que un local puede ofrecer (los muestra su web). */
+export const MEDIOS_DE_PAGO: string[] = ['Transferencia', 'Mercado Pago', 'Efectivo', 'Tarjetas']
+
 /** Los estados en los que el local se muestra al público. */
 export function localVisible(local: LocalPublico): boolean {
   return local.estado === 'demo' || local.estado === 'activo'

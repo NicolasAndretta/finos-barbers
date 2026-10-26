@@ -18,7 +18,7 @@ const sinSuscripcion = () => () => {}
  *  - Finanzas: solo quien administra el local (la caja).
  *  - Cobros: todos, cada uno con lo suyo (la comercial ve si el Mercado Pago
  *    está conectado; con qué cuenta y los botones, solo quien administra).
- *  - El catálogo: todos los que entran al panel.
+ *  - El catálogo y los datos del local: todos los que entran al panel.
  * Ocultar no es lo que protege (eso lo hace la base): es para no mostrar
  * botones que después dirían "no tenés permiso".
  */
@@ -28,6 +28,7 @@ export function AdminNav({ permisos }: { permisos: { administra: boolean; operaP
   const ruta = (r: string) => rutaLocal(local.slug, r)
   const LINKS = [
     { href: ruta('/admin/dashboard'), label: 'Inicio', ver: true },
+    { href: ruta('/admin/local'), label: 'Datos del local', ver: true },
     { href: ruta('/admin/servicios'), label: 'Servicios', ver: true },
     { href: ruta('/admin/horarios'), label: 'Horarios', ver: true },
     { href: ruta('/admin/turnos'), label: 'Turnos', ver: permisos.operaPrivado },

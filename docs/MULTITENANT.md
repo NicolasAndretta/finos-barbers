@@ -192,7 +192,7 @@ Después de cada cambio en producción:
 | 4a | Cada local cobra en su propia cuenta de Mercado Pago: una conexión por local, el aviso de Mercado Pago como fuente de verdad, las demos no cobran | ✅ Hecha en desarrollo el 26/10/2026; OK de Nico el 26/10 (va a producción con el resto, después de la Fase 5) |
 | 4b | Imágenes por local; las llamadas con la llave del servidor, revisadas y filtradas por local | ✅ Hecha en desarrollo el 26/10/2026, aprobada de antemano por Nico (va a producción con el resto, después de la Fase 5) |
 | 5 | Prueba automática de aislamiento completa | ✅ Hecha en desarrollo el 26/10/2026, aprobada de antemano por Nico. Sigue el pase a producción de todo junto (lo corre Nico: `docs/PASE-A-PRODUCCION.md`) |
-| 6 | Alta de barberías desde el panel (demo → activo), ver la sección de abajo | ⏳ |
+| 6 | Alta de barberías desde el panel (demo → activo), ver la sección de abajo | ✅ Hecha en desarrollo el 26/10/2026, aprobada de antemano por Nico. **No va en el pase de las Fases 1 a 5**: va en un pase siguiente (la `0014` y el código) |
 | 7 | Interruptores de plan: turnos, tienda, finanzas | ⏳ |
 
 Cada fase se prueba en desarrollo. A producción van todas juntas después de la
@@ -1327,3 +1327,87 @@ levantados a la vez. La demo anduvo en cada tanda; la base terminó igual a desa
 las cuatro pruebas de base pasaron contra la copia; y el rescate funcionó (con la base
 al final, el código viejo no podía guardar turnos; con el rescate, sí). El detalle,
 al final del documento del pase. La copia se borró al terminar.
+
+### Fase 6 — Dar de alta locales desde el panel: el plan (26/10/2026)
+
+Aprobada de antemano por Nico ("todo aprobado, seguí con las fases"). Se construye en
+desarrollo, en la rama de trabajo; **no viaja en `pase/fases-1-a-5`**.
+
+**Qué se construye**
+
+| Pieza | En simple |
+|---|---|
+| `/plataforma` | Solo el equipo (Nico y Delfina). Todos los locales, por estado, con lo que le falta a cada uno. Al entrar, el equipo va directo acá |
+| Nueva muestra | Solo el nombre es obligatorio. La dirección web se arma sola del nombre. Si hay a mano: rubro, WhatsApp, Instagram, dirección, ciudad, nombres de los profesionales. Crea el local en muestra con una plantilla del rubro: servicios con precios de referencia, horario de lunes a sábado de 10 a 20, y los profesionales (si no hay nombres, uno "de ejemplo"). Todo en una sola operación de la base: o se crea entero, o nada |
+| La ficha de cada local | El link para mostrar (copiar o mandar por WhatsApp), la lista de activación (datos, servicios, profesionales, horarios, dueño, Mercado Pago) y los botones de estado |
+| "Datos del local" (panel de cada local) | Lo que hasta hoy solo se cambiaba en la base: nombre, lema, descripción, dirección, WhatsApp, Instagram, TikTok, mail, alias, seña y medios de pago. Lo ven el dueño y el equipo |
+| Invitar al dueño | Nombre, apellido y mail. Si el mail no tiene cuenta, se crea y sale un link para que el dueño elija su contraseña (se copia o se manda por WhatsApp; sirve una vez y vence a la hora; mientras no haya entrado nunca, se puede sacar otro). Si ya tiene cuenta, se lo suma y entra con la contraseña de siempre: ahí no sale link, porque quien invita podría quedarse con la cuenta de otro. Una cuenta del equipo no puede ser dueña. La comercial suma o saca dueños solo en las muestras; en un local activo, solo el admin |
+| Activar | Pide al menos un dueño. Borra lo de prueba (turnos, pedidos, caja y la lista de clientes de prueba), pasa el local a activo y anota quién y cuándo. Desde ahí la comercial deja de ver lo privado (regla de la Fase 2) |
+| Estados | Muestra ↔ archivada: el equipo. Activo ↔ suspendido: solo el admin. Ningún estado se cambia "a mano" desde el navegador, ni siquiera el equipo: solo con estas funciones. Y un local se crea solo con la función de alta |
+| La muestra se nota | Cartel "Muestra" en la web pública, no aparece en Google (`noindex`) y no salen mails. Al activar: sin cartel, Google la puede indexar, y salen los mails, firmados con el nombre del local (hasta hoy decían "Roble Barbería" para cualquier local: arreglado) |
+
+**En la base** (`0014_alta_de_locales.sql`): seis funciones (crear, activar, cambiar de
+estado, sumar y sacar dueños, y el resumen de la plataforma). Cada una revisa quién la
+llama. La guardia de `locales` se ajusta: el estado y el registro de alta no se tocan
+desde el navegador, y la dirección web la cambia solo el admin. No borra datos.
+
+**Las pruebas:** `probar-plataforma` (nueva, con navegador, también en el celular) recorre
+todo: crear, mostrar, invitar, el dueño entra, activar, suspender, archivar, y los
+intentos por afuera de la pantalla. La matriz y la revisión de la llave del servidor
+suman lo nuevo.
+
+**Lo que no entra, y por qué:**
+- Logo y colores propios de cada local: es diseño, y suma columnas nuevas. Va en una fase
+  aparte. Hoy cada local ya tiene un logo dibujado con su nombre.
+- El archivado automático de las muestras a los 30 días: falta decidirlo (abajo).
+- Dominio propio y planes: Fase 7 en adelante.
+
+### Fase 6 — Dar de alta locales desde el panel: hecha en desarrollo (26/10/2026)
+
+**Qué cambió**
+
+| Pieza | En simple |
+|---|---|
+| `0014_alta_de_locales.sql` | Las seis funciones de la plataforma y la guardia de `locales` ajustada (ver el plan, arriba). Corre dos veces sin cambiar nada |
+| `/plataforma` (nuevo) | La lista de locales por estado, con lo que le falta a cada uno; "Nueva muestra"; y la ficha de cada local con el link para mostrar, la lista para activar, los dueños y los botones de estado. Roble, por ser la muestra del producto, no ofrece activar ni archivar |
+| `src/lib/plantillas.ts` (nuevo) | Con qué arranca una muestra de cada rubro: tres servicios con precios de referencia (para revisar). Y la dirección web que se arma sola del nombre |
+| Panel → "Datos del local" (nuevo) | Nombre, lema, descripción, dirección, WhatsApp, redes, seña, alias y medios de pago. Si cambia la dirección, el mapa la sigue |
+| La invitación del dueño | El link sale de "recuperar contraseña" pero no se manda por mail: lo copia quien invita. Lleva a elegir la contraseña con una bienvenida, y de ahí directo al panel del local. Sirve una vez |
+| Cartel de "Muestra" y `noindex` | En la web pública de toda muestra (también Roble, que lo es). Al activar, se van solos |
+| Mails | Con el nombre del local (remitente, encabezado y pie) y la palabra del rubro ("Manicura"), y solo de los locales activos. Siguen sin llegar hasta tener el dominio del producto verificado en Resend |
+| Al entrar | El equipo cae en `/plataforma`; en el panel de cualquier local tiene "← Plataforma" |
+
+**Cómo se verificó**
+- La `0014` corre dos veces.
+- `probar-plataforma` (nueva): el recorrido entero en el celu y en la compu, más los intentos
+  por afuera de la pantalla (un cliente, un dueño y la comercial llamando a las funciones a mano).
+- `probar-aislamiento` cambió dos controles que eran de antes: "la comercial crea un local" y
+  "la comercial cambia el estado" ahora prueban que NO puede hacerlo a mano, que sí puede con la
+  función de alta, que un dueño no crea locales, y que suspender es solo del admin.
+- La matriz suma las siete funciones nuevas a la lista revisada; la revisión de la llave del
+  servidor, los dos usos nuevos (la cuenta del dueño).
+- **Contraprueba 1 (la base):** se le sacó a `activar_local` el control de quién la llama.
+  `probar-plataforma` marcó "un cliente / un dueño no puede activar" (y, como consecuencia, que
+  la muestra quedó con fecha de activación). Se volvió a pasar la `0014`: la función quedó
+  idéntica (misma huella) y pasa.
+- **Contraprueba 2 (la app):** se hizo que la invitación diera el link también a una cuenta en
+  uso. `probar-plataforma` marcó exactamente esa falla. Restaurado (archivo idéntico, misma
+  huella), pasa.
+- **`npm run probar`: 12 pruebas, 564 controles, todo en verde** (las 11 de antes más
+  `probar-plataforma`, 57). `npm run lint` (0 errores, las 6 advertencias viejas) y
+  `npm run build` en verde.
+
+**Para Nico (cuando pueda):**
+- Los precios de referencia de las plantillas (`src/lib/plantillas.ts`).
+- ¿Las muestras se archivan solas a los 30 días? Hoy se archivan a mano, desde su ficha.
+
+**Encontrado al prepararla, y arreglado:** los mails decían "Roble Barbería" para cualquier
+local; no había ninguna forma de cambiar los datos de un local sin tocar la base; y el cartel de
+"Muestra" y el `noindex` de las muestras, que el plan daba por hechos, no existían.
+
+**Decisiones que tomé (cambiables):**
+- Suspender y reactivar, solo el admin: es cortarle el sitio a alguien que paga.
+- Una cuenta del equipo no puede ser dueña de un local, y la comercial maneja dueños solo en las
+  muestras: si no, podría hacerse dueña de un local activo y ver lo privado.
+- El link de invitación lo ve quien invita (así se manda por WhatsApp, con el dueño al lado). Con
+  el dominio del producto se puede sumar el mail.

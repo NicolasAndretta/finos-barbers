@@ -143,6 +143,8 @@ export async function exigirPermiso(local: LocalPublico, permiso: PermisoDeAccio
 /**
  * A dónde va alguien después de entrar, si no pidió volver a una página.
  *
+ *  0. Si no venía de ningún local y es del equipo de la plataforma (Fase 6):
+ *     a /plataforma, la lista de locales.
  *  1. ¿De qué local venía? (el que mandó el login). Si no venía de ninguno:
  *     el primer local donde es dueño o barbero; si no, el de demostración.
  *  2. En ese local: quien lo administra o edita → su panel; el barbero → su
@@ -158,6 +160,11 @@ export async function destinoDespuesDeEntrar(
   slugPedido?: string | null,
 ): Promise<string> {
   let local = slugPedido ? await getLocal(slugPedido) : null
+
+  if (!local) {
+    const { data: equipo } = await supabase.from('equipo').select('rol').eq('user_id', userId).maybeSingle()
+    if (equipo) return '/plataforma'
+  }
 
   if (!local) {
     const { data: membresias } = await supabase

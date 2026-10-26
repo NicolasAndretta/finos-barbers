@@ -4,6 +4,7 @@ import React, { useTransition } from 'react'
 import { cancelarTurno } from '@/app/actions/reservas'
 import { Spinner } from '@/components/ui/Spinner'
 import { formatPrecio } from '@/lib/format'
+import { useLocalOpcional } from '@/components/local/LocalProvider'
 
 type Turno = {
   id: string
@@ -16,6 +17,8 @@ type Turno = {
 
 export function TurnoCard({ turno }: { turno: Turno }) {
   const [isPending, startTransition] = useTransition()
+  // El local de la página: el mail de la cancelación sale con su nombre.
+  const local = useLocalOpcional()
 
   const [year, month, day] = turno.fecha.split('-')
   const fechaLegible = `${day}/${month}/${year}`
@@ -25,7 +28,7 @@ export function TurnoCard({ turno }: { turno: Turno }) {
   const handleCancelar = () => {
     if (confirm('¿Estás seguro de que deseas cancelar este turno?')) {
       startTransition(async () => {
-        const res = await cancelarTurno(turno.id)
+        const res = await cancelarTurno(turno.id, local?.slug)
         if (res.error) alert(res.error)
       })
     }

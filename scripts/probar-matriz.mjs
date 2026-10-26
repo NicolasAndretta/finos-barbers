@@ -107,6 +107,15 @@ const FUNCIONES_REVISADAS = {
   'es_mi_agenda(p_local uuid, p_barbero uuid)': 'sí o no sobre quien pregunta',
   'puede_ver_persona(p_persona uuid)': 'sí o no sobre quien pregunta',
   'guardar_horarios(p_local uuid, p_barbero uuid, p_tramos jsonb)': 'security invoker: corre con los permisos de quien llama, y RLS decide',
+  // La plataforma (Fase 6, 0014). Cada una revisa adentro quién la llama; lo
+  // prueba en detalle probar-plataforma.mjs, para cada tipo de cuenta.
+  'crear_local(p_nombre text, p_slug text, p_rubro text, p_datos jsonb, p_servicios jsonb, p_profesionales jsonb)': 'solo el equipo; crea en muestra y a nombre de quien llama',
+  'activar_local(p_local uuid)': 'solo el equipo, solo una muestra con dueño; borra lo de prueba de ESE local',
+  'cambiar_estado_local(p_local uuid, p_estado text)': 'muestra ↔ archivada el equipo; activo ↔ suspendido solo el admin; nada más',
+  'puede_manejar_duenos(p_local uuid)': 'sí o no sobre quien pregunta',
+  'sumar_dueno(p_local uuid, p_usuario uuid)': 'el admin, o la comercial en una muestra; nunca una cuenta del equipo como dueña',
+  'quitar_dueno(p_local uuid, p_usuario uuid)': 'el admin, o la comercial en una muestra',
+  'resumen_de_locales()': 'solo el equipo (si no, vacío); cuentas y sí/no, y los mails de dueños de un local activo solo al admin',
   'is_admin()': 'la vieja de antes de la Fase 2, sin uso: sí o no sobre quien pregunta',
   'handle_new_user()': 'función de un disparador: Postgres no deja llamarla desde afuera',
   'rls_auto_enable()': 'función de un disparador de eventos de producción: no se puede llamar desde afuera',

@@ -193,7 +193,7 @@ export function CalendarioSemanal() {
   // ── Acciones sobre turnos ─────────────────────────────────────────────────
   const handleConfirmar = (id: string) => {
     startTransition(async () => {
-      const res = await adminConfirmarTurno(id)
+      const res = await adminConfirmarTurno(id, local.slug)
       if (!res.error) {
         setTurnos(prev => prev.map(t => t.id === id ? { ...t, estado: 'confirmado' } : t))
         setSelected(prev => prev?.id === id ? { ...prev, estado: 'confirmado' } : prev)
@@ -204,7 +204,7 @@ export function CalendarioSemanal() {
   const handleCancelar = (id: string) => {
     if (!confirm('¿Cancelar este turno?')) return
     startTransition(async () => {
-      const res = await adminCancelarTurno(id)
+      const res = await adminCancelarTurno(id, local.slug)
       if (!res.error) {
         setTurnos(prev => prev.filter(t => t.id !== id))
         setSelected(null)

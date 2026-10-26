@@ -66,7 +66,7 @@ export default function AdminTurnosPage() {
 
   const handleConfirmar = (turnoId: string) => {
     startTransition(async () => {
-      const res = await adminConfirmarTurno(turnoId)
+      const res = await adminConfirmarTurno(turnoId, local.slug)
       if (res.error) {
         alert(res.error)
       } else {
@@ -89,7 +89,7 @@ export default function AdminTurnosPage() {
   const handleCancelar = (turnoId: string) => {
     if (confirm('¿Estás seguro de que deseas cancelar este turno?')) {
       startTransition(async () => {
-        const res = await adminCancelarTurno(turnoId)
+        const res = await adminCancelarTurno(turnoId, local.slug)
         if (res.error) {
           alert(res.error)
         } else {

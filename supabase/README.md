@@ -15,7 +15,8 @@ Todo lo que describe la base de datos vive acá, versionado junto con el código
 | `migrations/0011_cobros_por_local.sql` | Fase 4a: una conexión de Mercado Pago por local (con qué cuenta), la seña "devuelta", la caja acepta ventas de invitados, y las cuatro funciones que aplican un pago ya verificado (solo el servidor). En producción va ANTES de publicar el código de la Fase 4a. |
 | `migrations/0012_sin_mecanismo_temporal.sql` | Fase 4b: saca el disparador temporal de la Fase 2 que copiaba la membresía de barbero desde el perfil (el código ya la crea directamente). No borra datos. |
 | `migrations/0013_permisos_minimos.sql` | Fase 5: segunda cerradura en los permisos de Postgres de las tablas de la barbería (la clave pública solo lee; nadie tiene truncate, trigger ni references). No toca lo de 369 ni borra datos. |
-| `migrations/0014` en adelante | Los cambios que siguen. Cada uno se prueba primero en desarrollo. |
+| `migrations/0014_alta_de_locales.sql` | Fase 6: las funciones de la plataforma (crear una muestra con su plantilla, activar, archivar, suspender, sumar y sacar dueños, el resumen). Un local se crea y cambia de estado solo con ellas: la guardia de `locales` ya no deja hacerlo "a mano", ni al equipo. No borra datos (activar borra lo de prueba de ese local, cuando alguien lo activa). |
+| `migrations/0015` en adelante | Los cambios que siguen. Cada uno se prueba primero en desarrollo. |
 | `rescate/volver-antes-de-0009-y-0012.sql` | **No es una migración** (nadie la corre sola): solo para una emergencia en el pase a producción, si hubiera que volver al código viejo después de la última tanda. Ver `docs/PASE-A-PRODUCCION.md`. |
 | `seed-desarrollo.sql` | Datos de ejemplo: el catálogo de Roble, el local de demostración (servicios, barberos, productos, categorías, reseñas). Sin cuentas, turnos, pedidos ni tokens. |
 | `esquema-reporte.md` | Resumen legible de la foto, con alertas de seguridad. Se regenera con cada exportación. |
@@ -92,6 +93,11 @@ node scripts/probar-imagenes.mjs
 # Probar las cuentas de barbero y su panel con un navegador (solo desarrollo; con
 # la app levantada)
 node scripts/probar-panel-barbero.mjs
+
+# Probar el alta de locales de punta a punta con un navegador: crear la muestra,
+# invitar al dueño, activar, suspender, archivar (solo desarrollo; con la app
+# levantada y NEXT_PUBLIC_APP_URL, para el link de invitación)
+node scripts/probar-plataforma.mjs
 
 # Cada uso de la llave del servidor, revisado: uno nuevo sin revisar hace fallar
 # (no necesita la base ni la app)

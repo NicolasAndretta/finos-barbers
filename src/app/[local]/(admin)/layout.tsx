@@ -7,6 +7,7 @@ import { rutaLocal } from '@/lib/local-datos'
 import { LogoutButton } from '@/components/ui/LogoutButton'
 import { Logo } from '@/components/ui/Logo'
 import { AdminNav } from '@/components/admin/AdminNav'
+import { getRolEquipo } from '@/lib/plataforma'
 
 // El panel de administración de un local. Entra quien edita su catálogo (el
 // dueño, el admin de la plataforma, la comercial); cada uno ve lo que le toca.
@@ -14,11 +15,13 @@ export default async function AdminLayout({ children, params }: { children: Reac
   const local = await getLocal((await params).local)
   if (!local) notFound()
   const { profile, permisos } = await requirePanelAdmin(local)
+  // El equipo de la plataforma tiene a mano la vuelta a la lista de locales.
+  const rolEquipo = await getRolEquipo()
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col font-sans">
       <header className="border-b border-zinc-900 bg-zinc-950/80 backdrop-blur-md sticky top-0 z-40 px-6 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
-        <div className="flex items-center justify-between w-full sm:w-auto">
+        <div className="flex items-center justify-between w-full sm:w-auto gap-4">
           <Link href={rutaLocal(local.slug, '/admin/dashboard')} className="flex items-center gap-3 focus:outline-none">
             <Logo size={30} />
             <span className="text-[9px] uppercase tracking-[0.3em] text-amber-400/70 font-bold hidden sm:block">
@@ -27,6 +30,11 @@ export default async function AdminLayout({ children, params }: { children: Reac
               Admin
             </span>
           </Link>
+          {rolEquipo && (
+            <Link href={`/plataforma/${local.slug}`} className="whitespace-nowrap text-xs font-semibold text-zinc-400 hover:text-white border border-zinc-800 rounded-lg px-3 py-1.5">
+              ← Plataforma
+            </Link>
+          )}
         </div>
 
         <AdminNav permisos={{ administra: permisos.administra, operaPrivado: permisos.operaPrivado }} />

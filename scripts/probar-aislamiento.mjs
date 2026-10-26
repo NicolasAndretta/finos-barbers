@@ -320,10 +320,34 @@ try {
     anotar(quedan === 2, `el dueño de Roble NO puede vaciar el horario de B con guardar_horarios (quedan ${quedan} tramos)`)
   }
 
-  anotar(await intentar('comercial', 'POST', '/rest/v1/locales', { slug: `aislamiento-nuevo-${sello}`, nombre: 'Creado por la comercial' }),
-    'la comercial crea un local')
-  anotar(await intentar('comercial', 'PATCH', `/rest/v1/locales?id=eq.${localB}`, { estado: 'suspendido' }),
-    'la comercial cambia el estado de un local')
+  // Desde la Fase 6 (0014): un local se crea solo con crear_local, y el estado
+  // cambia solo con las funciones de la plataforma; suspender, solo el admin.
+  anotar(!(await intentar('comercial', 'POST', '/rest/v1/locales', { slug: `aislamiento-directo-${sello}`, nombre: 'Creado a mano' })),
+    'la comercial NO puede crear un local "a mano" (solo con la función de alta)')
+  {
+    const alta = await pedir('POST', '/rest/v1/rpc/crear_local', { token: c.comercial.token, cuerpo: {
+      p_nombre: 'Creado por la comercial', p_slug: `aislamiento-nuevo-${sello}`, p_rubro: 'barberia', p_datos: {}, p_servicios: [], p_profesionales: [],
+    } })
+    const creado = await uno(`select estado, creado_por from public.locales where slug = $1`, [`aislamiento-nuevo-${sello}`])
+    anotar(alta.ok && creado?.estado === 'demo' && creado?.creado_por === c.comercial.id,
+      'la comercial crea un local con la función de alta (queda en muestra, a su nombre)')
+    const ajeno = await pedir('POST', '/rest/v1/rpc/crear_local', { token: c.duenoA.token, cuerpo: {
+      p_nombre: 'Creado por un dueño', p_slug: `aislamiento-dueno-${sello}`, p_rubro: 'barberia', p_datos: {}, p_servicios: [], p_profesionales: [],
+    } })
+    anotar(!ajeno.ok && !(await uno(`select 1 as hay from public.locales where slug = $1`, [`aislamiento-dueno-${sello}`])),
+      'un dueño NO puede crear locales')
+  }
+  anotar(!(await intentar('comercial', 'PATCH', `/rest/v1/locales?id=eq.${localB}`, { estado: 'suspendido' })) &&
+    (await uno('select estado from public.locales where id = $1', [localB])).estado === 'activo',
+    'la comercial NO puede cambiar el estado "a mano"')
+  {
+    const r = await pedir('POST', '/rest/v1/rpc/cambiar_estado_local', { token: c.comercial.token, cuerpo: { p_local: localB, p_estado: 'suspendido' } })
+    anotar(!r.ok && (await uno('select estado from public.locales where id = $1', [localB])).estado === 'activo',
+      'la comercial NO puede suspender un local activo (eso es del admin)')
+  }
+  anotar((await pedir('POST', '/rest/v1/rpc/cambiar_estado_local', { token: c.admin.token, cuerpo: { p_local: localB, p_estado: 'suspendido' } })).ok &&
+    (await uno('select estado from public.locales where id = $1', [localB])).estado === 'suspendido',
+    'el admin suspende un local')
 
   // B quedó suspendido: deja de ser público.
   titulo('3. Un local suspendido desaparece de la vista pública')
@@ -391,6 +415,8 @@ try {
     }
     await q(`delete from public.locales where id = $1`, [localB])
   }
+  // Lo que creó la función de alta (su horario de plantilla), y después los locales.
+  await q(`delete from public.horarios where local_id in (select id from public.locales where slug like 'aislamiento-%')`)
   await q(`delete from public.locales where slug like 'aislamiento-%'`)
   await db.end()
   for (const id of creadas) await pedir('DELETE', `/auth/v1/admin/users/${id}`, { llave: MAESTRA })

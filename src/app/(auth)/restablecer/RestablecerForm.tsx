@@ -5,7 +5,13 @@ import Link from 'next/link'
 import { Spinner } from '@/components/ui/Spinner'
 import { actualizarPassword, type ResetPasswordState } from './actions'
 
-export function RestablecerForm() {
+/**
+ * Elegir una contraseña nueva. Sirve para dos cosas:
+ *  - "¿Olvidaste tu contraseña?" (el link llega por mail);
+ *  - la invitación de un dueño (Fase 6): llega con ?bienvenida=<local>, y el
+ *    texto es de bienvenida. Al guardar, el dueño entra directo a su panel.
+ */
+export function RestablecerForm({ bienvenida }: { bienvenida?: string }) {
   const [state, formAction, isPending] = useActionState(
     actualizarPassword,
     {} as ResetPasswordState
@@ -15,14 +21,17 @@ export function RestablecerForm() {
     <div className="w-full max-w-md p-8 rounded-2xl bg-zinc-900/80 backdrop-blur-xl border border-zinc-800 shadow-2xl">
       <div className="text-center mb-8">
         <h2 className="text-3xl font-extrabold tracking-tight text-white">
-          Nueva contraseña
+          {bienvenida ? '¡Bienvenido!' : 'Nueva contraseña'}
         </h2>
         <p className="mt-2 text-sm text-zinc-400">
-          Elegí una contraseña nueva para tu cuenta.
+          {bienvenida
+            ? 'Elegí tu contraseña: con tu mail y esta contraseña vas a entrar a tu panel.'
+            : 'Elegí una contraseña nueva para tu cuenta.'}
         </p>
       </div>
 
       <form action={formAction} className="space-y-5">
+        {bienvenida && <input type="hidden" name="local" value={bienvenida} />}
         {state.error && (
           <div className="p-4 rounded-lg bg-red-950/30 border border-red-800/50 text-red-400 text-sm flex items-center gap-2">
             <svg className="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -33,7 +42,7 @@ export function RestablecerForm() {
         )}
 
         <div className="space-y-1">
-          <label htmlFor="password" className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider">Nueva contraseña</label>
+          <label htmlFor="password" className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider">{bienvenida ? 'Contraseña' : 'Nueva contraseña'}</label>
           <input id="password" name="password" type="password" autoComplete="new-password" required minLength={6}
             className="w-full rounded-xl bg-zinc-800 border border-zinc-700 px-4 py-3 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-white focus:ring-2 focus:ring-white/10 transition-all"
             placeholder="••••••••" />

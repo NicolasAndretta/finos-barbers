@@ -38,6 +38,9 @@ const REVISADOS = {
   'src/app/[local]/(tienda)/checkout/success/page.tsx#SuccessPage': 'estado de un pedido que pudo ser sin cuenta: solo id y estado, de un pedido de ESTE local (eq local_id)',
   // Cuentas de barbero.
   'src/app/actions/barberos.ts#adminCrearCuentaBarbero': 'crear una cuenta ya confirmada (auth.admin): permiso revisado en el local, el barbero tiene que ser de ESE local, y la membresía se crea en ESE local',
+  // Los dueños (Fase 6): buscar una cuenta por su mail y crearla es administrar cuentas.
+  'src/app/actions/plataforma.ts#invitarDueno': 'cuenta del dueño (auth.admin): busca el mail y, si no existe, crea la cuenta sin contraseña; la suma la base (sumar_dueno, con la sesión de quien invita: revisa el permiso en ESE local y que no sea del equipo); el link solo para una cuenta sin estrenar',
+  'src/app/actions/plataforma.ts#otroLinkDeDueno': 'otro link para elegir contraseña: permiso revisado por la base (puede_manejar_duenos) en ESE local, la cuenta tiene que ser dueña de ESE local (eq local_id) y no haber entrado nunca',
   // Fotos (Fase 4b): Storage no tiene políticas de escritura a propósito.
   'src/lib/imagenes.ts#usoDelLocal': 'fotos: mide la carpeta de UN local (su id)',
   'src/lib/imagenes.ts#subirImagen': 'fotos: sube a la carpeta de UN local (su id), con permiso revisado en /api/imagenes',
@@ -45,7 +48,13 @@ const REVISADOS = {
 }
 
 /** Dónde se pueden usar las funciones de administrador de cuentas (crear, borrar usuarios). */
-const ADMIN_DE_CUENTAS = ['src/app/actions/barberos.ts#adminCrearCuentaBarbero']
+const ADMIN_DE_CUENTAS = [
+  'src/app/actions/barberos.ts#adminCrearCuentaBarbero',
+  'src/app/actions/plataforma.ts#invitarDueno',
+  'src/app/actions/plataforma.ts#otroLinkDeDueno',
+  // Arma el link (generateLink) con la llave que le pasan esas dos: no la crea.
+  'src/app/actions/plataforma.ts#linkParaElegirContrasena',
+]
 
 // ─── La búsqueda ─────────────────────────────────────────────────────────────
 

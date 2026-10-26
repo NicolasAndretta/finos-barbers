@@ -2,8 +2,8 @@
 
 import { createClient } from '@/lib/supabase'
 import { exigirPermiso, requireProfile } from '@/lib/auth'
-import { sendConfirmacionTurno, sendCancelacionTurno } from '@/lib/resend'
-import { localDeAccion } from '@/lib/local'
+import { sendConfirmacionTurno, sendCancelacionTurno, datosDelLocal } from '@/lib/resend'
+import { getLocal, localDeAccion } from '@/lib/local'
 import { refrescarLocales } from '@/lib/refrescar'
 
 // Panel de administración de UN local. Las que listan o crean reciben el
@@ -80,7 +80,17 @@ export async function adminGetTurnos(slug: string, filters?: {
   })) ?? []
 }
 
-export async function adminConfirmarTurno(turnoId: string) {
+/**
+ * El local para el mail de un turno que se toca por id: el de la página (slug),
+ * solo si de verdad es el del turno. Si no coincide, no sale mail (nunca con el
+ * nombre de otro local).
+ */
+async function localDelTurno(slug: string | undefined, localId: string) {
+  const local = slug ? await getLocal(slug) : null
+  return local && local.id === localId ? local : null
+}
+
+export async function adminConfirmarTurno(turnoId: string, slug?: string) {
   const adminProfile = await requireProfile()
   const supabase = await createClient()
 
@@ -113,7 +123,9 @@ export async function adminConfirmarTurno(turnoId: string) {
   const barbero = (Array.isArray(turno.barberos) ? turno.barberos[0] : turno.barberos) as { nombre: string; apellido: string }
   const servicio = (Array.isArray(turno.servicios) ? turno.servicios[0] : turno.servicios) as { nombre: string; precio: number }
 
-  await sendConfirmacionTurno({
+  const localDelMail = await localDelTurno(slug, turno.local_id)
+  if (localDelMail) await sendConfirmacionTurno({
+    ...datosDelLocal(localDelMail),
     nombreCliente: `${cliente.nombre} ${cliente.apellido}`,
     emailCliente: cliente.email,
     nombreBarbero: `${barbero.nombre} ${barbero.apellido}`,
@@ -180,14 +192,14 @@ export async function adminConfirmarSena(turnoId: string) {
   return { success: true }
 }
 
-export async function adminCancelarTurno(turnoId: string) {
+export async function adminCancelarTurno(turnoId: string, slug?: string) {
   await requireProfile()
   const supabase = await createClient()
 
   const { data: turno, error: getErr } = await supabase
     .from('turnos')
     .select(`
-      id, fecha, hora, estado,
+      id, local_id, fecha, hora, estado,
       profiles ( nombre, apellido, email ),
       barberos ( nombre, apellido ),
       servicios ( nombre )
@@ -213,7 +225,9 @@ export async function adminCancelarTurno(turnoId: string) {
   const barbero = (Array.isArray(turno.barberos) ? turno.barberos[0] : turno.barberos) as { nombre: string; apellido: string }
   const servicio = (Array.isArray(turno.servicios) ? turno.servicios[0] : turno.servicios) as { nombre: string }
 
-  await sendCancelacionTurno({
+  const localDelMail = await localDelTurno(slug, turno.local_id)
+  if (localDelMail) await sendCancelacionTurno({
+    ...datosDelLocal(localDelMail),
     nombreCliente: `${cliente.nombre} ${cliente.apellido}`,
     emailCliente: cliente.email,
     nombreBarbero: `${barbero.nombre} ${barbero.apellido}`,
@@ -438,6 +452,7 @@ export async function adminCrearTurno(formData: FormData) {
     const fechaLegible = `${day}/${month}/${year}`
 
     await sendConfirmacionTurno({
+      ...datosDelLocal(local),
       nombreCliente: `${cliente.nombre} ${cliente.apellido}`,
       emailCliente: cliente.email,
       nombreBarbero: `${barbero.nombre} ${barbero.apellido}`,
