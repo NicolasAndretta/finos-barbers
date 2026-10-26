@@ -2,6 +2,8 @@
 
 import { useCart } from '@/lib/cart-context'
 import { formatPrecio } from '@/lib/format'
+import { whatsappLink } from '@/lib/local-datos'
+import { useLocal } from '@/components/local/LocalProvider'
 import type { Producto } from '@/types'
 
 const CATEGORIA_META: Record<string, { label: string; emoji: string; badgeClass: string; gradientClass: string }> = {
@@ -31,7 +33,13 @@ const CATEGORIA_META: Record<string, { label: string; emoji: string; badgeClass:
   },
 }
 
-export function ProductoCard({ producto }: { producto: Producto }) {
+/**
+ * `catalogo`: el local no cobra online (no tiene Mercado Pago). En vez de
+ * "Agregar" al carrito, el producto se consulta por WhatsApp con el mensaje ya
+ * escrito; si el local no cargó WhatsApp, se consulta en el local.
+ */
+export function ProductoCard({ producto, catalogo = false }: { producto: Producto; catalogo?: boolean }) {
+  const local = useLocal()
   const { items, addItem, updateCantidad } = useCart()
   const itemEnCarrito = items.find(i => i.id === producto.id)
   const meta = CATEGORIA_META[producto.categoria] ?? CATEGORIA_META['otros']
@@ -89,6 +97,19 @@ export function ProductoCard({ producto }: { producto: Producto }) {
 
           {sinStock ? (
             <span className="text-zinc-600 text-xs font-medium">No disponible</span>
+          ) : catalogo ? (
+            local.whatsapp ? (
+              <a
+                href={whatsappLink(local, `¡Hola ${local.nombreCorto}! Quería consultar por ${producto.nombre} (${formatPrecio(producto.precio)}).`)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="shrink-0 flex items-center gap-1.5 bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-bold px-3 py-2 rounded-lg transition-colors"
+              >
+                Consultar por WhatsApp
+              </a>
+            ) : (
+              <span className="text-zinc-500 text-xs font-medium text-right">Consultá en el local</span>
+            )
           ) : itemEnCarrito ? (
             /* Controles de cantidad cuando está en el carrito */
             <div className="flex items-center gap-2">

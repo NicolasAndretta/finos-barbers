@@ -352,6 +352,20 @@ try {
   anotar(!(await m(c.barbero.id, ROBLE, 'barbero')), 'si deja de ser barbero, pierde su membresía de barbero')
   const turnosVisibles = await pedir('GET', `/rest/v1/turnos?id=eq.${tA1}&select=id`, { token: c.barbero.token })
   anotar((turnosVisibles.datos ?? []).length === 0, 'y deja de ver la agenda')
+
+  // ─── 6. Mercado Pago (Fase 4a) ────────────────────────────────────────────
+  // Los tokens de cada local y las funciones que marcan un pago son solo del
+  // servidor: ni el dueño ni el admin, con su sesión, los tocan.
+  titulo('6. Mercado Pago: nadie lee los tokens ni marca pagos desde afuera')
+  await q(`insert into public.mp_conexion (local_id, mp_user_id, access_token) values ($1, '1', 'token-de-prueba-aislamiento')`, [localB])
+  for (const quien of ['visitante', 'cliente', 'ajeno', 'barbero', 'duenoA', 'duenoB', 'comercial', 'admin']) {
+    const r = await pedir('GET', '/rest/v1/mp_conexion?select=*', { token: c[quien].token })
+    anotar(!r.ok || (Array.isArray(r.datos) && r.datos.length === 0), `${quien}: no lee los tokens de Mercado Pago (tampoco los de su local)`)
+    const p = await pedir('POST', '/rest/v1/rpc/confirmar_pago_pedido', {
+      token: c[quien].token, cuerpo: { p_local: localB, p_pedido: localB, p_pago: '1', p_monto: 1 },
+    })
+    anotar(!p.ok, `${quien}: no puede marcar un pedido como pagado`, p.ok ? `respondió ${JSON.stringify(p.datos)}` : '')
+  }
 } catch (e) {
   fallas++
   console.error(`\n✗ La prueba se cortó: ${e.message}`)
@@ -363,7 +377,7 @@ try {
     await q(`delete from public.turnos where cliente_id = any ($1::uuid[])`, [creadas])
   }
   if (localB) {
-    for (const t of ['horarios', 'ausencias', 'resenas', 'productos', 'servicios', 'categorias', 'barberos', 'membresias']) {
+    for (const t of ['mp_conexion', 'horarios', 'ausencias', 'resenas', 'productos', 'servicios', 'categorias', 'barberos', 'membresias']) {
       await q(`delete from public.${t} where local_id = $1`, [localB])
     }
     await q(`delete from public.locales where id = $1`, [localB])

@@ -186,8 +186,8 @@ DEV_ADMIN_PASSWORD=una-clave-de-prueba
 Y dos cuidados:
 - Borrá el valor de `RESEND_API_KEY` (dejá `RESEND_API_KEY=`): así desarrollo
   no manda mails de verdad.
-- Si `MERCADOPAGO_ACCESS_TOKEN` empieza con `APP_USR-` (es de producción),
-  cambialo por uno que empiece con `TEST-` o borrá la línea.
+- Si tenés `MERCADOPAGO_ACCESS_TOKEN`, borrá la línea: desde la Fase 4 la app
+  no lo usa (cada local cobra con su propia cuenta conectada).
 
 ### 3.6 Cargar los datos de ejemplo y tu usuario admin
 ```bash

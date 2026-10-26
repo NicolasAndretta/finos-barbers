@@ -12,7 +12,8 @@ Todo lo que describe la base de datos vive acá, versionado junto con el código
 | `migrations/0008_locales_en_la_web.sql` | Fase 3a: el rubro de cada local, las direcciones reservadas, los datos públicos de un local (`datos_del_local`) y qué puede hacer cada uno en un local (`permisos_en_local`). |
 | `migrations/0009_sin_local_por_defecto.sql` | Fase 3a: se termina el "Roble por defecto" (salvo `mp_conexion`, hasta la Fase 4). En producción va DESPUÉS de publicar el código de la Fase 3a. |
 | `migrations/0010_horarios.sql` | Fase 3b: horarios reales (tablas `horarios` y `ausencias`, `guardar_horarios`), reglas de reserva de cada local (anticipación, días adelante, zona horaria) y Roble de lunes a sábado de 10 a 20. |
-| `migrations/0011` en adelante | Los cambios que siguen. Cada uno se prueba primero en desarrollo. |
+| `migrations/0011_cobros_por_local.sql` | Fase 4a: una conexión de Mercado Pago por local (con qué cuenta), la seña "devuelta", la caja acepta ventas de invitados, y las cuatro funciones que aplican un pago ya verificado (solo el servidor). En producción va ANTES de publicar el código de la Fase 4a. |
+| `migrations/0012` en adelante | Los cambios que siguen. Cada uno se prueba primero en desarrollo. |
 | `seed-desarrollo.sql` | Datos de ejemplo: el catálogo de Roble, el local de demostración (servicios, barberos, productos, categorías, reseñas). Sin cuentas, turnos, pedidos ni tokens. |
 | `esquema-reporte.md` | Resumen legible de la foto, con alertas de seguridad. Se regenera con cada exportación. |
 | `config.toml` | Configuración del Supabase local (desarrollo). La crea `npx supabase init`. |
@@ -66,6 +67,11 @@ node scripts/probar-locales.mjs
 # Probar los horarios con un navegador: horario cortado, profesional con horario
 # propio, licencias, feriados, la anticipación y el panel (solo desarrollo; con la app levantada)
 node scripts/probar-horarios.mjs
+
+# Probar los cobros con un navegador y un Mercado Pago de mentira: cada local
+# cobra en su cuenta, los pagos se verifican, las demos no cobran (solo
+# desarrollo; la app se levanta distinto: ver arriba de probar-cobros.mjs)
+node scripts/probar-cobros.mjs
 
 # El equipo de la plataforma (Nico admin, Delfina comercial)
 node scripts/equipo.mjs listar

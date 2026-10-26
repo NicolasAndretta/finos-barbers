@@ -125,12 +125,16 @@ try {
   anotar(sinClasificar.length === 0, 'no hay tablas sin clasificar',
     sinClasificar.length ? `${sinClasificar.join(', ')}: decidí si llevan local y anotalas en este script` : '')
 
-  // Desde la 0009 (Fase 3a) ninguna tabla tiene "Roble por defecto", salvo
-  // mp_conexion, que lo conserva hasta la Fase 4 (Mercado Pago por local).
+  // Desde la 0009 (Fase 3a) ninguna tabla tiene "Roble por defecto", y desde
+  // la 0011 (Fase 4a) tampoco mp_conexion: cada conexión dice de qué local es.
   const conDefecto = CON_LOCAL.filter((n) => porNombre[n]?.defecto)
-  const deMas = conDefecto.filter((n) => n !== 'mp_conexion')
-  anotar(deMas.length === 0, 'ninguna tabla guarda en Roble lo que llega sin local (salvo mp_conexion, hasta la Fase 4)',
-    deMas.length ? `todavía con valor por defecto: ${deMas.join(', ')}` : '')
+  anotar(conDefecto.length === 0, 'ninguna tabla guarda en Roble lo que llega sin local',
+    conDefecto.length ? `todavía con valor por defecto: ${conDefecto.join(', ')}` : '')
+
+  // Fase 4a: una sola conexión de Mercado Pago por local.
+  const [unica] = await q(`select count(*)::int as n from pg_constraint
+                            where conname = 'mp_conexion_un_local' and conrelid = 'public.mp_conexion'::regclass and contype = 'u'`)
+  anotar(unica?.n === 1, 'mp_conexion: una sola conexión de Mercado Pago por local')
 
   // ── 2. No hay filas sin local ─────────────────────────────────────────────
   titulo('2. Cada fila, con su local')

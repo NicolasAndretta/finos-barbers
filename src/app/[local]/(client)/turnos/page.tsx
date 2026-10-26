@@ -4,35 +4,60 @@ import { notFound } from 'next/navigation'
 import { requireProfile } from '@/lib/auth'
 import { getLocal } from '@/lib/local'
 import { rutaLocal } from '@/lib/local-datos'
-import { getTurnosCliente, confirmarPagoSenaTurno } from '@/app/actions/reservas'
+import { createClient } from '@/lib/supabase'
+import { leerReferencia, verificarPago } from '@/lib/cobros'
+import { getTurnosCliente } from '@/app/actions/reservas'
 import { TurnoCard } from '@/components/client/TurnoCard'
 
 type SearchParams = Promise<{ [key: string]: string | string[] | undefined }>
+
+const uno = (v: string | string[] | undefined) => (typeof v === 'string' ? v : '')
 
 // Los turnos del cliente en ESTE local.
 export default async function TurnosPage({ params, searchParams }: { params: Promise<{ local: string }>; searchParams: SearchParams }) {
   const local = await getLocal((await params).local)
   if (!local) notFound()
-  await requireProfile(rutaLocal(local.slug, '/turnos'))
+  const profile = await requireProfile(rutaLocal(local.slug, '/turnos'))
   const resolvedParams = await searchParams
 
-  // Vuelta de MercadoPago tras pagar la seña del turno.
-  const turnoId = resolvedParams.external_reference as string | undefined
-  const paymentId = resolvedParams.payment_id as string | undefined
-  const mpStatus = (resolvedParams.status ?? resolvedParams.collection_status) as string | undefined
-  let senaPagada = false
-  if (turnoId && paymentId && (mpStatus === 'approved' || mpStatus === 'pending')) {
-    try {
-      const r = await confirmarPagoSenaTurno(turnoId, paymentId)
-      senaPagada = !('error' in r)
-    } catch { /* idempotente */ }
+  // Vuelta de Mercado Pago después de pagar la seña. Lo que trae la dirección
+  // (estado, número de pago) NO se cree: cualquiera la puede escribir a mano.
+  // Se le pregunta el pago a Mercado Pago con la cuenta del local (la misma
+  // verificación que hace el aviso de pago, lib/cobros.ts) y lo que se muestra
+  // sale de la base. Si Mercado Pago no contesta, el aviso lo termina después.
+  let aviso: 'pagada' | 'confirmando' | null = null
+  const pagoId = uno(resolvedParams.payment_id)
+  if (pagoId) {
+    const verificado = await verificarPago(local.id, pagoId)
+    // Si Mercado Pago no pudo contestar, la referencia de la dirección sirve
+    // para mostrar "estamos confirmando" (no cambia nada, y solo se lee un
+    // turno propio). Si contestó que ese pago no es de acá, no se muestra nada.
+    const referencia = verificado.referencia
+      ?? (verificado.resultado === 'reintentar' ? leerReferencia(uno(resolvedParams.external_reference)) : null)
+    if (referencia?.tipo === 'turno') {
+      const supabase = await createClient()
+      const { data: turno } = await supabase
+        .from('turnos')
+        .select('sena_estado')
+        .eq('id', referencia.id)
+        .eq('local_id', local.id)
+        .eq('cliente_id', profile.id)
+        .maybeSingle()
+      if (turno) aviso = turno.sena_estado === 'pagada' ? 'pagada' : 'confirmando'
+    }
   }
 
-  const isSuccess = resolvedParams.reserva === 'success' || senaPagada
+  const isSuccess = resolvedParams.reserva === 'success' || aviso === 'pagada'
   const turnos = await getTurnosCliente(local.slug)
 
   return (
     <div className="flex flex-col items-center justify-start pb-12 animate-fade-in w-full max-w-3xl mx-auto">
+      {aviso === 'confirmando' && (
+        <div className="mb-8 w-full p-4 rounded-xl bg-amber-500/10 border border-amber-500/25 text-amber-200 text-sm">
+          <p className="font-bold">Estamos confirmando el pago de tu seña.</p>
+          <p className="text-amber-200/80 text-xs mt-1">Si ya pagaste, en unos minutos tu turno aparece confirmado. No hace falta que pagues de nuevo.</p>
+        </div>
+      )}
       {isSuccess && (
         <div className="mb-8 w-full p-4 rounded-xl bg-emerald-950/30 border border-emerald-800/50 text-emerald-400 text-sm flex flex-col sm:flex-row items-center justify-between gap-4 shadow-lg shadow-emerald-500/10">
           <div className="flex items-center gap-3">
@@ -42,7 +67,7 @@ export default async function TurnosPage({ params, searchParams }: { params: Pro
               </svg>
             </div>
             <div>
-              <p className="font-bold">¡Reserva confirmada con éxito!</p>
+              <p className="font-bold">{aviso === 'pagada' ? '¡Seña pagada! Tu turno quedó confirmado.' : '¡Reserva confirmada con éxito!'}</p>
               <p className="text-emerald-500/80 text-xs">Te mandamos los detalles por mail.</p>
             </div>
           </div>

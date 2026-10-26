@@ -9,11 +9,20 @@ import { useLocal } from '@/components/local/LocalProvider'
 import { rutaLocal } from '@/lib/local-datos'
 import { conMayuscula } from '@/lib/rubros'
 import { formatPrecio } from '@/lib/format'
+import type { ModoDeCobro } from '@/lib/cobros'
 
 type Servicio = { id: string; nombre: string; duracion_minutos: number; precio: number; descripcion: string }
 type Barbero = { id: string; nombre: string; apellido: string }
 
-export function ReservaForm({ servicios, barberos }: { servicios: Servicio[], barberos: Barbero[] }) {
+/**
+ * `cobro` dice cómo cobra la seña este local (lo decide el servidor, ver
+ * lib/cobros.ts):
+ *   online          → Mercado Pago o transferencia;
+ *   muestra         → una demo: se puede elegir Mercado Pago para verlo, pero
+ *                     no se cobra nada;
+ *   sin_mercadopago → solo transferencia.
+ */
+export function ReservaForm({ servicios, barberos, cobro }: { servicios: Servicio[], barberos: Barbero[], cobro: ModoDeCobro }) {
   // El local de la página: su seña, su alias y sus palabras ("barbero", "manicura").
   const local = useLocal()
   const Profesional = conMayuscula(local.palabras.profesional)
@@ -29,7 +38,8 @@ export function ReservaForm({ servicios, barberos }: { servicios: Servicio[], ba
   const [isPending, startTransition] = useTransition()
   const [isLoadingHorarios, setIsLoadingHorarios] = useState(false)
   const [errorMsg, setErrorMsg] = useState('')
-  const [metodoPago, setMetodoPago] = useState<MetodoPago>('mercadopago')
+  const [metodoPago, setMetodoPago] = useState<MetodoPago>(cobro === 'sin_mercadopago' ? 'transferencia' : 'mercadopago')
+  // metodo: 'transferencia', 'mercadopago' (no se pudo abrir el pago) o 'muestra' (una demo).
   const [confirmacion, setConfirmacion] = useState<{ metodo: string; sena: number; alias: string } | null>(null)
   const avisoRef = useRef<HTMLDivElement>(null)
 
@@ -75,6 +85,10 @@ export function ReservaForm({ servicios, barberos }: { servicios: Servicio[], ba
       }
       if ('mp' in res && res.mp && res.url_checkout) {
         window.location.href = res.url_checkout
+        return
+      }
+      if ('muestra' in res && res.muestra) {
+        setConfirmacion({ metodo: 'muestra', sena: res.sena ?? 0, alias: '' })
         return
       }
       if ('metodo' in res) {
@@ -215,9 +229,12 @@ export function ReservaForm({ servicios, barberos }: { servicios: Servicio[], ba
           {horaSeleccionada && !confirmacion && (() => {
             const sena = Math.round((servicioSeleccionado.precio * local.senaPorcentaje) / 100)
             // La seña se paga siempre por adelantado — sin opción de pagar en el local.
+            // Mercado Pago aparece solo si el local cobra online (o, en una demo, para mostrarlo).
             const metodos: { value: MetodoPago; label: string; desc: string }[] = [
-              { value: 'mercadopago', label: 'Mercado Pago', desc: 'Tarjeta o dinero en cuenta' },
-              { value: 'transferencia', label: 'Transferencia', desc: `Alias ${local.aliasPago}` },
+              ...(cobro !== 'sin_mercadopago'
+                ? [{ value: 'mercadopago' as const, label: 'Mercado Pago', desc: cobro === 'muestra' ? 'Tarjeta o dinero en cuenta (en la muestra no se cobra)' : 'Tarjeta o dinero en cuenta' }]
+                : []),
+              { value: 'transferencia', label: 'Transferencia', desc: local.aliasPago ? `Alias ${local.aliasPago}` : 'El local te pasa los datos para transferir' },
             ]
             return (
             <div className="pt-6 border-t border-zinc-900">
@@ -279,14 +296,31 @@ export function ReservaForm({ servicios, barberos }: { servicios: Servicio[], ba
                 </svg>
               </div>
               <h3 className="text-xl font-bold text-white">¡Turno reservado!</h3>
-              <div className="mt-3 text-sm text-zinc-400">
-                {confirmacion.metodo === 'mercadopago' && (
-                  <p className="mb-2">No pudimos abrir el pago de Mercado Pago en este momento.</p>
-                )}
-                <p>Para confirmarlo, transferí la seña de <span className="text-amber-400 font-bold">{formatPrecio(confirmacion.sena)}</span> al alias:</p>
-                <p className="mt-2 inline-block bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-2 text-white font-mono">{confirmacion.alias}</p>
-                <p className="mt-2 text-xs text-zinc-600">Mandanos el comprobante por WhatsApp y listo.</p>
-              </div>
+              {confirmacion.metodo === 'muestra' ? (
+                // Una demo: se muestra cómo sería el pago, sin cobrar nada (decisión 5).
+                <div className="mt-3 text-sm text-zinc-400 max-w-md mx-auto space-y-2">
+                  <p className="inline-block rounded-full bg-amber-500/10 border border-amber-500/30 px-3 py-1 text-xs font-semibold text-amber-300">Es una muestra: no se cobró nada</p>
+                  <p>
+                    En tu local, acá se abre Mercado Pago, se paga la seña de <span className="text-amber-400 font-bold">{formatPrecio(confirmacion.sena)}</span> y
+                    la plata te cae directo en tu cuenta.
+                  </p>
+                </div>
+              ) : (
+                <div className="mt-3 text-sm text-zinc-400">
+                  {confirmacion.metodo === 'mercadopago' && (
+                    <p className="mb-2">No pudimos abrir el pago de Mercado Pago en este momento.</p>
+                  )}
+                  {confirmacion.alias ? (
+                    <>
+                      <p>Para confirmarlo, transferí la seña de <span className="text-amber-400 font-bold">{formatPrecio(confirmacion.sena)}</span> al alias:</p>
+                      <p className="mt-2 inline-block max-w-full break-all bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-2 text-white font-mono">{confirmacion.alias}</p>
+                      <p className="mt-2 text-xs text-zinc-600">Mandanos el comprobante por WhatsApp y listo.</p>
+                    </>
+                  ) : (
+                    <p>Para confirmarlo, el local te pasa los datos para transferir la seña de <span className="text-amber-400 font-bold">{formatPrecio(confirmacion.sena)}</span>.</p>
+                  )}
+                </div>
+              )}
               <button onClick={() => router.push(rutaLocal(local.slug, '/turnos'))}
                 className="mt-6 bg-white hover:bg-zinc-200 text-zinc-950 font-bold px-6 py-3 rounded-xl transition-colors">
                 Ver mis turnos

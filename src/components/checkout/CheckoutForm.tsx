@@ -17,9 +17,15 @@ const CATEGORIA_EMOJI: Record<string, string> = {
   'otros': '📦',
 }
 
-export function CheckoutForm({ loggedIn }: { loggedIn: boolean }) {
-  const { items, total } = useCart()
+/**
+ * `muestra`: el local está en demo. El flujo se recorre entero, pero al pagar
+ * no se va a Mercado Pago: una pantalla explica cómo sería en la tienda de
+ * verdad (decisión 5: las demos no cobran).
+ */
+export function CheckoutForm({ loggedIn, muestra = false }: { loggedIn: boolean; muestra?: boolean }) {
+  const { items, total, clearCart } = useCart()
   const local = useLocal()
+  const [pagoDeMuestra, setPagoDeMuestra] = useState<number | null>(null)
   const [mounted, setMounted]             = useState(false)
   const [tipoEntrega, setTipoEntrega]     = useState<TipoEntrega>('retiro')
   const [direccion, setDireccion]         = useState('')
@@ -37,6 +43,34 @@ export function CheckoutForm({ loggedIn }: { loggedIn: boolean }) {
     return (
       <div className="flex items-center justify-center py-24">
         <Spinner className="w-8 h-8 text-amber-400" />
+      </div>
+    )
+  }
+
+  // Una demo: cómo sería el pago en la tienda de verdad. Va antes del "carrito
+  // vacío" porque al terminar la muestra el carrito se vacía, como en una compra.
+  if (pagoDeMuestra !== null) {
+    return (
+      <div className="py-16 text-center max-w-md mx-auto">
+        <div className="w-16 h-16 mx-auto rounded-full bg-emerald-500/15 flex items-center justify-center mb-4">
+          <svg className="w-8 h-8 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+          </svg>
+        </div>
+        <h2 className="text-2xl font-extrabold text-white">¡Así se compra!</h2>
+        <p className="mt-3 inline-block rounded-full bg-amber-500/10 border border-amber-500/30 px-3 py-1 text-xs font-semibold text-amber-300">
+          Es una muestra: no se cobró nada
+        </p>
+        <p className="mt-3 text-sm text-zinc-400">
+          En tu tienda, acá se abre Mercado Pago, se pagan los <span className="text-amber-400 font-bold">{formatPrecio(pagoDeMuestra)}</span> y
+          la plata te cae directo en tu cuenta. El stock se descuenta solo y la venta queda anotada en tu caja.
+        </p>
+        <Link
+          href={rutaLocal(local.slug, '/tienda')}
+          className="inline-block mt-6 bg-amber-500 hover:bg-amber-400 text-black font-bold text-sm px-6 py-2.5 rounded-lg transition-colors"
+        >
+          Seguir mirando la tienda
+        </Link>
       </div>
     )
   }
@@ -97,7 +131,13 @@ export function CheckoutForm({ loggedIn }: { loggedIn: boolean }) {
         return
       }
 
-      if (result.url_checkout) {
+      if ('muestra' in result && result.muestra) {
+        setPagoDeMuestra(result.total)
+        clearCart()
+        return
+      }
+
+      if ('url_checkout' in result && result.url_checkout) {
         window.location.href = result.url_checkout
       }
     })
@@ -262,11 +302,11 @@ export function CheckoutForm({ loggedIn }: { loggedIn: boolean }) {
             ) : (
               <MercadoPagoIcon />
             )}
-            {isPending ? 'Procesando...' : 'Pagar con MercadoPago'}
+            {isPending ? 'Procesando...' : 'Pagar con Mercado Pago'}
           </button>
 
           <p className="text-zinc-600 text-xs text-center mt-3">
-            Te vamos a llevar a la plataforma segura de Mercado Pago
+            {muestra ? 'Es una muestra: no se cobra nada' : 'Te vamos a llevar a la plataforma segura de Mercado Pago'}
           </p>
 
           {/* Volver */}

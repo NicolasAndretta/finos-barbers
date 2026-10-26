@@ -1,8 +1,9 @@
 'use server'
 
-import { MercadoPagoConfig, Preference, Payment } from 'mercadopago'
 import { createClient, createServiceClient } from '@/lib/supabase'
-import { getAccessTokenComercio } from '@/lib/mp-oauth'
+import { crearPreferencia } from '@/lib/mercadopago'
+import { cuentaDelLocal } from '@/lib/mp-conexion'
+import { direccionesDelCobro, modoDeCobro, referenciaDe } from '@/lib/cobros'
 import { getUser, requireProfile } from '@/lib/auth'
 import { sendConfirmacionTurno, sendCancelacionTurno } from '@/lib/resend'
 import { localDeAccion } from '@/lib/local'
@@ -189,6 +190,14 @@ export async function crearReserva(formData: FormData) {
     return { error: 'Método de pago inválido' }
   }
 
+  // Cómo cobra este local (lib/cobros.ts). Un local activo sin Mercado Pago no
+  // ofrece esa opción; si llega igual (alguien llamó a la acción a mano), se
+  // frena antes de guardar nada.
+  const modo = await modoDeCobro(local)
+  if (metodo_pago === 'mercadopago' && modo === 'sin_mercadopago') {
+    return { error: 'Este local todavía no cobra con Mercado Pago. Elegí transferencia.' }
+  }
+
   // El horario se vuelve a revisar al guardar, no solo al mostrar la lista:
   // entre que el cliente la vio y apretó el botón, otro pudo reservar un
   // horario que se pisa con este (la base solo frena dos turnos que EMPIEZAN a
@@ -268,73 +277,41 @@ export async function crearReserva(formData: FormData) {
   // 4. Que las pantallas muestren el turno nuevo
   refrescarLocales()
 
-  // 5. Pago de la seña según el método elegido
-  if (metodo_pago === 'mercadopago' && senaMonto > 0) {
-    const accessToken = (await getAccessTokenComercio()) ?? process.env.MERCADOPAGO_ACCESS_TOKEN
-    if (!accessToken) {
-      return { success: true, turnoId: data.id, metodo: metodo_pago, sena: senaMonto, alias: local.aliasPago }
-    }
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
-    try {
-      const mpClient = new MercadoPagoConfig({ accessToken })
-      const pref = await new Preference(mpClient).create({
-        body: {
-          items: [{
-            id: data.id,
-            title: `Seña ${local.senaPorcentaje}% — ${servicio.nombre} (${local.nombreCorto})`,
-            quantity: 1,
-            unit_price: senaMonto,
-            currency_id: 'ARS',
-          }],
-          payer: { email: profile.email },
-          back_urls: {
-            success: `${appUrl}${rutaLocal(local.slug, '/turnos')}`,
-            failure: `${appUrl}${rutaLocal(local.slug, '/turnos')}`,
-            pending: `${appUrl}${rutaLocal(local.slug, '/turnos')}`,
-          },
-          ...(!appUrl.includes('localhost') && { auto_return: 'approved' as const }),
-          external_reference: data.id,
-        },
-      })
-      await supabase.from('turnos').update({ mp_preference_id: pref.id }).eq('id', data.id)
-      const url = pref.init_point ?? pref.sandbox_init_point
-      return { mp: true, url_checkout: url ?? '', turnoId: data.id }
-    } catch (err) {
-      console.error('[MP turno] Error al crear preferencia:', err)
-      // El turno queda creado; la seña se podrá pagar por otro medio.
-      return { success: true, turnoId: data.id, metodo: metodo_pago, sena: senaMonto, alias: local.aliasPago }
-    }
+  // 5. Pago de la seña según el método elegido y cómo cobra el local.
+  //    La confirmación del pago NO pasa por acá: la decide el aviso de Mercado
+  //    Pago (api/mp/webhook), verificando el pago con la cuenta del local.
+  const porTransferencia = { success: true, turnoId: data.id, metodo: metodo_pago, sena: senaMonto, alias: local.aliasPago }
+  if (metodo_pago !== 'mercadopago' || senaMonto <= 0) return porTransferencia
+
+  // En una demo nunca se cobra (decisión 5): el turno queda como cualquier
+  // otro, y la pantalla explica cómo sería el pago en el local de verdad.
+  if (modo === 'muestra') return { muestra: true, turnoId: data.id, sena: senaMonto }
+
+  try {
+    const cuenta = await cuentaDelLocal(local.id)
+    if (!cuenta) throw new Error('el local no tiene una cuenta de Mercado Pago vigente')
+    const cobro = await crearPreferencia(cuenta.token, {
+      items: [{
+        id: data.id,
+        title: `Seña ${local.senaPorcentaje}% — ${servicio.nombre} (${local.nombreCorto})`,
+        quantity: 1,
+        unit_price: senaMonto,
+        currency_id: 'ARS',
+      }],
+      payer: { email: profile.email },
+      external_reference: referenciaDe({ tipo: 'turno', id: data.id }),
+      ...direccionesDelCobro(local, { ok: '/turnos', error: '/turnos' }),
+    })
+    // Con la llave del servidor y filtrado por local: con la sesión del
+    // cliente la base lo rechazaba sin avisar (al cliente solo le deja
+    // cancelar; anotado en la Fase 0).
+    await createServiceClient().from('turnos').update({ mp_preference_id: cobro.id }).eq('id', data.id).eq('local_id', local.id)
+    return { mp: true, url_checkout: cobro.url, turnoId: data.id }
+  } catch (err) {
+    console.error('[reservas] No se pudo armar el cobro de la seña:', err instanceof Error ? err.message : err)
+    // El turno ya está guardado: la seña se puede pagar por transferencia.
+    return porTransferencia
   }
-
-  return { success: true, turnoId: data.id, metodo: metodo_pago, sena: senaMonto, alias: local.aliasPago }
-}
-
-/**
- * Marca la seña de un turno como pagada tras la vuelta de MercadoPago.
- * Idempotente. Verifica el pago con MP cuando es posible.
- */
-export async function confirmarPagoSenaTurno(turnoId: string, paymentId: string) {
-  const supabase = createServiceClient()
-  const { data: turno } = await supabase
-    .from('turnos').select('id, sena_estado').eq('id', turnoId).single()
-  if (!turno) return { error: 'Turno no encontrado' }
-  if (turno.sena_estado === 'pagada') return { success: true }
-
-  const accessToken = (await getAccessTokenComercio()) ?? process.env.MERCADOPAGO_ACCESS_TOKEN
-  if (accessToken && paymentId) {
-    try {
-      const payment = await new Payment(new MercadoPagoConfig({ accessToken })).get({ id: paymentId })
-      if (payment.status !== 'approved' && payment.status !== 'pending') {
-        return { error: 'El pago no fue aprobado' }
-      }
-    } catch { /* MP ya redirigió a success; seguimos */ }
-  }
-
-  await supabase.from('turnos')
-    .update({ sena_estado: 'pagada', mp_payment_id: paymentId, estado: 'confirmado' })
-    .eq('id', turnoId)
-  refrescarLocales()
-  return { success: true }
 }
 
 /** Los turnos del cliente conectado en ESTE local. */

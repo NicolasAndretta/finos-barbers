@@ -5,13 +5,15 @@ import { getLocal } from '@/lib/local'
 import { rutaLocal } from '@/lib/local-datos'
 import { getServicios, getBarberos } from '@/app/actions/reservas'
 import { ReservaForm } from '@/components/client/ReservaForm'
+import { modoDeCobro } from '@/lib/cobros'
 
-// Reservar un turno en ESTE local: sus servicios y su equipo.
+// Reservar un turno en ESTE local: sus servicios, su equipo, y cómo cobra la
+// seña (con Mercado Pago, de muestra en una demo, o solo por transferencia).
 export default async function ReservarPage({ params }: { params: Promise<{ local: string }> }) {
   const local = await getLocal((await params).local)
   if (!local) notFound()
   await requireProfile(rutaLocal(local.slug, '/reservar'))
-  const [servicios, barberos] = await Promise.all([getServicios(local.slug), getBarberos(local.slug)])
+  const [servicios, barberos, cobro] = await Promise.all([getServicios(local.slug), getBarberos(local.slug), modoDeCobro(local)])
 
   return (
     <div className="flex flex-col items-center justify-start text-center pb-12 animate-fade-in w-full">
@@ -24,7 +26,7 @@ export default async function ReservarPage({ params }: { params: Promise<{ local
         </p>
       </div>
 
-      <ReservaForm servicios={servicios} barberos={barberos} />
+      <ReservaForm servicios={servicios} barberos={barberos} cobro={cobro} />
     </div>
   )
 }

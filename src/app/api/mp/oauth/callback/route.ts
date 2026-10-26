@@ -1,36 +1,57 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { cookies } from 'next/headers'
-import { exigirPermiso } from '@/lib/auth'
-import { localDeAccion } from '@/lib/local'
-import { PRODUCTO } from '@/lib/producto'
-import { exchangeCodeForToken, guardarConexion, publicBaseUrl } from '@/lib/mp-oauth'
+import { NextResponse, type NextRequest } from 'next/server'
+import { getUser } from '@/lib/auth'
+import { getPermisos } from '@/lib/local'
+import { rutaLocal } from '@/lib/local-datos'
+import { createClient } from '@/lib/supabase'
+import { COOKIE_CONEXION, RUTA_COOKIE_CONEXION, canjearCodigo, guardarConexion } from '@/lib/mp-conexion'
 
-// Vuelta de Mercado Pago tras autorizar. Valida el state, cambia el código por
-// el token (server-to-server) y lo guarda. Solo admin.
+// La vuelta de Mercado Pago después de que el dueño autoriza. Es UNA dirección
+// para todos los locales (la que se registra en la aplicación de Mercado
+// Pago); de qué local se trata lo dice la cookie que dejó /connect.
+//
+// Valida el `state`, vuelve a revisar el permiso (la sesión pudo cambiar en
+// el medio), cambia el código por el token (servidor a servidor: el navegador
+// nunca lo ve) y guarda la conexión de ese local.
+
+export const dynamic = 'force-dynamic'
+
+const esId = (v: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v)
+
+/** Redirige y, de paso, borra la cookie: sirve para una sola vuelta. */
+function irA(ruta: string) {
+  const res = new NextResponse(null, { status: 303, headers: { Location: ruta } })
+  res.cookies.delete({ name: COOKIE_CONEXION, path: RUTA_COOKIE_CONEXION })
+  return res
+}
+
 export async function GET(req: NextRequest) {
-  // Por ahora hay UNA conexión de Mercado Pago, la de Roble (por local, en la
-  // Fase 4): la puede tocar solo quien administra Roble.
-  await exigirPermiso(await localDeAccion(PRODUCTO.localPorDefecto), 'administra')
+  const [stateGuardado = '', localId = ''] = (req.cookies.get(COOKIE_CONEXION)?.value ?? '').split('.')
+  if (!esId(localId)) return irA('/')
 
-  const base = publicBaseUrl(req)
-  const url = new URL(req.url)
-  const code = url.searchParams.get('code')
-  const state = url.searchParams.get('state')
+  // Sin sesión, al login a secas: volver acá después no serviría (la cookie
+  // ya se borró), así que se conecta de nuevo desde el panel.
+  if (!(await getUser())) return irA('/login')
 
-  const cookieStore = await cookies()
-  const savedState = cookieStore.get('mp_oauth_state')?.value
-  cookieStore.delete('mp_oauth_state')
+  // El nombre del local, para volver a su panel. Con la sesión: si no es
+  // alguien de ese local, no lo ve y vuelve al inicio.
+  const supabase = await createClient()
+  const { data: local } = await supabase.from('locales').select('id, slug').eq('id', localId).maybeSingle()
+  if (!local) return irA('/')
+  const pagos = rutaLocal(local.slug, '/admin/pagos')
 
-  if (!code || !state || !savedState || state !== savedState) {
-    return NextResponse.redirect(new URL(`/${PRODUCTO.localPorDefecto}/admin/pagos?error=state`, base))
-  }
+  const state = req.nextUrl.searchParams.get('state')
+  if (!state || !stateGuardado || state !== stateGuardado) return irA(`${pagos}?error=state`)
+  if (!(await getPermisos(local.id)).administra) return irA(`${pagos}?error=permiso`)
+
+  // Sin código: el dueño canceló en Mercado Pago, o Mercado Pago devolvió un error.
+  const code = req.nextUrl.searchParams.get('code')
+  if (!code) return irA(`${pagos}?error=cancelado`)
 
   try {
-    const token = await exchangeCodeForToken(code, req)
-    await guardarConexion(token)
-    return NextResponse.redirect(new URL(`/${PRODUCTO.localPorDefecto}/admin/pagos?mp=ok`, base))
+    await guardarConexion(local.id, await canjearCodigo(code))
+    return irA(`${pagos}?mp=ok`)
   } catch (err) {
-    console.error('[MP OAuth] Error en callback:', err)
-    return NextResponse.redirect(new URL(`/${PRODUCTO.localPorDefecto}/admin/pagos?error=token`, base))
+    console.error(`[mp-conexion] No se pudo completar la conexión del local ${local.id}:`, err instanceof Error ? err.message : err)
+    return irA(`${pagos}?error=token`)
   }
 }

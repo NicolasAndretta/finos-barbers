@@ -12,7 +12,8 @@ const CATEGORIAS: { value: CategoriaProducto | 'todas'; label: string; emoji: st
   { value: 'otros',           label: 'Otros',           emoji: '📦' },
 ]
 
-export function TiendaCatalogo({ productos }: { productos: Producto[] }) {
+/** `catalogo`: el local no cobra online, así que cada producto se consulta por WhatsApp. */
+export function TiendaCatalogo({ productos, catalogo = false }: { productos: Producto[]; catalogo?: boolean }) {
   const [categoriaActiva, setCategoriaActiva] = useState<CategoriaProducto | 'todas'>('todas')
   const [busqueda, setBusqueda] = useState('')
 
@@ -90,7 +91,7 @@ export function TiendaCatalogo({ productos }: { productos: Producto[] }) {
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {productosFiltrados.map(producto => (
-              <ProductoCard key={producto.id} producto={producto} />
+              <ProductoCard key={producto.id} producto={producto} catalogo={catalogo} />
             ))}
           </div>
         </>

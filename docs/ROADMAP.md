@@ -44,22 +44,12 @@ gitignoreado). Ya está en la base, respetando el patrón RLS existente (`is_adm
 - Campos en `turnos`: `metodo_pago`, `sena_monto`, `sena_estado`, `mp_*`.
 - Credenciales por env (MP), nunca hardcodeadas. Falta **probar un pago MP real** end-to-end.
 
-## ✅ Cobros online con OAuth (construido — falta credenciales + prueba en vivo)
-**Código completo** (migración 0003 + `lib/mp-oauth.ts` + rutas + panel):
-- `mp_conexion` (tokens protegidos por RLS, solo server).
-- `lib/mp-oauth.ts`: URL de autorización, intercambio de código, **refresh** automático,
-  `getAccessTokenComercio()` (con fallback al token del `.env`).
-- `/api/mp/oauth/connect` (genera state anti-CSRF + redirige) y `/api/mp/oauth/callback`
-  (valida state, cambia código por token, guarda).
-- `/admin/pagos`: estado de conexión + botón "Conectar Mercado Pago" / "Desconectar".
-- Checkout y seña de turnos usan el token del comercio conectado.
-
-**Falta para activarlo (lo hace Nico):**
-1. Crear la **app de Mercado Pago** (panel developers de andmar.studio) → `MP_CLIENT_ID`
-   + `MP_CLIENT_SECRET` en `.env.local` / env del hosting. Redirect URI:
-   `https://firebrick-giraffe-301726.hostingersite.com/api/mp/oauth/callback`.
-2. **Deploy a Hostinger** (el callback necesita estar online).
-3. Entrar a `/admin/pagos` → "Conectar" → autorizar → probar un pago.
+## ✅ Cobros online con OAuth — por local desde la Fase 4a (26/10/2026)
+Cada local conecta SU cuenta de Mercado Pago y cobra en ella. El código
+(`lib/mp-conexion.ts`, `lib/cobros.ts`, `lib/mercadopago.ts`, `/api/mp/oauth/*`,
+`/api/mp/webhook`, `/<local>/admin/pagos`) y cómo activarlo están en
+**`docs/ACTIVAR-MERCADOPAGO.md`**; el porqué de cada decisión, en
+`docs/MULTITENANT.md` (Fase 4a).
 
 ## ✅ Pulido final (verificado en mobile con capturas)
 - **Menú mobile (hamburguesa)** en la home: drawer con portal a `document.body`

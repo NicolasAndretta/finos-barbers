@@ -2,18 +2,17 @@
 
 import { exigirPermiso } from '@/lib/auth'
 import { localDeAccion } from '@/lib/local'
-import { createServiceClient } from '@/lib/supabase'
+import { desconectar } from '@/lib/mp-conexion'
 import { refrescarLocales } from '@/lib/refrescar'
 
 /**
- * Desconecta la cuenta de Mercado Pago del local. Solo quien lo administra.
- * (Conectar una cuenta por local completa en la Fase 4; hoy solo Roble tiene.)
+ * Desconecta la cuenta de Mercado Pago de ESTE local (las de los demás no se
+ * tocan). Solo quien lo administra: su dueño o el admin de la plataforma.
  */
 export async function desconectarMP(slug: string) {
   const local = await localDeAccion(slug)
   await exigirPermiso(local, 'administra')
-  const supabase = createServiceClient()
-  await supabase.from('mp_conexion').delete().eq('local_id', local.id)
+  await desconectar(local.id)
   refrescarLocales()
   return { success: true }
 }

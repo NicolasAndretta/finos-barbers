@@ -15,7 +15,9 @@ const sinSuscripcion = () => () => {}
  * Qué secciones ve cada uno (son las reglas de la Fase 2):
  *  - Turnos y Calendario: quien opera lo privado del local (el dueño, el admin
  *    de la plataforma, y la comercial solo en las demos).
- *  - Cobros y Finanzas: solo quien administra el local (la caja).
+ *  - Finanzas: solo quien administra el local (la caja).
+ *  - Cobros: todos, cada uno con lo suyo (la comercial ve si el Mercado Pago
+ *    está conectado; con qué cuenta y los botones, solo quien administra).
  *  - El catálogo: todos los que entran al panel.
  * Ocultar no es lo que protege (eso lo hace la base): es para no mostrar
  * botones que después dirían "no tenés permiso".
@@ -34,7 +36,7 @@ export function AdminNav({ permisos }: { permisos: { administra: boolean; operaP
     { href: ruta('/admin/categorias'), label: 'Categorías', ver: true },
     { href: ruta('/admin/barberos'), label: conMayuscula(local.palabras.profesionales), ver: true },
     { href: ruta('/admin/resenas'), label: 'Reseñas', ver: true },
-    { href: ruta('/admin/pagos'), label: 'Cobros', ver: permisos.administra },
+    { href: ruta('/admin/pagos'), label: 'Cobros', ver: true },
     { href: ruta('/admin/finanzas'), label: 'Finanzas', ver: permisos.administra },
   ].filter((l) => l.ver)
   const [open, setOpen] = useState(false)

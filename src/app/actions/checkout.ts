@@ -1,18 +1,43 @@
 'use server'
 
-import { MercadoPagoConfig, Preference, Payment } from 'mercadopago'
 import { createClient, createServiceClient } from '@/lib/supabase'
-import { getAccessTokenComercio } from '@/lib/mp-oauth'
+import { crearPreferencia } from '@/lib/mercadopago'
+import { cuentaDelLocal } from '@/lib/mp-conexion'
+import { direccionesDelCobro, modoDeCobro, referenciaDe } from '@/lib/cobros'
 import { localDeAccion } from '@/lib/local'
-import { localVisible, rutaLocal } from '@/lib/local-datos'
-import { refrescarLocales } from '@/lib/refrescar'
+import { localVisible } from '@/lib/local-datos'
 
 type ItemCarritoRaw = { id: string; cantidad: number }
+
+const esId = (v: unknown): v is string =>
+  typeof v === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v)
+
+/**
+ * El carrito lo arma el navegador, así que se revisa entero: ids con forma de
+ * id, cantidades enteras de 1 a 99, y un renglón por producto (si llega dos
+ * veces el mismo, se suman).
+ */
+function normalizarCarrito(raw: unknown): ItemCarritoRaw[] | null {
+  if (!Array.isArray(raw)) return null
+  const porProducto = new Map<string, number>()
+  for (const item of raw) {
+    const cantidad = Number((item as ItemCarritoRaw)?.cantidad)
+    if (!esId((item as ItemCarritoRaw)?.id) || !Number.isInteger(cantidad) || cantidad < 1 || cantidad > 99) return null
+    const id = (item as ItemCarritoRaw).id
+    porProducto.set(id, (porProducto.get(id) ?? 0) + cantidad)
+  }
+  return [...porProducto].map(([id, cantidad]) => ({ id, cantidad }))
+}
 
 export async function crearPedido(formData: FormData) {
   // El pedido es de la tienda de un local: el de la página donde se compró.
   const local = await localDeAccion(formData.get('local'))
   if (!localVisible(local)) return { error: 'Esta tienda no está vendiendo por ahora.' }
+
+  // Cómo cobra este local (lib/cobros.ts). Sin Mercado Pago la tienda es un
+  // catálogo: no se arma ningún pedido (antes quedaba uno colgado).
+  const modo = await modoDeCobro(local)
+  if (modo === 'sin_mercadopago') return { error: 'Esta tienda todavía no cobra online. Consultá por WhatsApp y te lo reservan.' }
 
   const itemsRaw     = formData.get('items') as string
   const tipoEntrega  = formData.get('tipo_entrega') as string
@@ -23,7 +48,7 @@ export async function crearPedido(formData: FormData) {
   const guestEmail    = ((formData.get('cliente_email')    as string | null) ?? '').trim()
   const guestTelefono = ((formData.get('cliente_telefono') as string | null) ?? '').trim()
 
-  if (!itemsRaw || !tipoEntrega) return { error: 'Datos incompletos' }
+  if (!itemsRaw || !['retiro', 'envio'].includes(tipoEntrega)) return { error: 'Datos incompletos' }
   if (tipoEntrega === 'envio' && !direccionRaw.trim()) {
     return { error: 'Ingresá la dirección de envío' }
   }
@@ -39,12 +64,13 @@ export async function crearPedido(formData: FormData) {
     }
   }
 
-  let itemsCarrito: ItemCarritoRaw[]
+  let itemsCarrito: ItemCarritoRaw[] | null
   try {
-    itemsCarrito = JSON.parse(itemsRaw)
+    itemsCarrito = normalizarCarrito(JSON.parse(itemsRaw))
   } catch {
-    return { error: 'Error al procesar el carrito' }
+    itemsCarrito = null
   }
+  if (!itemsCarrito) return { error: 'Error al procesar el carrito' }
   if (!itemsCarrito.length) return { error: 'El carrito está vacío' }
 
   // Service role: validamos e insertamos server-side (sin debilitar el RLS).
@@ -72,6 +98,13 @@ export async function crearPedido(formData: FormData) {
     const prod = productos.find(p => p.id === item.id)!
     return acc + prod.precio * item.cantidad
   }, 0)
+
+  // En una demo nunca se cobra (decisión 5): no se arma ningún pedido, y la
+  // pantalla explica cómo sería el pago en la tienda de verdad.
+  if (modo === 'muestra') return { muestra: true, total }
+
+  const cuenta = await cuentaDelLocal(local.id).catch(() => null)
+  if (!cuenta) return { error: 'Esta tienda no puede cobrar online en este momento. Probá de nuevo en un rato o consultá por WhatsApp.' }
 
   // Email para MercadoPago y para contacto del pedido.
   const emailContacto = user?.email ?? guestEmail
@@ -113,108 +146,35 @@ export async function crearPedido(formData: FormData) {
     return { error: 'Error al guardar los items del pedido' }
   }
 
-  const accessToken = (await getAccessTokenComercio()) ?? process.env.MERCADOPAGO_ACCESS_TOKEN
-  if (!accessToken) return { error: 'Pago no configurado — contactá al administrador' }
-
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL
-    || process.env.NEXT_PUBLIC_SITE_URL
-    || 'http://localhost:3000'
-
-  const preferenceBody = {
-    items: itemsCarrito.map(item => {
-      const prod = productos.find(p => p.id === item.id)!
-      return {
-        id:          item.id,
-        title:       prod.nombre,
-        unit_price:  prod.precio,
-        quantity:    item.cantidad,
-        currency_id: 'ARS',
-      }
-    }),
-    payer:              { email: emailContacto || '' },
-    back_urls: {
-      success: `${appUrl}${rutaLocal(local.slug, '/checkout/success')}`,
-      failure: `${appUrl}${rutaLocal(local.slug, '/checkout/failure')}`,
-      pending: `${appUrl}${rutaLocal(local.slug, '/checkout/success')}`,
-    },
-    ...(!appUrl.includes('localhost') && { auto_return: 'approved' as const }),
-    external_reference: pedido.id,
-  }
-
+  // El cobro, con la cuenta de Mercado Pago del local. Que el pedido quedó
+  // pagado lo decide después el aviso de Mercado Pago (api/mp/webhook): el
+  // stock baja y la venta entra a la caja recién ahí.
   try {
-    const mpClient = new MercadoPagoConfig({ accessToken })
-    const preference = new Preference(mpClient)
-    const result = await preference.create({ body: preferenceBody })
+    const cobro = await crearPreferencia(cuenta.token, {
+      items: itemsCarrito.map(item => {
+        const prod = productos.find(p => p.id === item.id)!
+        return {
+          id:          item.id,
+          title:       prod.nombre,
+          unit_price:  Number(prod.precio),
+          quantity:    item.cantidad,
+          currency_id: 'ARS' as const,
+        }
+      }),
+      ...(emailContacto && { payer: { email: emailContacto } }),
+      external_reference: referenciaDe({ tipo: 'pedido', id: pedido.id }),
+      ...direccionesDelCobro(local, { ok: '/checkout/success', error: '/checkout/failure' }),
+    })
 
     await supabase
       .from('pedidos')
-      .update({ mp_preference_id: result.id })
+      .update({ mp_preference_id: cobro.id })
       .eq('id', pedido.id)
 
-    const urlCheckout = result.init_point ?? result.sandbox_init_point
-    return { url_checkout: urlCheckout ?? '' }
+    return { url_checkout: cobro.url }
   } catch (err) {
-    console.error('[MP] Error al crear preferencia:', err)
+    console.error('[checkout] No se pudo armar el cobro del pedido:', err instanceof Error ? err.message : err)
     await supabase.from('pedidos').delete().eq('id', pedido.id)
     return { error: 'Error al iniciar el pago. Intentá de nuevo.' }
   }
-}
-
-export async function actualizarEstadoPedido(pedidoId: string, paymentId: string) {
-  // Funciona para usuarios logueados y para invitados (verificamos por id de
-  // pedido + estado del pago en MercadoPago). Service role server-side.
-  const supabase = createServiceClient()
-
-  const { data: pedido } = await supabase
-    .from('pedidos')
-    .select('id, estado, total, user_id, local_id')
-    .eq('id', pedidoId)
-    .single()
-
-  if (!pedido) return { error: 'Pedido no encontrado' }
-  if (pedido.estado === 'pagado') return { success: true }
-
-  const accessToken = (await getAccessTokenComercio()) ?? process.env.MERCADOPAGO_ACCESS_TOKEN
-  if (accessToken) {
-    try {
-      const mpClient = new MercadoPagoConfig({ accessToken })
-      const paymentClient = new Payment(mpClient)
-      const payment = await paymentClient.get({ id: paymentId })
-      if (payment.status !== 'approved' && payment.status !== 'pending') {
-        return { error: 'El pago no fue aprobado' }
-      }
-    } catch {
-      // Si falla la verificación, seguimos (MP ya redirigió a success).
-    }
-  }
-
-  const { error } = await supabase
-    .from('pedidos')
-    .update({ estado: 'pagado', mp_payment_id: paymentId })
-    .eq('id', pedidoId)
-
-  if (error) return { error: error.message }
-
-  // Registro financiero del pedido pagado (best-effort: si el pedido es de
-  // invitado y la tabla exige created_by, no rompemos el flujo).
-  try {
-    const hoy = new Date()
-    const fechaHoy = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`
-    await supabase.from('transacciones').insert({
-      local_id:    pedido.local_id,
-      tipo:        'ingreso',
-      categoria:   'productos',
-      monto:       pedido.total,
-      descripcion: `Pedido #${pedidoId.slice(0, 8).toUpperCase()} — tienda online`,
-      fecha:       fechaHoy,
-      origen:      'pedido',
-      pedido_id:   pedidoId,
-      created_by:  pedido.user_id,
-    })
-  } catch (err) {
-    console.error('[checkout] No se registró la transacción del pedido:', err)
-  }
-
-  refrescarLocales()
-  return { success: true }
 }

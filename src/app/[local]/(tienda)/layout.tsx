@@ -8,13 +8,17 @@ import { Logo } from '@/components/ui/Logo'
 import { CartProvider } from '@/lib/cart-context'
 import { CartButton } from '@/components/tienda/CartButton'
 import { CartDrawer } from '@/components/tienda/CartDrawer'
+import { modoDeCobro } from '@/lib/cobros'
 
 // Layout PÚBLICO de la tienda y el checkout: cualquiera puede ver productos y
 // comprar sin cuenta (guest checkout). Si hay sesión, mostramos acceso a la cuenta.
+// Si el local no cobra online, la tienda es un catálogo: sin carrito (cada
+// producto se consulta por WhatsApp).
 export default async function TiendaLayout({ children, params }: { children: React.ReactNode; params: Promise<{ local: string }> }) {
   const local = await getLocal((await params).local)
   if (!local) notFound()
   const ruta = (r: string = '') => rutaLocal(local.slug, r)
+  const conCarrito = (await modoDeCobro(local)) !== 'sin_mercadopago'
   // "Mi cuenta" lleva a lo que es en ESTE local: su panel o su área de cliente.
   const profile = await getProfile()
   const permisos = profile ? await getPermisos(local.id) : null
@@ -40,7 +44,7 @@ export default async function TiendaLayout({ children, params }: { children: Rea
             </nav>
 
             <div className="flex items-center gap-3">
-              <CartButton />
+              {conCarrito && <CartButton />}
               {cuentaLink ? (
                 <Link
                   href={cuentaLink}
@@ -64,7 +68,7 @@ export default async function TiendaLayout({ children, params }: { children: Rea
           {children}
         </main>
 
-        <CartDrawer />
+        {conCarrito && <CartDrawer />}
       </div>
     </CartProvider>
   )

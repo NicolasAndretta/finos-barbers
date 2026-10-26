@@ -189,7 +189,7 @@ Después de cada cambio en producción:
 | 2 | Membresías y RLS por local (reemplaza `is_admin()`), con prueba de aislamiento | ✅ Hecha en desarrollo el 14/10/2026; OK de Nico el 22/10 (va a producción con el resto, después de la Fase 5) |
 | 3a | El sitio elige el local por la dirección; `SITE` pasa a ser datos del local; panel por local con permisos de la Fase 2; un solo login; rubro y nombre provisorio | ✅ Hecha en desarrollo el 22/10/2026; OK de Nico el 25/10 (va a producción con el resto, después de la Fase 5) |
 | 3b | Horarios reales del local y de cada profesional (la reserva solo ofrece lo abierto) | ✅ Hecha en desarrollo el 25/10/2026; OK de Nico el 26/10 (va a producción con el resto, después de la Fase 5) |
-| 4a | Cada local cobra en su propia cuenta de Mercado Pago: una conexión por local, el aviso de Mercado Pago como fuente de verdad, las demos no cobran | ⏳ Plan aprobado el 26/10/2026; en construcción |
+| 4a | Cada local cobra en su propia cuenta de Mercado Pago: una conexión por local, el aviso de Mercado Pago como fuente de verdad, las demos no cobran | ✅ Hecha en desarrollo el 26/10/2026; falta el OK de Nico |
 | 4b | Imágenes por local; las llamadas con la llave del servidor, revisadas y filtradas por local | ⏳ Plan aprobado el 26/10/2026 |
 | 5 | Prueba automática de aislamiento completa | ⏳ |
 | 6 | Alta de barberías desde el panel (demo → activo), ver la sección de abajo | ⏳ |
@@ -1084,3 +1084,104 @@ de barbero (se resuelve con las invitaciones de la Fase 6).
 medio o en el más caro se decide antes de la Fase 7. En el borrador va en el del
 medio, junto con las señas por Mercado Pago. Lo de esta fase sirve para las dos
 opciones.
+
+### Fase 4a — Cada local cobra en su cuenta, hecha en desarrollo (26/10/2026)
+
+**Qué cambió, en simple**
+
+| Antes | Ahora |
+|---|---|
+| Una sola conexión de Mercado Pago para toda la web; conectar una cuenta borraba las demás | Una por local (la base no deja guardar dos). Cada dueño conecta la suya desde `/<local>/admin/pagos` |
+| El panel decía "Conectado", sin decir con qué cuenta | Muestra la cuenta (apodo y mail), cuándo se conectó y cuándo vence. La comercial ve solo "conectado: sí o no", y no puede conectar ni desconectar |
+| Se renovaba con 5 minutos de margen | Con 30 días, como Código Rojo. Si vence y no se puede renovar, el local deja de ofrecer Mercado Pago y el panel pide reconectar |
+| Si no había cuenta conectada, se cobraba con un token de respaldo del archivo de variables | Solo con la cuenta del local. El token de respaldo ya no existe |
+| No había aviso de Mercado Pago: si el cliente cerraba el navegador antes de volver, el pago no se registraba | El aviso (`/api/mp/webhook`) es lo que decide. La página de vuelta hace la misma verificación, para que el cliente lo vea enseguida |
+| Cómo se confirma un pago | Siempre se le pregunta el pago a Mercado Pago con la cuenta del local, y tienen que coincidir cuatro cosas: aprobado, cobrado por esa cuenta, de un turno o pedido de ese local, y por el monto justo. Lo que trae la dirección de vuelta no se cree. El detalle de la falla que esto cierra se anota cuando esté cerrada en producción (el repo es público) |
+| Una devolución hecha desde Mercado Pago no se reflejaba | La seña queda "devuelta"; el pedido se cancela, el stock vuelve y la salida queda en la caja (si ya se había enviado, queda anotado para revisarlo a mano) |
+| Las demos cobraban si había cuenta conectada | Una demo nunca cobra (decisión 5): la opción de Mercado Pago lleva a una pantalla de muestra ("en tu local, acá se abre Mercado Pago…"), en la reserva y en la tienda |
+| Un local sin Mercado Pago armaba pedidos que quedaban colgados | La reserva ofrece solo transferencia, y la tienda es un catálogo con "Consultar por WhatsApp" en cada producto (el mensaje va escrito) |
+
+**La base:** `0011_cobros_por_local.sql`. Una conexión por local con la cuenta, la
+seña "devuelta", la caja que acepta movimientos del sistema sin persona, cuánto
+stock descontó cada renglón, y cuatro funciones que aplican un pago ya verificado
+(confirmar o devolver una seña o un pedido). Cada función es una sola operación,
+vuelve a revisar el local y el monto, se puede repetir sin efecto, y solo la usa el
+servidor (se les saca el permiso a todos los demás, también a `public`).
+
+**El código, en cuatro archivos nuevos** (comentados en cada uno)
+- `src/lib/mercadopago.ts`: las llamadas a Mercado Pago, escritas directo. Se fue la
+  librería `mercadopago` (no dejaba apuntar a un Mercado Pago de mentira). Las
+  dependencias de producción siguen en 0 vulnerabilidades.
+- `src/lib/mp-conexion.ts`: la cuenta de cada local (conectar, renovar, mostrar,
+  desconectar). Reemplaza a `mp-oauth.ts`.
+- `src/lib/cobros.ts`: cómo cobra cada local (online, muestra o sin Mercado Pago) y
+  la verificación de un pago. Lo usan el aviso y las dos páginas de vuelta.
+- `src/lib/sitio.ts`: la dirección pública del sitio. En producción, si falta, ningún
+  local cobra online (mejor eso que mandar a Mercado Pago a "localhost").
+- Los archivos que tocan tokens llevan `import 'server-only'`: si alguien los
+  importara desde el navegador, el build falla.
+
+**Arreglos de paso**
+- La tienda nunca descontaba el stock al vender. Ahora baja cuando entra la plata, y
+  nunca queda negativo: si dos compran la última unidad, los dos pagos se registran y
+  el segundo queda anotado para que el dueño reponga o devuelva. Una devolución repone
+  exactamente lo que se descontó.
+- Las compras sin cuenta nunca llegaban a la caja: la caja exigía "quién la cargó", y
+  un invitado no tiene a nadie. Ahora lo que anota el sistema va sin persona; lo que se
+  carga a mano sigue exigiéndola. La fecha va en la hora del local (antes, la del
+  servidor: de noche caía al día siguiente).
+- La referencia del cobro de un turno se guardaba con la sesión del cliente y la base
+  la rechazaba sin avisar (anotado en la Fase 0): ahora la guarda el servidor.
+- El carrito se revisa entero en el servidor (cantidades de 1 a 99, un renglón por
+  producto), y no se arma ningún pedido si el local no puede cobrar.
+- `mp_conexion` sin los permisos que la foto le había dejado a la clave pública.
+- "Cobros" aparece en el menú para todos los del panel, cada uno con lo suyo.
+- "MercadoPago" → "Mercado Pago" en el botón de pagar.
+
+**Cómo se verificó**
+- La `0011` corre dos veces, y la cadena entera (0000 a 0011) también, dos veces
+  seguidas. Quedó comprobado en la base: ni la clave pública ni una sesión leen los
+  tokens ni pueden usar las funciones de pago; solo el servidor.
+- **`scripts/mp-falso.mjs` (nuevo):** un Mercado Pago de mentira en la PC. Imita las
+  cinco cosas que usa la app (autorizar, token, cuenta, crear un cobro, consultar un
+  pago), tiene una "caja" para pagar que avisa a la app como el de verdad, y anota con
+  qué cuenta le hablaron. La app lo acepta solo en desarrollo y apuntando a la propia PC.
+- **`scripts/probar-cobros.mjs` (nuevo), 65 ✓**, con navegador, en celu y en compu: la
+  dueña conecta su cuenta y el panel dice cuál; nadie de otro local ni la comercial la
+  tocan; una reserva se cobra con la cuenta del local y se confirma aunque el aviso no
+  llegue; ocho intentos de dar algo por pagado sin pagarlo, frenados; devolución de una
+  seña y de un pedido; una compra sin cuenta (stock y caja); la última unidad comprada
+  dos veces; el local sin Mercado Pago; Roble en demo con una cuenta conectada y el
+  Mercado Pago de mentira sin recibir ni un cobro; la renovación con margen y la
+  conexión vencida; desconectar; y el panel y la tienda-catálogo sin scroll de costado
+  en todos los anchos probados (de 320 a 1440).
+- **Contraprueba:** se sacó a propósito el control de "lo cobró la cuenta de este
+  local" y `probar-cobros` marcó 1 falla, justo la del pago cobrado por otra cuenta. Se
+  restauró (archivo idéntico, comprobado con su huella) y pasa de nuevo.
+- Las de siempre, ampliadas: `verificar-locales` 75 ✓ (una sola conexión por local),
+  `probar-seguridad` 50 ✓ (nadie usa las funciones de pago), `probar-aislamiento`
+  127 ✓ (las siete cuentas, incluidos el dueño y el admin con su sesión: ni leen los
+  tokens ni marcan pagos). `probar-reservas` 7 ✓, `probar-locales` 31 ✓ y
+  `probar-horarios` 18 ✓, sin cambios.
+- `npm run lint` (0 errores, las 6 advertencias viejas) y `npm run build` en verde.
+
+**Encontrado y arreglado en las pruebas**
+- El botón "Conectar" no salía hacia Mercado Pago: era un `<Link>` de Next, que navega
+  por dentro de la app, y "Conectar" es una ruta de la API que manda a otro sitio. Pasó
+  a ser un `<a>` común.
+- En la primera contraprueba fallaron 5 controles y no 1: los intentos compartían el
+  mismo turno, y cuando uno lo dejaba pagado, los siguientes no podían probar nada.
+  Ahora cada intento usa su propio turno.
+
+**Para el pase a producción (anotado)**
+- La aplicación de Mercado Pago del producto se crea con el nombre definitivo; su
+  dirección de vuelta es `<dirección del sitio>/api/mp/oauth/callback`. Pasos en
+  `docs/ACTIVAR-MERCADOPAGO.md`.
+- En Hostinger: `MP_CLIENT_ID`, `MP_CLIENT_SECRET` y `NEXT_PUBLIC_APP_URL`
+  (obligatoria), y borrar `MERCADOPAGO_ACCESS_TOKEN`. `MP_WEBHOOK_SECRET` solo el día
+  de un pago real de prueba.
+- La `0011` va antes de publicar el código de la 4a (lo usa). Con el código viejo
+  convive, salvo conectar una cuenta: entre una cosa y la otra, nadie conecta.
+- Un pago real con una cuenta real, antes del primer local que cobre.
+
+**Para la 4b:** imágenes por local y la llave del servidor, como dice el plan.

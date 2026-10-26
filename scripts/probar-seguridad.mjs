@@ -13,7 +13,8 @@
  *   - tocar lo de la web de 369 (tablas y archivos);
  *   - ver o tocar la lista de locales;
  *   - crear un pedido ya "pagado", colarle renglones a un pedido propio;
- *   - crear un turno con la seña "pagada" o con un pago inventado.
+ *   - crear un turno con la seña "pagada" o con un pago inventado;
+ *   - usar las funciones que marcan un pago (Fase 4a): solo el servidor.
  * Y comprueba que lo normal siga andando: ver el catálogo, reservar y cancelar.
  *
  * Solo corre en DESARROLLO: crea una cuenta de prueba (y la borra al final).
@@ -97,6 +98,21 @@ for (const nombre of ['barberos', 'servicios', 'productos', 'resenas', 'categori
 for (const nombre of ['profiles', 'turnos', 'pedidos', 'items_pedido', 'transacciones', 'mp_conexion', 'locales', 'trabajos', 'fotos', 'videos']) {
   const r = await pedir('GET', tabla(nombre, '?select=*'))
   anotar(filas(r) === 0, `no ve nada de ${nombre}`, r.ok ? '' : `rechazado (${r.estado})`)
+}
+
+// Fase 4a: las funciones que aplican un pago (migración 0011) las usa solo el
+// servidor, después de verificar el pago con Mercado Pago. Si alguien más
+// pudiera llamarlas, marcaría pagado lo que quisiera (fue el agujero de
+// mark_order_paid en Código Rojo).
+const FUNCIONES_DE_PAGO = [
+  ['confirmar_pago_sena', { p_local: ROBLE, p_turno: ROBLE, p_pago: '1', p_monto: 1 }],
+  ['devolver_pago_sena', { p_local: ROBLE, p_turno: ROBLE, p_pago: '1' }],
+  ['confirmar_pago_pedido', { p_local: ROBLE, p_pedido: ROBLE, p_pago: '1', p_monto: 1 }],
+  ['devolver_pago_pedido', { p_local: ROBLE, p_pedido: ROBLE, p_pago: '1' }],
+]
+for (const [funcion, cuerpo] of FUNCIONES_DE_PAGO) {
+  const r = await pedir('POST', `/rest/v1/rpc/${funcion}`, { cuerpo })
+  anotar(!r.ok, `no puede usar ${funcion}`, r.ok ? `respondió ${JSON.stringify(r.datos)}` : `rechazado (${r.estado})`)
 }
 
 // ─── 2. Registrarse pidiendo ser admin ───────────────────────────────────────
@@ -214,6 +230,10 @@ try {
   titulo('8. Cliente logueado: caja y Mercado Pago')
   anotar(filas(await cliente('GET', tabla('transacciones', '?select=*'))) === 0, 'no ve la caja')
   anotar(filas(await cliente('GET', tabla('mp_conexion', '?select=*'))) === 0, 'no ve la conexión de Mercado Pago')
+  for (const [funcion, cuerpo] of FUNCIONES_DE_PAGO) {
+    const r = await cliente('POST', `/rest/v1/rpc/${funcion}`, cuerpo)
+    anotar(!r.ok, `no puede marcar pagos con ${funcion}`, r.ok ? `respondió ${JSON.stringify(r.datos)}` : `rechazado (${r.estado})`)
+  }
 } finally {
   // Limpieza: lo que creó la cuenta de prueba, y la cuenta.
   await servidor('DELETE', tabla('pedidos', `?user_id=eq.${uid}`)) // sus renglones se van solos

@@ -236,10 +236,12 @@ export default function AdminTurnosPage() {
                         className={`px-2 py-0.5 rounded-full font-semibold border ${
                           turno.sena_estado === 'pagada'
                             ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                            : turno.sena_estado === 'devuelta'
+                            ? 'bg-zinc-500/10 text-zinc-300 border-zinc-500/20'
                             : 'bg-amber-500/10 text-amber-400 border-amber-500/20'
                         }`}
                       >
-                        {turno.sena_estado === 'pagada' ? 'Seña pagada' : 'Seña pendiente'}
+                        {turno.sena_estado === 'pagada' ? 'Seña pagada' : turno.sena_estado === 'devuelta' ? 'Seña devuelta' : 'Seña pendiente'}
                       </span>
                     </div>
                   )}
