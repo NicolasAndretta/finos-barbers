@@ -939,3 +939,23 @@ su chequeo de salud, su galería y sus fotos. Todo ✓.
 
 La base de producción no se tocó. Producción sigue sin las Fases 1 a 3a (van
 juntas después de la Fase 5).
+
+### Fase 3b — Plan aprobado (25/10/2026)
+
+Horarios reales: arregla la segunda falla de la demo (ofrece domingos, desde
+las 9 y horas que ya pasaron). Decisiones de Nico:
+- **Horario cortado: sí.** Un día puede tener varios tramos (de 10 a 13 y de 15
+  a 20); en el hueco no se puede reservar.
+- **Anticipación mínima para reservar hoy: 1 hora**, y cada local la cambia.
+- **Hasta cuántos días adelante: 60**, y cada local lo cambia.
+
+El plan: horarios por día de cada local (con tramos), horarios propios de cada
+profesional (si no tiene, usa los del local), ausencias (vacaciones de un
+profesional, feriados del local), la hora en la zona horaria del local, la web
+mostrando los mismos horarios que usa la reserva, una pantalla "Horarios" en el
+panel, y Roble arrancando con lo que ya dice su web (lunes a sábado de 10 a 20,
+domingos cerrado). Pruebas con navegador y contraprueba.
+
+Pregunta de Nico, para el futuro: Roble muestra más que el plan Básico (es la
+vidriera del Premium). Con los planes (Fase 7), conviene que la demo se pueda
+mostrar en cada plan con un interruptor.
