@@ -187,7 +187,7 @@ Después de cada cambio en producción:
 | 0 | Esquema base versionado + proyecto de desarrollo | ✅ 10/10/2026 (la `0005`, verificada en producción el 13/10) |
 | 1 | Tabla `locales` y columna `local_id` en todas las tablas de la barbería; lo que existe hoy pasa a ser Roble, el local de demostración (sin cortar la demo ni tocar lo de 369) | ✅ Hecha en desarrollo el 10/10/2026; OK de Nico el 14/10 (va a producción con el resto, después de la Fase 5) |
 | 2 | Membresías y RLS por local (reemplaza `is_admin()`), con prueba de aislamiento | ✅ Hecha en desarrollo el 14/10/2026; OK de Nico el 22/10 (va a producción con el resto, después de la Fase 5) |
-| 3a | El sitio elige el local por la dirección; `SITE` pasa a ser datos del local; panel por local con permisos de la Fase 2; un solo login; rubro y nombre provisorio | 🟡 Hecha en desarrollo el 22/10/2026; falta el OK de Nico |
+| 3a | El sitio elige el local por la dirección; `SITE` pasa a ser datos del local; panel por local con permisos de la Fase 2; un solo login; rubro y nombre provisorio | ✅ Hecha en desarrollo el 22/10/2026; OK de Nico el 25/10 (va a producción con el resto, después de la Fase 5) |
 | 3b | Horarios reales del local y de cada profesional (la reserva solo ofrece lo abierto) | ⏳ |
 | 4 | Llamadas con permisos totales filtradas por local; Mercado Pago e imágenes por local | ⏳ |
 | 5 | Prueba automática de aislamiento completa | ⏳ |
@@ -927,3 +927,15 @@ de `braces`, que solo usa el lint). Lint, build y las 5 pruebas en verde.
 - **Decidido (25/10):** las cuentas de barbero las crea quien administra el
   local y también la comercial mientras el local está en demo ("por si tiene
   que hacerlo"); una vez entregado, es responsabilidad del dueño. Hecho.
+
+### Demo publicada: turnos que se pisan + Next 16.4.2 (25/10/2026)
+
+Nico corrió `git push origin 9413522:main` (main: `bfb2400` → `9413522`, sin
+commit de unión). Hostinger publicó solo, con el build nuevo por webpack: la
+versión pasó de `nxhfCbN01sYyjEe2QnT9R` a `TyAmrAnjQ4PKieMUJb6Pr`. Revisión
+enseguida: la demo responde y muestra barberos y reseñas de la base (las
+variables de Hostinger sobrevivieron), tienda, login y panel protegido; 369 con
+su chequeo de salud, su galería y sus fotos. Todo ✓.
+
+La base de producción no se tocó. Producción sigue sin las Fases 1 a 3a (van
+juntas después de la Fase 5).
