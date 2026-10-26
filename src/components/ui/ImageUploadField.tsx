@@ -1,13 +1,21 @@
 'use client'
 
 import React, { useRef, useState } from 'react'
-import { subirImagen } from '@/app/actions/uploads'
 import { Spinner } from './Spinner'
 import { useLocal } from '@/components/local/LocalProvider'
+import { ImagenInvalida, prepararFoto } from '@/lib/image-client'
 
 /**
- * Campo de imagen con dos opciones: subir desde la PC (a Supabase Storage) o
- * pegar una URL. Muestra vista previa. `value` es la URL final (subida o pegada).
+ * Campo de foto del panel (productos, profesionales). Muestra la vista previa.
+ * `value` es la dirección de la foto ya subida ('' = sin foto).
+ *
+ * Fase 4b:
+ *  - La foto se achica en el navegador antes de subirla (lib/image-client.ts):
+ *    sube ~300 KB en vez de 8 MB, y anda con las fotos de cámara del celu.
+ *  - Se sube a /api/imagenes, que la vuelve a revisar y la guarda en la carpeta
+ *    de ESTE local (lib/imagenes.ts).
+ *  - Ya no se puede pegar un link: los de Instagram y Facebook vencen a los
+ *    días y la foto se rompía sin aviso.
  */
 export function ImageUploadField({
   value,
@@ -19,30 +27,35 @@ export function ImageUploadField({
   label?: string
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
-  // Las imágenes se suben a la carpeta del local del panel.
+  // Las fotos van a la carpeta del local del panel.
   const local = useLocal()
-  const [subiendo, setSubiendo] = useState(false)
+  const [estado, setEstado] = useState<'' | 'preparando' | 'subiendo'>('')
   const [error, setError] = useState<string | null>(null)
 
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
     setError(null)
-    setSubiendo(true)
     try {
+      setEstado('preparando')
+      const lista = await prepararFoto(file)
+      setEstado('subiendo')
       const fd = new FormData()
       fd.append('local', local.slug)
-      fd.append('file', file)
-      const res = await subirImagen(fd)
-      if (res.error) setError(res.error)
-      else if (res.url) onChange(res.url)
-    } catch {
-      setError('No se pudo subir la imagen. Intentá de nuevo.')
+      fd.append('archivo', lista)
+      const res = await fetch('/api/imagenes', { method: 'POST', body: fd })
+      const datos = (await res.json().catch(() => ({}))) as { url?: string; error?: string }
+      if (!res.ok || !datos.url) setError(datos.error ?? 'No se pudo subir la foto. Probá de nuevo.')
+      else onChange(datos.url)
+    } catch (err) {
+      setError(err instanceof ImagenInvalida ? err.message : 'No se pudo subir la foto. Probá de nuevo.')
     } finally {
-      setSubiendo(false)
+      setEstado('')
       if (inputRef.current) inputRef.current.value = ''
     }
   }
+
+  const ocupado = estado !== ''
 
   return (
     <div>
@@ -63,22 +76,22 @@ export function ImageUploadField({
           )}
         </div>
 
-        <div className="flex-1 space-y-2">
-          <div className="flex items-center gap-2">
+        <div className="flex-1 min-w-0 space-y-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
               onClick={() => inputRef.current?.click()}
-              disabled={subiendo}
+              disabled={ocupado}
               className="inline-flex items-center gap-2 bg-zinc-800 hover:bg-zinc-700 disabled:opacity-50 text-white text-xs font-semibold px-3 py-2 rounded-lg transition-colors cursor-pointer"
             >
-              {subiendo ? <Spinner className="w-3.5 h-3.5 text-white" /> : (
+              {ocupado ? <Spinner className="w-3.5 h-3.5 text-white" /> : (
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                 </svg>
               )}
-              {subiendo ? 'Subiendo…' : 'Subir desde la PC'}
+              {estado === 'preparando' ? 'Preparando…' : estado === 'subiendo' ? 'Subiendo…' : value ? 'Cambiar foto' : 'Subir foto'}
             </button>
-            {value && (
+            {value && !ocupado && (
               <button
                 type="button"
                 onClick={() => onChange('')}
@@ -92,21 +105,14 @@ export function ImageUploadField({
           <input
             ref={inputRef}
             type="file"
-            accept="image/png,image/jpeg,image/webp,image/gif"
+            accept="image/png,image/jpeg,image/webp,image/heic,image/heif"
             onChange={handleFile}
             className="hidden"
+            aria-label={label}
           />
 
-          {/* Alternativa: pegar URL */}
-          <input
-            type="url"
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            placeholder="…o pegá una URL: https://…"
-            className="w-full bg-zinc-900 border border-zinc-800 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
-          />
-
-          {error && <p className="text-xs text-red-400">{error}</p>}
+          <p className="text-xs text-zinc-600">Desde la galería del celu o la compu. Se achica sola.</p>
+          {error && <p className="text-xs text-red-400" role="alert">{error}</p>}
         </div>
       </div>
     </div>

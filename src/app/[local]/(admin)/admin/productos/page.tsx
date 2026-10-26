@@ -126,7 +126,7 @@ export default function AdminProductosPage() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-extrabold text-white tracking-tight">Productos</h1>
-          <p className="text-zinc-400 text-sm mt-1">Gestiona el catálogo de la tienda</p>
+          <p className="text-zinc-400 text-sm mt-1">Gestioná el catálogo de la tienda</p>
         </div>
         <button
           onClick={() => { setShowForm(true); resetForm() }}
@@ -202,7 +202,7 @@ export default function AdminProductosPage() {
                 required rows={2}
                 value={formData.descripcion}
                 onChange={e => setFormData({ ...formData, descripcion: e.target.value })}
-                placeholder="Describe el producto..."
+                placeholder="Describí el producto..."
                 className="w-full bg-zinc-900 border border-zinc-800 text-white rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-amber-500/20 resize-none"
               />
             </div>
@@ -278,7 +278,7 @@ export default function AdminProductosPage() {
         </div>
       ) : productos.length === 0 ? (
         <div className="bg-zinc-950 border border-zinc-900 rounded-xl p-10 text-center">
-          <p className="text-zinc-400">No hay productos. Crea el primero.</p>
+          <p className="text-zinc-400">No hay productos. Creá el primero.</p>
         </div>
       ) : (
         <div className="space-y-3">

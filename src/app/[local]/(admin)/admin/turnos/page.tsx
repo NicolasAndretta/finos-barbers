@@ -122,7 +122,7 @@ export default function AdminTurnosPage() {
               Agenda de Turnos
             </h1>
             <p className="text-zinc-400 text-sm mt-1">
-              Gestiona todos los turnos de la barbería
+              Gestioná todos los turnos del local
             </p>
           </div>
 

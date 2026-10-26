@@ -4,6 +4,16 @@ import { createClient, createServiceClient } from '@/lib/supabase'
 import { exigirPermiso, requireProfile } from '@/lib/auth'
 import { localDeAccion } from '@/lib/local'
 import { refrescarLocales } from '@/lib/refrescar'
+import { borrarFotoVieja, fotoValida } from '@/lib/imagenes'
+
+/** La foto que se quiere guardar, revisada (lib/imagenes.ts), o el error para mostrar. */
+function revisarFoto(localId: string, nueva: string | null, actual: string | null): { foto: string | null } | { error: string } {
+  try {
+    return { foto: fotoValida(localId, nueva, actual) }
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : 'Foto inválida' }
+  }
+}
 
 /** Público: barberos activos de un local (para su home y la reserva). */
 export async function getBarberos(slug: string) {
@@ -23,15 +33,22 @@ export async function adminGetBarberos(slug: string) {
   const local = await localDeAccion(slug)
   await exigirPermiso(local, 'editaCatalogo')
   const supabase = await createClient()
-  // Embebemos las cuentas de acceso vinculadas (profiles.barbero_id → barberos.id)
-  // para saber cuáles ya tienen login.
+  // Las cuentas de acceso de cada uno salen de las membresías de barbero de
+  // ESTE local (Fase 4b; antes, del perfil, que es de toda la plataforma).
+  // Con la sesión: quien no opera lo privado del local no ve los mails.
   const { data, error } = await supabase
     .from('barberos')
-    .select('*, cuentas:profiles(id, email)')
+    .select('*, membresias(user_id, rol, profiles(email))')
     .eq('local_id', local.id)
     .order('nombre')
   if (error) throw new Error(error.message)
-  return data
+  type Membresia = { user_id: string; rol: string; profiles: { email: string } | { email: string }[] | null }
+  return (data ?? []).map(({ membresias, ...barbero }) => ({
+    ...barbero,
+    cuentas: ((membresias ?? []) as Membresia[])
+      .filter((m) => m.rol === 'barbero')
+      .map((m) => ({ id: m.user_id, email: (Array.isArray(m.profiles) ? m.profiles[0]?.email : m.profiles?.email) ?? '' })),
+  }))
 }
 
 /**
@@ -44,7 +61,9 @@ export async function adminGetBarberos(slug: string) {
  * confirmado), así que acá se revisa todo a mano:
  *   - el permiso, en el local de la pantalla;
  *   - que el barbero sea de ESE local.
- * La membresía de barbero en el local se crea sola (disparador de la Fase 2).
+ * Desde la Fase 4b la membresía de barbero se crea acá, directamente. Antes se
+ * ponía `role = 'barbero'` en el perfil (que es de toda la plataforma) y un
+ * disparador temporal de la Fase 2 copiaba la membresía; la 0012 lo saca.
  */
 export async function adminCrearCuentaBarbero(formData: FormData) {
   const local = await localDeAccion(formData.get('local'))
@@ -69,21 +88,20 @@ export async function adminCrearCuentaBarbero(formData: FormData) {
     return { error: createErr?.message || 'No se pudo crear la cuenta (¿el email ya existe?).' }
   }
 
+  // El perfil, con su nombre (el rol de la plataforma queda en 'client': lo
+  // que puede hacer en cada local lo dice su membresía).
   const { error: profErr } = await service.from('profiles').upsert(
-    {
-      id: created.user.id,
-      email,
-      nombre: barbero.nombre,
-      apellido: barbero.apellido || '',
-      role: 'barbero',
-      barbero_id: barberoId,
-    },
+    { id: created.user.id, email, nombre: barbero.nombre, apellido: barbero.apellido || '' },
     { onConflict: 'id' }
   )
-  if (profErr) {
-    // Rollback del usuario auth si falla el profile.
+  // Su agenda en ESTE local.
+  const { error: membErr } = profErr ? { error: null } : await service.from('membresias').insert({
+    user_id: created.user.id, local_id: local.id, rol: 'barbero', barbero_id: barberoId,
+  })
+  if (profErr || membErr) {
+    // Si algo falló, se deshace la cuenta: no queda una cuenta a medias.
     await service.auth.admin.deleteUser(created.user.id)
-    return { error: profErr.message }
+    return { error: (profErr ?? membErr)!.message }
   }
 
   refrescarLocales()
@@ -106,10 +124,13 @@ export async function adminCrearBarbero(formData: FormData) {
   const dias         = parseDias(formData.get('dias') as string)
 
   if (!nombre) return { error: 'El nombre es requerido' }
+  // La foto tiene que estar subida desde el panel, en la carpeta de ESTE local.
+  const revisada = revisarFoto(local.id, foto_url, null)
+  if ('error' in revisada) return { error: revisada.error }
 
   const supabase = await createClient()
   const { error } = await supabase.from('barberos').insert({
-    local_id: local.id, nombre, apellido, bio, especialidad, foto_url, dias, activo: true,
+    local_id: local.id, nombre, apellido, bio, especialidad, foto_url: revisada.foto, dias, activo: true,
   })
   if (error) return { error: error.message }
   refrescarLocales()
@@ -131,13 +152,22 @@ export async function adminActualizarBarbero(formData: FormData) {
   if (!id || !nombre) return { error: 'Faltan campos requeridos' }
 
   const supabase = await createClient()
+  // De qué local es y qué foto tenía: para revisar la nueva y borrar la vieja.
+  const { data: antes } = await supabase.from('barberos').select('local_id, foto_url').eq('id', id).maybeSingle()
+  if (!antes) return { error: 'No se encontró el barbero o no tenés permiso para cambiarlo.' }
+  const revisada = revisarFoto(antes.local_id, foto_url, antes.foto_url)
+  if ('error' in revisada) return { error: revisada.error }
+
   const { data, error } = await supabase
     .from('barberos')
-    .update({ nombre, apellido, bio, especialidad, foto_url, dias })
+    .update({ nombre, apellido, bio, especialidad, foto_url: revisada.foto, dias })
     .eq('id', id)
     .select('id')
   if (error) return { error: error.message }
   if (!data?.length) return { error: 'No se encontró el barbero o no tenés permiso para cambiarlo.' }
+  // Recién con el cambio guardado (la base confirmó el permiso), la foto
+  // reemplazada o quitada se borra.
+  await borrarFotoVieja(antes.local_id, antes.foto_url, revisada.foto)
   refrescarLocales()
   return { success: true }
 }

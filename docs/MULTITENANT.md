@@ -190,7 +190,7 @@ Después de cada cambio en producción:
 | 3a | El sitio elige el local por la dirección; `SITE` pasa a ser datos del local; panel por local con permisos de la Fase 2; un solo login; rubro y nombre provisorio | ✅ Hecha en desarrollo el 22/10/2026; OK de Nico el 25/10 (va a producción con el resto, después de la Fase 5) |
 | 3b | Horarios reales del local y de cada profesional (la reserva solo ofrece lo abierto) | ✅ Hecha en desarrollo el 25/10/2026; OK de Nico el 26/10 (va a producción con el resto, después de la Fase 5) |
 | 4a | Cada local cobra en su propia cuenta de Mercado Pago: una conexión por local, el aviso de Mercado Pago como fuente de verdad, las demos no cobran | ✅ Hecha en desarrollo el 26/10/2026; OK de Nico el 26/10 (va a producción con el resto, después de la Fase 5) |
-| 4b | Imágenes por local; las llamadas con la llave del servidor, revisadas y filtradas por local | ⏳ Plan aprobado el 26/10/2026; en construcción |
+| 4b | Imágenes por local; las llamadas con la llave del servidor, revisadas y filtradas por local | ✅ Hecha en desarrollo el 26/10/2026, aprobada de antemano por Nico (va a producción con el resto, después de la Fase 5) |
 | 5 | Prueba automática de aislamiento completa | ⏳ |
 | 6 | Alta de barberías desde el panel (demo → activo), ver la sección de abajo | ⏳ |
 | 7 | Interruptores de plan: turnos, tienda, finanzas | ⏳ |
@@ -1197,3 +1197,70 @@ Lo que NO cubre ese OK, porque son reglas de base de Nico y no se deshacen fáci
 `main` (los push a `main` los corre él), la base de producción (siempre con copia antes
 y su OK puntual), y borrar datos o columnas (`locales.horarios` sigue para "más
 adelante"). Eso se deja preparado, paso a paso, para que lo corra él.
+
+### Fase 4b — Imágenes por local y la llave del servidor, hecha en desarrollo (26/10/2026)
+
+**Qué cambió, en simple**
+
+| Antes | Ahora |
+|---|---|
+| Una foto de más de 1 MB fallaba con un error genérico (el tope de las Server Actions): las fotos del celu no subían | El navegador la achica antes de subirla (`lib/image-client.ts`, el de 369 y Código Rojo): una foto de cámara de 8 MB sube como ~300 KB |
+| El servidor guardaba lo que llegaba, mirando solo lo que decía el navegador | Mira los primeros bytes (JPG, PNG o WebP de verdad; un SVG o un HTML disfrazado no pasan), la endereza, la achica a 1600 px, la guarda en WebP y le borra los datos ocultos, incluida la ubicación GPS |
+| La subida era una Server Action | Es una ruta de la API, `/api/imagenes`, como en 369: revisa el tamaño antes de leer el archivo, que el pedido salga del propio sitio, y el permiso en ESE local. Se puede probar desde afuera |
+| Carpeta por el nombre de la dirección (`roble/...`) | Carpeta por el id del local, que nunca cambia |
+| Sin tope: un local podía llenar el espacio que compartimos con 369 | 25 MB por local (unas 100 a 150 fotos). Pasado eso, un aviso claro |
+| Al cambiar o quitar una foto, la vieja quedaba en el bucket para siempre | Se borra, solo después de que la base aceptó el cambio, y solo dentro de la carpeta de ese local (`galeria` jamás) |
+| Se podía pegar el link de una foto de otro sitio | Ya no (los de Instagram vencen y la foto se rompía). El servidor tampoco lo acepta si lo mandan a mano; las fotos de afuera que ya estaban siguen andando |
+| El panel del barbero usaba la llave del servidor, y su lista de clientes mostraba a TODOS los clientes del local | Usa la sesión: lo cuidan las reglas de la base. La lista muestra a los que tienen o tuvieron turno con él, como dice el cuadro de la Fase 2. Quien administra el local y no tiene agenda ve a todos |
+| La cuenta de barbero se creaba poniendo `role = 'barbero'` en el perfil (que es de toda la plataforma), y un disparador temporal copiaba la membresía | Se crea la membresía de barbero directamente, en ESE local. La `0012` saca el disparador temporal |
+
+**La base:** `0012_sin_mecanismo_temporal.sql` borra el disparador
+`profiles_sincroniza_barbero` y su función. No borra datos: las membresías quedan, y
+las columnas `profiles.role` y `profiles.barbero_id` también (sin uso; sacarlas es
+borrar, va aparte con el OK de Nico, como `locales.horarios`).
+
+**La llave del servidor, revisada:** quedan 13 usos en 13 funciones, cada uno con
+su porqué y cómo filtra por local, en **`scripts/verificar-llave-servidor.mjs`
+(nuevo)**. Un uso nuevo sin revisar lo hace fallar, igual que `verificar-locales`
+con una tabla sin clasificar. También controla que la llave se lea solo en
+`lib/supabase.ts` y que crear o borrar cuentas pase solo por donde se revisó.
+
+**De paso:** `sharp` pasa a ser dependencia directa (como en 369; en Hostinger corre en
+WebAssembly, y se le aplica el mismo arreglo de memoria compartida). Seis textos del
+panel que seguían en tuteo pasaron a voseo, y dos que decían "de la barbería" ahora
+dicen "del local" (un local puede ser de uñas). Las dependencias de producción
+siguen en 0 vulnerabilidades.
+
+**Cómo se verificó**
+- La `0012` corre dos veces, y la cadena entera (0000 a 0012) también, dos veces
+  seguidas.
+- **`scripts/probar-imagenes.mjs` (nuevo), 29 ✓**, con navegador: una foto de cámara de
+  6000×4000 y 8 MB, con GPS, subida desde el celu, llega en WebP, a 1600 px, liviana y
+  sin datos ocultos, en la carpeta del local; cambiar y quitar borran la vieja; el
+  servidor rechaza un SVG con código, un HTML disfrazado, un archivo vacío, una foto
+  rota y uno de 9 MB; nadie sube a la carpeta de otro local, ni sin sesión, ni desde
+  otro sitio; pegar un link llamando a la acción a mano, rechazado; el tope del local;
+  la foto de un profesional; y el formulario sin scroll de costado de 320 a 1440.
+- **`scripts/probar-panel-barbero.mjs` (nuevo), 12 ✓**: la dueña le crea la cuenta a un
+  barbero desde el panel (queda su membresía en ese local y el perfil no cambia de
+  rol); el barbero entra a su agenda y ve solo sus turnos; en "Clientes" ve solo a los
+  suyos y la dueña a todos; en otro local no es barbero de nada.
+- **Contrapruebas:** (1) se le sacó a propósito a `/api/imagenes` el control de
+  permiso en el local, y `probar-imagenes` marcó 1 falla, justo "el dueño de C no
+  puede subir a la carpeta de B"; restaurado (archivo idéntico, comprobado con su
+  huella), pasa. (2) Se agregó un uso de la llave sin revisar y
+  `verificar-llave-servidor` lo marcó; sacado, pasa.
+- Todas las demás, en verde: `verificar-locales` 76 ✓, `verificar-llave-servidor` 16 ✓,
+  `probar-seguridad` 50 ✓, `probar-aislamiento` 129 ✓ (la sección del mecanismo
+  temporal pasó a probar que solo cuenta la membresía), `probar-reservas` 7 ✓,
+  `probar-locales` 31 ✓, `probar-horarios` 18 ✓, `probar-cobros` 65 ✓.
+- `npm run lint` (0 errores, las 6 advertencias viejas) y `npm run build` en verde.
+
+**Encontrado y arreglado en las pruebas:** la prueba de "pegar un link" no lograba
+meter el link en lo que manda la pantalla: Next manda los campos de la acción con un
+prefijo (`_1_imagen_url`). Corregida, la prueba agarra el rechazo de verdad.
+
+**Para más adelante (anotado):** sacar `profiles.role` y `profiles.barbero_id`, que
+quedan sin uso (es borrar: con el OK de Nico). Las fotos de afuera que ya estaban
+cargadas (por ejemplo, en el catálogo de ejemplo de Roble) siguen andando; si se
+cambian, la nueva tiene que subirse por el panel.

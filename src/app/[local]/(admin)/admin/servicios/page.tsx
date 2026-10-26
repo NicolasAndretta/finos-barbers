@@ -138,7 +138,7 @@ export default function AdminServiciosPage() {
             Administración de Servicios
           </h1>
           <p className="text-zinc-400 text-sm mt-1">
-            Gestiona los servicios de la barbería
+            Gestioná los servicios del local
           </p>
         </div>
 
@@ -194,7 +194,7 @@ export default function AdminServiciosPage() {
                 required
                 rows={3}
                 className="w-full bg-zinc-900 border border-zinc-800 text-white rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-amber-500/20 resize-none"
-                placeholder="Describe el servicio..."
+                placeholder="Describí el servicio..."
               />
             </div>
 

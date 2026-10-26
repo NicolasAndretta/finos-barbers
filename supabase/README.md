@@ -13,7 +13,8 @@ Todo lo que describe la base de datos vive acá, versionado junto con el código
 | `migrations/0009_sin_local_por_defecto.sql` | Fase 3a: se termina el "Roble por defecto" (salvo `mp_conexion`, hasta la Fase 4). En producción va DESPUÉS de publicar el código de la Fase 3a. |
 | `migrations/0010_horarios.sql` | Fase 3b: horarios reales (tablas `horarios` y `ausencias`, `guardar_horarios`), reglas de reserva de cada local (anticipación, días adelante, zona horaria) y Roble de lunes a sábado de 10 a 20. |
 | `migrations/0011_cobros_por_local.sql` | Fase 4a: una conexión de Mercado Pago por local (con qué cuenta), la seña "devuelta", la caja acepta ventas de invitados, y las cuatro funciones que aplican un pago ya verificado (solo el servidor). En producción va ANTES de publicar el código de la Fase 4a. |
-| `migrations/0012` en adelante | Los cambios que siguen. Cada uno se prueba primero en desarrollo. |
+| `migrations/0012_sin_mecanismo_temporal.sql` | Fase 4b: saca el disparador temporal de la Fase 2 que copiaba la membresía de barbero desde el perfil (el código ya la crea directamente). No borra datos. |
+| `migrations/0013` en adelante | Los cambios que siguen. Cada uno se prueba primero en desarrollo. |
 | `seed-desarrollo.sql` | Datos de ejemplo: el catálogo de Roble, el local de demostración (servicios, barberos, productos, categorías, reseñas). Sin cuentas, turnos, pedidos ni tokens. |
 | `esquema-reporte.md` | Resumen legible de la foto, con alertas de seguridad. Se regenera con cada exportación. |
 | `config.toml` | Configuración del Supabase local (desarrollo). La crea `npx supabase init`. |
@@ -72,6 +73,19 @@ node scripts/probar-horarios.mjs
 # cobra en su cuenta, los pagos se verifican, las demos no cobran (solo
 # desarrollo; la app se levanta distinto: ver arriba de probar-cobros.mjs)
 node scripts/probar-cobros.mjs
+
+# Probar las fotos con un navegador: se achican, pierden el GPS, van a la carpeta
+# del local, el servidor rechaza lo que no es una foto, el tope (solo desarrollo;
+# con la app levantada)
+node scripts/probar-imagenes.mjs
+
+# Probar las cuentas de barbero y su panel con un navegador (solo desarrollo; con
+# la app levantada)
+node scripts/probar-panel-barbero.mjs
+
+# Cada uso de la llave del servidor, revisado: uno nuevo sin revisar hace fallar
+# (no necesita la base ni la app)
+node scripts/verificar-llave-servidor.mjs
 
 # El equipo de la plataforma (Nico admin, Delfina comercial)
 node scripts/equipo.mjs listar

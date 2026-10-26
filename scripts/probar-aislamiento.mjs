@@ -112,9 +112,10 @@ try {
 
   await q(`insert into public.membresias (user_id, local_id, rol) values ($1, $2, 'dueno'), ($3, $4, 'dueno')`,
     [c.duenoA.id, ROBLE, c.duenoB.id, localB])
-  // El barbero se crea como lo hace hoy la app: rol y agenda en el perfil.
-  // La membresía la tiene que crear sola la base (mecanismo temporal).
-  await q(`update public.profiles set role = 'barbero', barbero_id = $2 where id = $1`, [c.barbero.id, b1.id])
+  // El barbero se crea como lo hace la app desde la Fase 4b: con su membresía
+  // de barbero en el local, y su agenda (antes, con el rol en el perfil y un
+  // disparador temporal que copiaba la membresía; la 0012 lo sacó).
+  await q(`insert into public.membresias (user_id, local_id, rol, barbero_id) values ($1, $2, 'barbero', $3)`, [c.barbero.id, ROBLE, b1.id])
   await q(`insert into public.equipo (user_id, rol) values ($1, 'comercial'), ($2, 'admin')`, [c.comercial.id, c.admin.id])
 
   // El cliente reserva en los dos locales, como en la app (con su sesión).
@@ -150,7 +151,7 @@ try {
   const mDuenoA = await m(c.duenoA.id, ROBLE, 'dueno')
   const mDuenoB = await m(c.duenoB.id, localB, 'dueno')
   anotar(Boolean(mClienteA && mClienteB), 'reservar te hace cliente del local (en Roble y en B)')
-  anotar(Boolean(mBarbero), 'el barbero creado como hoy (rol en el perfil) quedó como barbero de Roble')
+  anotar(Boolean(mBarbero), 'el barbero quedó como barbero de Roble, con su agenda')
   console.log('  Local B, 7 cuentas, 4 turnos, 2 pedidos y 2 movimientos de caja, listos.')
 
   // ─── 1. Quién ve qué ──────────────────────────────────────────────────────
@@ -346,12 +347,20 @@ try {
   anotar(await intentar('cliente', 'PATCH', `/rest/v1/turnos?id=eq.${tGuardia}`, { estado: 'cancelado' }),
     'el cliente sí cancela su turno')
 
-  // ─── 5. El mecanismo temporal del barbero ─────────────────────────────────
-  titulo('5. El mecanismo temporal de los barberos')
+  // ─── 5. Las cuentas de barbero, sin el mecanismo temporal (Fase 4b) ───────
+  // Lo que es cada uno en cada local lo dice SOLO su membresía: tocar el
+  // perfil (que es de toda la plataforma) ya no crea ni borra nada.
+  titulo('5. Las cuentas de barbero: solo cuenta la membresía')
+  const [funcion] = await q(`select to_regprocedure('public.sincronizar_membresia_barbero()') is null as no_existe`)
+  anotar(funcion?.no_existe === true, 'el disparador temporal de la Fase 2 ya no existe')
+  await q(`update public.profiles set role = 'barbero', barbero_id = $2 where id = $1`, [c.ajeno.id, b2.id])
+  anotar(!(await m(c.ajeno.id, ROBLE, 'barbero')), 'ponerle "barbero" en el perfil a alguien ya no lo hace barbero de ningún local')
+  await q(`update public.profiles set role = 'client', barbero_id = null where id = $1`, [c.ajeno.id])
   await q(`update public.profiles set role = 'client', barbero_id = null where id = $1`, [c.barbero.id])
-  anotar(!(await m(c.barbero.id, ROBLE, 'barbero')), 'si deja de ser barbero, pierde su membresía de barbero')
+  anotar(Boolean(await m(c.barbero.id, ROBLE, 'barbero')), 'y cambiarle el perfil al barbero no le saca su membresía')
+  await q(`delete from public.membresias where user_id = $1 and local_id = $2 and rol = 'barbero'`, [c.barbero.id, ROBLE])
   const turnosVisibles = await pedir('GET', `/rest/v1/turnos?id=eq.${tA1}&select=id`, { token: c.barbero.token })
-  anotar((turnosVisibles.datos ?? []).length === 0, 'y deja de ver la agenda')
+  anotar((turnosVisibles.datos ?? []).length === 0, 'sin la membresía, deja de ver la agenda')
 
   // ─── 6. Mercado Pago (Fase 4a) ────────────────────────────────────────────
   // Los tokens de cada local y las funciones que marcan un pago son solo del

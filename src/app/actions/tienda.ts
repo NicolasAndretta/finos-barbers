@@ -4,6 +4,16 @@ import { createClient } from '@/lib/supabase'
 import { exigirPermiso, requireProfile } from '@/lib/auth'
 import { localDeAccion } from '@/lib/local'
 import { refrescarLocales } from '@/lib/refrescar'
+import { borrarFotoVieja, fotoValida } from '@/lib/imagenes'
+
+/** La foto que se quiere guardar, revisada (lib/imagenes.ts), o el error para mostrar. */
+function revisarFoto(localId: string, nueva: string | null, actual: string | null): { foto: string | null } | { error: string } {
+  try {
+    return { foto: fotoValida(localId, nueva, actual) }
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : 'Foto inválida' }
+  }
+}
 
 /**
  * Catálogo público de la tienda de un local.
@@ -62,6 +72,9 @@ export async function adminCrearProducto(formData: FormData) {
   if (!nombre || !descripcion || !precio || !stock || !categoria) {
     return { error: 'Faltan campos requeridos' }
   }
+  // La foto tiene que estar subida desde el panel, en la carpeta de ESTE local.
+  const revisada = revisarFoto(local.id, imagen_url, null)
+  if ('error' in revisada) return { error: revisada.error }
 
   const supabase = await createClient()
   const { error } = await supabase.from('productos').insert({
@@ -71,7 +84,7 @@ export async function adminCrearProducto(formData: FormData) {
     precio: parseFloat(precio),
     stock: parseInt(stock),
     stock_minimo: stockMinimo ? parseInt(stockMinimo) : 3,
-    imagen_url: imagen_url?.trim() || null,
+    imagen_url: revisada.foto,
     categoria,
     activo: true,
   })
@@ -103,6 +116,12 @@ export async function adminActualizarProducto(formData: FormData) {
   }
 
   const supabase = await createClient()
+  // De qué local es y qué foto tenía: para revisar la nueva y borrar la vieja.
+  const { data: antes } = await supabase.from('productos').select('local_id, imagen_url').eq('id', id).maybeSingle()
+  if (!antes) return { error: 'No se encontró el producto o no tenés permiso para cambiarlo.' }
+  const revisada = revisarFoto(antes.local_id, imagen_url, antes.imagen_url)
+  if ('error' in revisada) return { error: revisada.error }
+
   const { data, error } = await supabase
     .from('productos')
     .update({
@@ -111,7 +130,7 @@ export async function adminActualizarProducto(formData: FormData) {
       precio: parseFloat(precio),
       stock: parseInt(stock),
       ...(stockMinimo ? { stock_minimo: parseInt(stockMinimo) } : {}),
-      imagen_url: imagen_url?.trim() || null,
+      imagen_url: revisada.foto,
       categoria,
     })
     .eq('id', id)
@@ -119,6 +138,10 @@ export async function adminActualizarProducto(formData: FormData) {
 
   if (error) return { error: error.message }
   if (!data?.length) return { error: 'No se encontró el producto o no tenés permiso para cambiarlo.' }
+
+  // Recién con el cambio guardado (la base confirmó el permiso), la foto
+  // reemplazada o quitada se borra: no queda ocupando el espacio del local.
+  await borrarFotoVieja(antes.local_id, antes.imagen_url, revisada.foto)
 
   refrescarLocales()
   return { success: true }

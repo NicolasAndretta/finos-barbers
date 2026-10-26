@@ -3,22 +3,23 @@ import { getClientesLista } from '@/app/actions/barbero-panel'
 
 export const dynamic = 'force-dynamic'
 
-// Los clientes de ESTE local (solo lectura).
+// Los clientes que ve el panel del barbero (solo lectura): los de sus turnos,
+// o todos los del local si quien entra lo administra y no tiene agenda propia.
 export default async function BarberoClientesPage({ params }: { params: Promise<{ local: string }> }) {
-  const clientes = await getClientesLista((await params).local)
+  const { clientes, alcance } = await getClientesLista((await params).local)
 
   return (
     <div className="w-full">
       <div className="mb-8">
         <h1 className="text-3xl font-extrabold text-white tracking-tight">Clientes</h1>
         <p className="text-zinc-400 text-sm mt-1">
-          Los clientes del local. Solo lectura.
+          {alcance === 'mis_turnos' ? 'Los que tienen o tuvieron turno con vos. Solo lectura.' : 'Los clientes del local. Solo lectura.'}
         </p>
       </div>
 
       {clientes.length === 0 ? (
         <div className="bg-zinc-950 border border-zinc-900 rounded-xl p-10 text-center">
-          <p className="text-zinc-400">Todavía no hay clientes registrados.</p>
+          <p className="text-zinc-400">{alcance === 'mis_turnos' ? 'Todavía nadie reservó con vos.' : 'Todavía no hay clientes registrados.'}</p>
         </div>
       ) : (
         <div className="bg-zinc-950 border border-zinc-900 rounded-xl divide-y divide-zinc-900">
