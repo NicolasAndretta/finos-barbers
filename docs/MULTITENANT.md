@@ -189,8 +189,8 @@ Después de cada cambio en producción:
 | 2 | Membresías y RLS por local (reemplaza `is_admin()`), con prueba de aislamiento | ✅ Hecha en desarrollo el 14/10/2026; OK de Nico el 22/10 (va a producción con el resto, después de la Fase 5) |
 | 3a | El sitio elige el local por la dirección; `SITE` pasa a ser datos del local; panel por local con permisos de la Fase 2; un solo login; rubro y nombre provisorio | ✅ Hecha en desarrollo el 22/10/2026; OK de Nico el 25/10 (va a producción con el resto, después de la Fase 5) |
 | 3b | Horarios reales del local y de cada profesional (la reserva solo ofrece lo abierto) | ✅ Hecha en desarrollo el 25/10/2026; OK de Nico el 26/10 (va a producción con el resto, después de la Fase 5) |
-| 4a | Cada local cobra en su propia cuenta de Mercado Pago: una conexión por local, el aviso de Mercado Pago como fuente de verdad, las demos no cobran | ✅ Hecha en desarrollo el 26/10/2026; falta el OK de Nico |
-| 4b | Imágenes por local; las llamadas con la llave del servidor, revisadas y filtradas por local | ⏳ Plan aprobado el 26/10/2026 |
+| 4a | Cada local cobra en su propia cuenta de Mercado Pago: una conexión por local, el aviso de Mercado Pago como fuente de verdad, las demos no cobran | ✅ Hecha en desarrollo el 26/10/2026; OK de Nico el 26/10 (va a producción con el resto, después de la Fase 5) |
+| 4b | Imágenes por local; las llamadas con la llave del servidor, revisadas y filtradas por local | ⏳ Plan aprobado el 26/10/2026; en construcción |
 | 5 | Prueba automática de aislamiento completa | ⏳ |
 | 6 | Alta de barberías desde el panel (demo → activo), ver la sección de abajo | ⏳ |
 | 7 | Interruptores de plan: turnos, tienda, finanzas | ⏳ |
@@ -1185,3 +1185,15 @@ servidor (se les saca el permiso a todos los demás, también a `public`).
 - Un pago real con una cuenta real, antes del primer local que cobre.
 
 **Para la 4b:** imágenes por local y la llave del servidor, como dice el plan.
+
+### OK de la Fase 4a, y las fases siguientes aprobadas de antemano (26/10/2026, de noche)
+
+Nico dio el OK de la 4a y dejó aprobado seguir solo con las fases siguientes mientras
+duerme: "doy el ok a todo… si tenés que seguir haciendo fases, seguí haciéndolo…
+absolutamente todo aprobado; dejame solo las dudas que sí o sí necesites que yo te
+responda". Siguen la 4b y la Fase 5, en desarrollo.
+
+Lo que NO cubre ese OK, porque son reglas de base de Nico y no se deshacen fácil: tocar
+`main` (los push a `main` los corre él), la base de producción (siempre con copia antes
+y su OK puntual), y borrar datos o columnas (`locales.horarios` sigue para "más
+adelante"). Eso se deja preparado, paso a paso, para que lo corra él.
