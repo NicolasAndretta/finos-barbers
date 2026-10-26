@@ -805,8 +805,8 @@ y se cerraron los dos, en `src/app/actions/reservas.ts` y
 (commit `9413522`): trae este arreglo y, encima, Next 16.4.2 con build por
 webpack (la falla crítica de Next, ver "Fase 3 — Plan aprobado"). Sale de
 `main`, así que publicarla sigue siendo solo avanzar `main`. El paso 2 de abajo
-queda: `git push origin 9413522:main` (lo corre Nico: el modo automático no
-deja que Claude publique en `main`).
+queda: `git push origin 9413522:main` (lo corre Nico: `main` se publica solo
+a mano).
 
 **Cómo se publica en la demo (con Nico, unos 10 minutos)**
 1. La base no cambia: no hace falta copia de seguridad.
@@ -1306,3 +1306,24 @@ ningún error de borrado): ahora la prueba espera a que la vieja desaparezca.
 **Para más adelante (anotado):** las tres tablas de 369 tienen los mismos permisos
 amplios por defecto. Hoy las cierra RLS sin políticas; ajustarlas sería tocar lo de
 369, así que queda para cuando se revise esa web.
+
+### El pase a producción, preparado y ensayado (26/10/2026)
+
+Con las Fases 1 a 5 hechas, queda llevar todo junto a producción. Lo corre Nico, con
+`docs/PASE-A-PRODUCCION.md` de arriba a abajo (unos 45 minutos).
+
+**Qué se preparó**
+
+| Pieza | En simple |
+|---|---|
+| `main` unido a la rama de trabajo | Trae el arreglo de turnos y Next 16.4.2 que se publicaron el 25/10. Así, publicar es solo avanzar `main`, sin commit de unión |
+| `pase/fases-1-a-5` (rama nueva) | Una rama fija con exactamente lo que se ensayó. La de trabajo puede seguir con la Fase 6 sin que eso viaje en el pase |
+| `docs/PASE-A-PRODUCCION.md` | El paso a paso: copia de seguridad, las migraciones en dos tandas con el código nuevo en el medio, el equipo, las revisiones entre tanda y tanda, y qué hacer si algo sale mal en cada punto |
+| `supabase/rescate/volver-antes-de-0009-y-0012.sql` | Para una emergencia: deja la base como antes de la última tanda, así el código viejo vuelve a andar. No es una migración (no la corre nadie salvo a mano) y no borra datos |
+
+**El ensayo:** el documento entero, corrido contra una copia de producción (la base
+del 13/10 con sus datos) en un segundo Supabase local, con el código viejo y el nuevo
+levantados a la vez. La demo anduvo en cada tanda; la base terminó igual a desarrollo;
+las cuatro pruebas de base pasaron contra la copia; y el rescate funcionó (con la base
+al final, el código viejo no podía guardar turnos; con el rescate, sí). El detalle,
+al final del documento del pase. La copia se borró al terminar.
