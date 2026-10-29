@@ -6,7 +6,7 @@
  *     los mismos lugares dentro de Roble (/roble/reservar...). Desde la Fase 3a
  *     cada local vive en su carpeta, y no se puede romper ningún link que ya
  *     se haya mandado a un cliente (ni las vueltas de Mercado Pago).
- *  2. Refrescar el token de sesión de Supabase en cada request (via setAll).
+ *  2. Refrescar el token de sesión de Supabase cuando vence (via setAll).
  *  3. Proteger las áreas privadas de cada local (/<local>/admin, /<local>/turnos...):
  *     sin sesión, al login, que después vuelve a la misma página.
  *
@@ -91,11 +91,14 @@ export async function proxy(request: NextRequest) {
     },
   )
 
-  // IMPORTANTE: No agregar lógica entre createServerClient y getUser().
-  // getUser() puede disparar un refresh de token que escribe cookies via setAll.
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  // IMPORTANTE: No agregar lógica entre createServerClient y getClaims().
+  // getClaims() puede disparar un refresh de token que escribe cookies via setAll.
+  // Verifica la firma de la sesión acá mismo (con la clave pública del
+  // proyecto, ES256), sin ir a Supabase en cada pedido; con una sesión firmada
+  // a la antigua, le pregunta a Supabase como antes. Las páginas y la base
+  // vuelven a verificar: esto solo decide si mandar al login.
+  const { data } = await supabase.auth.getClaims()
+  const user = data?.claims?.sub ? data.claims : null
 
   const { pathname } = request.nextUrl
 

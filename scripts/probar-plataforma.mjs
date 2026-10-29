@@ -131,6 +131,15 @@ async function entrar(p, cuenta, { local } = {}) {
   await Promise.all([p.waitForURL((u) => !u.pathname.startsWith('/login'), { timeout: 30_000 }), p.click('button[type="submit"]')])
 }
 const localPorSlug = (slug) => uno(`select * from public.locales where slug = $1`, [slug])
+/** La sesión de Supabase que tiene un navegador: el nombre de la cookie y lo que guarda (juntando los pedazos). */
+async function sesionDe(p) {
+  const galletas = (await p.context().cookies()).filter((c) => /-auth-token(.d+)?$/.test(c.name))
+    .sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }))
+  const nombre = galletas[0].name.replace(/.d+$/, '')
+  const valor = galletas.map((c) => c.value).join('')
+  const crudo = valor.startsWith('base64-') ? Buffer.from(valor.slice(7), 'base64url').toString() : decodeURIComponent(valor)
+  return { nombre, datos: JSON.parse(crudo) }
+}
 
 try {
   const comercial = await crearCuenta('Delfi', 'Comercial')
@@ -370,6 +379,24 @@ try {
   anotar(!new URL(pcl.url()).pathname.startsWith('/plataforma'), 'un cliente no entra a /plataforma', pcl.url())
   await pd.goto(`${APP}/plataforma/${SLUG}`, { waitUntil: 'networkidle' })
   anotar(!new URL(pd.url()).pathname.startsWith('/plataforma'), 'el dueño tampoco', pd.url())
+
+  // La sesión se verifica en el servidor con la firma del token (getClaims,
+  // desde la tanda 6b). Contraprueba: el dueño edita su token para decir que
+  // es el admin. La firma ya no coincide: no entra, ni a la plataforma ni a un
+  // panel, y ni siquiera queda "con sesión".
+  const sesionDelDueno = await sesionDe(pd)
+  const conSesion = (sesion) => ({ cookie: `${sesion.nombre}=base64-${Buffer.from(JSON.stringify(sesion.datos)).toString('base64url')}` })
+  const comoAdmin = structuredClone(sesionDelDueno)
+  const [cab, carga, firma] = comoAdmin.datos.access_token.split('.')
+  comoAdmin.datos.access_token = [cab, Buffer.from(JSON.stringify({ ...JSON.parse(Buffer.from(carga, 'base64url')), sub: jefe.id })).toString('base64url'), firma].join('.')
+  if (comoAdmin.datos.user) comoAdmin.datos.user.id = jefe.id
+  const verdadera = await fetch(`${APP}/plataforma`, { redirect: 'manual', headers: conSesion(sesionDelDueno) })
+  const falsa = await fetch(`${APP}/plataforma`, { redirect: 'manual', headers: conSesion(comoAdmin) })
+  const panelFalso = await fetch(`${APP}/${SLUG}/admin/turnos`, { redirect: 'manual', headers: conSesion(comoAdmin) })
+  const destino = (r) => new URL(r.headers.get('location') ?? '/', APP).pathname
+  anotar(verdadera.status >= 300 && verdadera.status < 400 && destino(verdadera) === '/', 'con su sesión de verdad, el dueño va al inicio (no es del equipo)', `${verdadera.status} → ${destino(verdadera)}`)
+  anotar(falsa.status >= 300 && falsa.status < 400 && destino(falsa) === '/login', 'con el token editado para ser el admin, no entra: va al login', `${falsa.status} → ${destino(falsa)}`)
+  anotar(panelFalso.status >= 300 && panelFalso.status < 400 && destino(panelFalso) === '/login', 'y tampoco al panel del local', `${panelFalso.status} → ${destino(panelFalso)}`)
 
   const tCliente = await token(cliente)
   const tDueno = await token(dueno)

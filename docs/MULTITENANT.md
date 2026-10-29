@@ -1493,3 +1493,101 @@ cuánto cuesta cada mensaje; después, un agregado.
 **Lo que no existe y la propuesta suma:** reportes, reseñas verificadas, exportar datos,
 reservar sin cuenta. **Fuera de la Fase 7:** WhatsApp, cobro del abono (Fase 8), gastos, una
 ficha por cliente, política de cancelación configurable, diseño propio por local (color y logo).
+
+### Decisiones de Nico (29/10/2026, antes de irse a dormir)
+
+- **Aprobada la tabla de planes v2 y la reserva sin cuenta** (la cuenta sigue existiendo, nunca
+  obligatoria: sirve para ver lo anterior y repetir). El dominio del producto se compra cuando
+  esté listo para vender.
+- **Esta noche: la tanda 6b y la Fase 7**, en desarrollo. La Fase 7 queda **aprobada de
+  antemano** (como las fases del 26/10): se arma con su plan escrito acá, y nada va a producción
+  sin él.
+- **Commits a su nombre en la rama de trabajo, y push de esa rama** (nunca `main`).
+- **Una muestra nueva se ve en Premium; el plan se elige al activarla**, con el dueño al lado.
+  Roble, en Premium, con un interruptor para mostrarla en cada plan.
+
+### Tanda 6b — Arreglos de lo que se vio en producción, hecha en desarrollo (29/10/2026)
+
+**Qué cambió, en simple**
+
+| Antes | Ahora |
+|---|---|
+| Al archivar, la ficha seguía diciendo "¡Muestra creada!" (Nico tocó Archivar dos veces) | Avisa el cambio: "Archivada. El link ya no anda", "Revivida", "Suspendido", "Reactivado" |
+| Una muestra sin dirección: "Dónde estamos" con la dirección vacía y el mapa en blanco; sin WhatsApp, un "Escribinos" que abría WhatsApp sin número; "Contacto" vacío en el pie | Lo que no está cargado no se muestra. El pie suma el WhatsApp cuando está |
+| Plantilla de barbería: 12.000 / 8.000 / 18.000 | Corte 16.000, barba 11.000, combo 24.000 |
+| Las muestras se archivaban solo a mano | Vencen a los 30 días y la base las archiva sola de noche (también a mano, como antes). Revivir da 30 días; el equipo puede "Sumar 30 días". Roble no vence |
+| `profiles.role`, `profiles.barbero_id`, `locales.horarios`, `is_admin()`: sin uso desde las Fases 2 y 3b | Borrados (la `0015`) |
+| Con sesión, cada página tardaba 1,2 a 1,8 s | 0,45 s (ver abajo) |
+
+**La velocidad.** Medido en la compu con la misma demora que tiene la base real (200 ms por
+consulta, medidos desde Buenos Aires contra producción), con un script que se carga antes que
+Next y le agrega esa demora a cada pedido a Supabase:
+
+| Página | Antes | Ahora |
+|---|---|---|
+| Panel: turnos, horarios, servicios | 1,41 s | 0,45 s |
+| Portada de un local, con sesión | 1,43 s | 0,45 s |
+| Panel: inicio | 1,82 s | 0,45 s |
+| Reservar, Mis turnos | 1,19 s | 0,45 s |
+| `/plataforma` y la ficha de un local | 0,97 s | 0,23 s |
+| Portada sin sesión (visitantes) | 0,47 s | 0,46 s (ya estaba bien) |
+
+La causa: cada página le preguntaba a Supabase "¿quién es este usuario?" (`auth.getUser()`, que
+va por la red) **6 o 7 veces**, varias una atrás de otra (el proxy, el layout, el perfil, el
+equipo...), y después pedía el perfil, los permisos y el equipo de a uno. Lo que se hizo:
+- **`getClaims()` en vez de `getUser()`**, en el proxy y en el servidor: verifica la firma de la
+  sesión ahí mismo, con la clave pública del proyecto (las sesiones de desarrollo y de producción
+  se firman con ES256; la clave pública se baja una vez cada 10 minutos). Si llegara una sesión
+  firmada a la antigua (HS256), le pregunta a Supabase como antes. Es lo que recomienda Supabase
+  hoy para el servidor.
+- **Una vez por pedido** (`cache` de React): `getUser`, `getProfile`, `getRolEquipo`.
+- **En paralelo** lo que no depende de otra cosa: perfil, permisos y equipo a la vez; en la
+  portada, la sesión junto con los servicios, el equipo, las reseñas y los horarios; las tres
+  cuentas del inicio del panel junto con el permiso; los turnos del cliente sin esperar al perfil.
+  Así, toda página con sesión hace dos tandas de consultas (el local, y después lo demás) y la
+  plataforma una.
+
+Lo que `getClaims()` no ve: una sesión cerrada en otro lado sigue valiendo hasta que vence su
+token (una hora). Es lo mismo que ya hacía la base, que también confía en la firma; y es la
+base la que decide qué puede ver y tocar cada uno.
+
+**Encontrado al hacerla, y arreglado:**
+- `scripts/equipo.mjs` (el que carga a Nico y a Delfina) todavía le ponía `role = 'admin'` al
+  perfil: con la `0015` habría fallado. Ahora solo escribe la tabla `equipo`; "revisar" (que
+  buscaba las cuentas viejas con ese dato) se fue con la columna.
+- "Turnos hoy" del inicio del panel contaba los de **mañana** entre las 21 y las 24: usaba la
+  fecha del servidor (UTC). Ahora usa la de la zona del local.
+- **Corrección de algo que dije:** que una muestra ofrezca "Mercado Pago" en "Medios de pago" no
+  es un error. Esa lista dice cómo se puede pagar **en el local** (por ejemplo, el QR de Mercado
+  Pago), y no depende de conectar la cuenta para las señas.
+
+**Las pruebas**
+- `probar-plataforma` suma 11 controles:
+  - la muestra nace con 30 días y la ficha dice cuándo vence;
+  - "Sumar 30 días" la lleva a 60;
+  - al archivar, la ficha dice "Archivada" y no "¡Muestra creada!";
+  - revivirla da 30 días de nuevo;
+  - el reloj está programado, archiva una muestra vencida y no toca ni un local activo ni a
+    Roble;
+  - nadie estira una muestra "a mano", y ni un cliente ni un dueño pueden extenderla;
+  - una sesión con el token editado para hacerse pasar por el admin no entra ni a
+    `/plataforma` ni al panel, y va al login (con la sesión de verdad, el mismo dueño va al
+    inicio).
+- Esa última no se puede "romper a propósito" para ver si la detecta: aunque la app aceptara la
+  sesión falsa, la base rechaza un token con la firma alterada. Son dos cerraduras.
+- Adaptadas a la `0015`:
+  - `probar-seguridad`: la cuenta nace sin poderes, no puede sumarse al equipo, hacerse dueña ni
+    cambiarse el mail;
+  - `probar-aislamiento`: el perfil ya no tiene rol ni barbero, y tocarlo no cambia la membresía;
+  - `probar-panel-barbero`: el barbero no queda en el equipo;
+  - `verificar-locales`: la consulta "barberos con su cuenta" va por la membresía;
+  - `probar-matriz`: `extender_muestra` en la lista revisada, `is_admin` afuera.
+- El reloj (pg_cron) se probó de verdad: una tarea de prueba programada cada minuto corrió, y se
+  borró.
+- **`npm run probar`: 12 pruebas, todo en verde** (con cobros, contra el Mercado Pago de
+  mentira). `npm run lint`: 0 errores, las 6 advertencias viejas. `npm run build`: en verde.
+- Nuevo: `node scripts/reloj.mjs` (solo lee): qué tiene programado el reloj, cómo salieron las
+  últimas corridas y qué muestras vencen.
+
+**Para producción:** `docs/PASE-FASE-6B.md`. La `0015` va primero (convive con el código de la
+Fase 6, que no lee nada de lo que borra) y después el código.

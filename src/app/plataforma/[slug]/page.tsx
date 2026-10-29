@@ -28,8 +28,9 @@ const AVISO_DEL_CAMBIO: Record<string, string> = {
 export default async function FichaDelLocal({ params, searchParams }: Props) {
   const { slug } = await params
   const { nueva, activado, cambio } = await searchParams
-  const { rol } = await requireEquipo(`/plataforma/${slug}`)
-  const local = (await getResumenLocales()).find((l) => l.slug === slug)
+  // A la vez: el resumen, para quien no es del equipo, viene vacío.
+  const [{ rol }, locales] = await Promise.all([requireEquipo(`/plataforma/${slug}`), getResumenLocales()])
+  const local = locales.find((l) => l.slug === slug)
   if (!local) notFound()
 
   const link = `${urlPublica() ?? ''}/${local.slug}`

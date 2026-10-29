@@ -9,10 +9,8 @@ import { adminGetStats } from '@/app/actions/admin'
 export default async function AdminDashboardPage({ params }: { params: Promise<{ local: string }> }) {
   const local = await getLocal((await params).local)
   if (!local) notFound()
-  const profile = await getProfile()
+  const [profile, stats] = await Promise.all([getProfile(), adminGetStats(local.slug)])
   if (!profile) return null
-
-  const stats = await adminGetStats(local.slug)
 
   return (
     <div className="flex flex-col gap-8 w-full">

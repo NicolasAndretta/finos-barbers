@@ -1,7 +1,7 @@
 import React from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getProfile } from "@/lib/auth";
+import { getProfile, getUser } from "@/lib/auth";
 import { getLocal, getPermisos } from "@/lib/local";
 import { rutaLocal, whatsappLink } from "@/lib/local-datos";
 import { conMayuscula } from "@/lib/rubros";
@@ -35,9 +35,26 @@ export default async function HomePage({ params }: { params: Promise<{ local: st
   const { palabras } = local;
   const esDemoDeRoble = local.slug === PRODUCTO.localPorDefecto;
 
+  // Servicios, equipo y reseñas, de la base. Si la base no responde, la home
+  // igual se ve (sin esas secciones) en vez de mostrar un error.
+  type ServicioRow = { id: string; nombre: string; descripcion: string | null; precio: number; duracion_minutos: number };
+  type BarberoRow = { nombre: string; apellido: string | null; especialidad: string | null; bio: string | null; dias: string[] | null };
+  type ResenaRow = { nombre: string; texto: string; rating: number };
+
+  // Todo a la vez: quién mira (la sesión se verifica acá mismo, sin ir a la
+  // base) y lo que muestra la página. Con sesión, el perfil y los permisos.
+  const usuario = await getUser();
+  const [profile, permisos, serviciosDb, barberosDb, resenasDb, horarios] = await Promise.all([
+    usuario ? getProfile() : null,
+    usuario ? getPermisos(local.id) : null,
+    getServicios(local.slug).catch(() => [] as ServicioRow[]),
+    getBarberos(local.slug).catch(() => [] as BarberoRow[]),
+    getResenasVisibles(local.slug).catch(() => [] as ResenaRow[]),
+    // Los mismos horarios que usa la reserva (Fase 3b): no pueden decir otra cosa.
+    getHorariosSemana(local.slug).catch(() => [] as { dia: string; horas: string }[]),
+  ]);
+
   // A qué panel lleva el botón de arriba, según lo que es en ESTE local.
-  const profile = await getProfile();
-  const permisos = profile ? await getPermisos(local.id) : null;
   const panelLink = !profile
     ? null
     : permisos?.editaCatalogo
@@ -46,20 +63,6 @@ export default async function HomePage({ params }: { params: Promise<{ local: st
         ? ruta("/barbero/calendario")
         : ruta("/dashboard");
   const panelLabel = permisos?.editaCatalogo ? "Panel" : "Mi cuenta";
-
-  // Servicios, equipo y reseñas, de la base. Si la base no responde, la home
-  // igual se ve (sin esas secciones) en vez de mostrar un error.
-  type ServicioRow = { id: string; nombre: string; descripcion: string | null; precio: number; duracion_minutos: number };
-  type BarberoRow = { nombre: string; apellido: string | null; especialidad: string | null; bio: string | null; dias: string[] | null };
-  type ResenaRow = { nombre: string; texto: string; rating: number };
-
-  const [serviciosDb, barberosDb, resenasDb, horarios] = await Promise.all([
-    getServicios(local.slug).catch(() => [] as ServicioRow[]),
-    getBarberos(local.slug).catch(() => [] as BarberoRow[]),
-    getResenasVisibles(local.slug).catch(() => [] as ResenaRow[]),
-    // Los mismos horarios que usa la reserva (Fase 3b): no pueden decir otra cosa.
-    getHorariosSemana(local.slug).catch(() => [] as { dia: string; horas: string }[]),
-  ]);
 
   const servicios = (serviciosDb as ServicioRow[]).slice(0, 6);
   const Profesional = conMayuscula(palabras.profesional);

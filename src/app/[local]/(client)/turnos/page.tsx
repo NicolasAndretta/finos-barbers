@@ -17,8 +17,14 @@ const uno = (v: string | string[] | undefined) => (typeof v === 'string' ? v : '
 export default async function TurnosPage({ params, searchParams }: { params: Promise<{ local: string }>; searchParams: SearchParams }) {
   const local = await getLocal((await params).local)
   if (!local) notFound()
-  const profile = await requireProfile(rutaLocal(local.slug, '/turnos'))
   const resolvedParams = await searchParams
+  const pagoId = uno(resolvedParams.payment_id)
+  // Sin vuelta de Mercado Pago, los turnos se piden junto con el perfil. Con
+  // vuelta, después de verificar el pago (que puede cambiar la seña).
+  const [profile, turnosDeEntrada] = await Promise.all([
+    requireProfile(rutaLocal(local.slug, '/turnos')),
+    pagoId ? null : getTurnosCliente(local.slug),
+  ])
 
   // Vuelta de Mercado Pago después de pagar la seña. Lo que trae la dirección
   // (estado, número de pago) NO se cree: cualquiera la puede escribir a mano.
@@ -26,7 +32,6 @@ export default async function TurnosPage({ params, searchParams }: { params: Pro
   // verificación que hace el aviso de pago, lib/cobros.ts) y lo que se muestra
   // sale de la base. Si Mercado Pago no contesta, el aviso lo termina después.
   let aviso: 'pagada' | 'confirmando' | null = null
-  const pagoId = uno(resolvedParams.payment_id)
   if (pagoId) {
     const verificado = await verificarPago(local.id, pagoId)
     // Si Mercado Pago no pudo contestar, la referencia de la dirección sirve
@@ -48,7 +53,7 @@ export default async function TurnosPage({ params, searchParams }: { params: Pro
   }
 
   const isSuccess = resolvedParams.reserva === 'success' || aviso === 'pagada'
-  const turnos = await getTurnosCliente(local.slug)
+  const turnos = turnosDeEntrada ?? await getTurnosCliente(local.slug)
 
   return (
     <div className="flex flex-col items-center justify-start pb-12 animate-fade-in w-full max-w-3xl mx-auto">

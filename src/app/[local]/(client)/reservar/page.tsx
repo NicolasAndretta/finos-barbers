@@ -12,8 +12,12 @@ import { modoDeCobro } from '@/lib/cobros'
 export default async function ReservarPage({ params }: { params: Promise<{ local: string }> }) {
   const local = await getLocal((await params).local)
   if (!local) notFound()
-  await requireProfile(rutaLocal(local.slug, '/reservar'))
-  const [servicios, barberos, cobro] = await Promise.all([getServicios(local.slug), getBarberos(local.slug), modoDeCobro(local)])
+  const [, servicios, barberos, cobro] = await Promise.all([
+    requireProfile(rutaLocal(local.slug, '/reservar')),
+    getServicios(local.slug),
+    getBarberos(local.slug),
+    modoDeCobro(local),
+  ])
 
   return (
     <div className="flex flex-col items-center justify-start text-center pb-12 animate-fade-in w-full">

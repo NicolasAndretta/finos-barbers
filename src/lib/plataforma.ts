@@ -13,7 +13,7 @@ import 'server-only'
 import { cache } from 'react'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
-import { getProfile, rutaLogin } from '@/lib/auth'
+import { getProfile, getUser, rutaLogin } from '@/lib/auth'
 import type { Profile } from '@/types'
 import type { DuenoDelLocal, ResumenLocal, RolEquipo } from '@/lib/plataforma-datos'
 
@@ -21,9 +21,9 @@ export * from '@/lib/plataforma-datos'
 
 /** El rol en el equipo de quien está conectado, o null si no es del equipo. */
 export const getRolEquipo = cache(async (): Promise<RolEquipo | null> => {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getUser()
   if (!user) return null
+  const supabase = await createClient()
   // La política "equipo: la ve cada uno" deja leer la fila propia.
   const { data } = await supabase.from('equipo').select('rol').eq('user_id', user.id).maybeSingle()
   return data?.rol === 'admin' || data?.rol === 'comercial' ? data.rol : null
@@ -31,9 +31,8 @@ export const getRolEquipo = cache(async (): Promise<RolEquipo | null> => {
 
 /** Para las páginas de la plataforma: sin sesión, al login; sin ser del equipo, al inicio. */
 export async function requireEquipo(volver = '/plataforma'): Promise<{ rol: RolEquipo; profile: Profile }> {
-  const profile = await getProfile()
+  const [profile, rol] = await Promise.all([getProfile(), getRolEquipo()])
   if (!profile) redirect(rutaLogin(volver))
-  const rol = await getRolEquipo()
   if (!rol) redirect('/')
   return { rol, profile }
 }

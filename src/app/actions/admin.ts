@@ -5,6 +5,7 @@ import { exigirPermiso, requireProfile } from '@/lib/auth'
 import { sendConfirmacionTurno, sendCancelacionTurno, datosDelLocal } from '@/lib/resend'
 import { getLocal, localDeAccion } from '@/lib/local'
 import { refrescarLocales } from '@/lib/refrescar'
+import { ahoraEnZona } from '@/lib/horarios'
 
 // Panel de administración de UN local. Las que listan o crean reciben el
 // nombre corto del local (el de la dirección) y revisan el permiso ahí. Las
@@ -483,32 +484,41 @@ export async function adminCrearTurno(formData: FormData) {
 
 export async function adminGetStats(slug: string) {
   const local = await localDeAccion(slug)
-  await exigirPermiso(local, 'editaCatalogo')
   const supabase = await createClient()
 
-  // Turnos de hoy
-  const today = new Date().toISOString().split('T')[0]
-  const { count: turnosHoy, error: turnosError } = await supabase
-    .from('turnos')
-    .select('*', { count: 'exact', head: true })
-    .eq('local_id', local.id)
-    .eq('fecha', today)
-    .in('estado', ['pendiente', 'confirmado'])
+  // "Hoy" en la zona del local, no en la del servidor: en Argentina, después de
+  // las 21 la fecha del servidor (UTC) ya es la de mañana.
+  const hoy = ahoraEnZona(local.zonaHoraria).fecha
 
-  // Servicios activos
-  const { count: serviciosActivos, error: serviciosError } = await supabase
-    .from('servicios')
-    .select('*', { count: 'exact', head: true })
-    .eq('local_id', local.id)
-    .eq('activo', true)
-
-  // Clientes del local (membresía "cliente"). La comercial, en un local
-  // activo, ve 0: los clientes de un local en producción no son suyos.
-  const { count: totalClientes, error: clientesError } = await supabase
-    .from('membresias')
-    .select('*', { count: 'exact', head: true })
-    .eq('local_id', local.id)
-    .eq('rol', 'cliente')
+  // Las tres cuentas a la vez, y a la vez que el permiso: si no lo tiene,
+  // exigirPermiso corta y no se devuelve nada (y la base, igual, no le
+  // mostraría lo que no es suyo).
+  const [
+    ,
+    { count: turnosHoy, error: turnosError },
+    { count: serviciosActivos, error: serviciosError },
+    // Clientes del local (membresía "cliente"). La comercial, en un local
+    // activo, ve 0: los clientes de un local en producción no son suyos.
+    { count: totalClientes, error: clientesError },
+  ] = await Promise.all([
+    exigirPermiso(local, 'editaCatalogo'),
+    supabase
+      .from('turnos')
+      .select('*', { count: 'exact', head: true })
+      .eq('local_id', local.id)
+      .eq('fecha', hoy)
+      .in('estado', ['pendiente', 'confirmado']),
+    supabase
+      .from('servicios')
+      .select('*', { count: 'exact', head: true })
+      .eq('local_id', local.id)
+      .eq('activo', true),
+    supabase
+      .from('membresias')
+      .select('*', { count: 'exact', head: true })
+      .eq('local_id', local.id)
+      .eq('rol', 'cliente'),
+  ])
 
   if (turnosError || serviciosError || clientesError) {
     throw new Error('Error al obtener estadísticas')

@@ -16,7 +16,8 @@ Todo lo que describe la base de datos vive acá, versionado junto con el código
 | `migrations/0012_sin_mecanismo_temporal.sql` | Fase 4b: saca el disparador temporal de la Fase 2 que copiaba la membresía de barbero desde el perfil (el código ya la crea directamente). No borra datos. |
 | `migrations/0013_permisos_minimos.sql` | Fase 5: segunda cerradura en los permisos de Postgres de las tablas de la barbería (la clave pública solo lee; nadie tiene truncate, trigger ni references). No toca lo de 369 ni borra datos. |
 | `migrations/0014_alta_de_locales.sql` | Fase 6: las funciones de la plataforma (crear una muestra con su plantilla, activar, archivar, suspender, sumar y sacar dueños, el resumen). Un local se crea y cambia de estado solo con ellas: la guardia de `locales` ya no deja hacerlo "a mano", ni al equipo. No borra datos (activar borra lo de prueba de ese local, cuando alguien lo activa). |
-| `migrations/0015` en adelante | Los cambios que siguen. Cada uno se prueba primero en desarrollo. |
+| `migrations/0015_muestras_que_vencen.sql` | Tanda 6b: las muestras vencen a los 30 días y el reloj de la base (pg_cron) las archiva de noche; el equipo puede sumarles 30 días. Se borran `profiles.role`, `profiles.barbero_id`, `locales.horarios` e `is_admin()`, sin uso desde las Fases 2 y 3b. **Borra datos** (esos valores): en producción, con copia antes. |
+| `migrations/0016` en adelante | Los cambios que siguen. Cada uno se prueba primero en desarrollo. |
 | `rescate/volver-antes-de-0009-y-0012.sql` | **No es una migración** (nadie la corre sola): solo para una emergencia en el pase a producción, si hubiera que volver al código viejo después de la última tanda. Ver `docs/PASE-A-PRODUCCION.md`. |
 | `seed-desarrollo.sql` | Datos de ejemplo: el catálogo de Roble, el local de demostración (servicios, barberos, productos, categorías, reseñas). Sin cuentas, turnos, pedidos ni tokens. |
 | `esquema-reporte.md` | Resumen legible de la foto, con alertas de seguridad. Se regenera con cada exportación. |
@@ -105,6 +106,10 @@ node scripts/verificar-llave-servidor.mjs
 
 # El equipo de la plataforma (Nico admin, Delfina comercial)
 node scripts/equipo.mjs listar
+
+# El reloj de la base (pg_cron): qué tiene programado, cómo salió y qué muestras
+# vencen (solo lectura)
+node scripts/reloj.mjs --env .env.produccion.local
 
 # Copia de seguridad de producción (solo lectura; queda en respaldos/, que no se sube)
 node scripts/respaldar-base.mjs --env .env.produccion.local

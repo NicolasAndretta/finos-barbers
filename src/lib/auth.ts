@@ -11,9 +11,9 @@
  * base igual frenaría lo que no corresponde.
  *
  * Funciones:
- *  - getUser()                 → User | null      (no redirige)
+ *  - getUser()                 → Usuario | null   (no redirige)
  *  - getProfile()              → Profile | null   (no redirige)
- *  - requireUser(volver?)      → User             (sin sesión → /login)
+ *  - requireUser(volver?)      → Usuario          (sin sesión → /login)
  *  - requireProfile(volver?)   → Profile          (sin sesión → /login)
  *  - requirePanelAdmin(local)  → { profile, permisos }  (panel de administración del local)
  *  - requirePanelBarbero(local)→ { profile, permisos }  (agenda del barbero en el local)
@@ -21,38 +21,46 @@
  *  - destinoDespuesDeEntrar()  → a qué página va alguien después del login
  */
 
+import { cache } from 'react'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { getLocal, getPermisos, type Permisos } from '@/lib/local'
 import { rutaLocal, type LocalPublico } from '@/lib/local-datos'
 import { PRODUCTO } from '@/lib/producto'
 import type { Profile } from '@/types'
-import type { SupabaseClient, User } from '@supabase/supabase-js'
+import type { SupabaseClient } from '@supabase/supabase-js'
 
 // ─── Primitivos (no redirigen) ───────────────────────────────────────────────
 
+/** Quién está conectado: su id y su mail. */
+export type Usuario = { id: string; email: string }
+
 /**
- * El usuario conectado, o null.
- * Usa getUser() (lo verifica contra Supabase): sirve para autorizar.
+ * El usuario conectado, o null. Sirve para autorizar: verifica la firma de la
+ * sesión (getClaims). Con las claves nuevas de Supabase (ES256) la verifica
+ * acá mismo, con la clave pública del proyecto (se baja una vez cada 10
+ * minutos), sin ir a Supabase en cada pedido; con una sesión firmada a la
+ * antigua, pregunta a Supabase como antes. Una sola vez por pedido (cache):
+ * antes cada página lo preguntaba 6 o 7 veces, una atrás de otra.
+ *
+ * Lo que no ve: una sesión cerrada en otro lado sigue valiendo hasta que vence
+ * su token (una hora). Es lo mismo que ya pasa con la base (que también confía
+ * en la firma), y la base sigue decidiendo qué puede ver y tocar cada uno.
  */
-export async function getUser(): Promise<User | null> {
+export const getUser = cache(async (): Promise<Usuario | null> => {
   const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  return user
-}
+  const { data, error } = await supabase.auth.getClaims()
+  const claims = data?.claims
+  if (error || !claims?.sub) return null
+  return { id: claims.sub, email: typeof claims.email === 'string' ? claims.email : '' }
+})
 
-/** El perfil del usuario conectado (nombre, mail), o null. */
-export async function getProfile(): Promise<Profile | null> {
-  const supabase = await createClient()
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
+/** El perfil del usuario conectado (nombre, mail), o null. Una vez por pedido. */
+export const getProfile = cache(async (): Promise<Profile | null> => {
+  const user = await getUser()
   if (!user) return null
 
+  const supabase = await createClient()
   const { data: profile } = await supabase
     .from('profiles')
     .select('*')
@@ -60,7 +68,7 @@ export async function getProfile(): Promise<Profile | null> {
     .single()
 
   return profile as Profile | null
-}
+})
 
 // ─── Login ───────────────────────────────────────────────────────────────────
 
@@ -88,7 +96,7 @@ export function esVueltaSegura(ruta: unknown): ruta is string {
 // ─── Guardias (redirigen si no se cumple) ────────────────────────────────────
 
 /** Hay sesión. Si no, al login (y después vuelve a `volver`). */
-export async function requireUser(volver?: string): Promise<User> {
+export async function requireUser(volver?: string): Promise<Usuario> {
   const user = await getUser()
   if (!user) redirect(rutaLogin(volver))
   return user
@@ -108,8 +116,10 @@ export async function requireProfile(volver?: string): Promise<Profile> {
  * Un cliente que llega acá va a su área de cliente de ese local.
  */
 export async function requirePanelAdmin(local: LocalPublico): Promise<{ profile: Profile; permisos: Permisos }> {
-  const profile = await requireProfile(rutaLocal(local.slug, '/admin/dashboard'))
-  const permisos = await getPermisos(local.id)
+  const [profile, permisos] = await Promise.all([
+    requireProfile(rutaLocal(local.slug, '/admin/dashboard')),
+    getPermisos(local.id),
+  ])
   if (!permisos.editaCatalogo) redirect(rutaLocal(local.slug, '/dashboard'))
   return { profile, permisos }
 }
@@ -119,8 +129,10 @@ export async function requirePanelAdmin(local: LocalPublico): Promise<{ profile:
  * lo administra, para revisarla).
  */
 export async function requirePanelBarbero(local: LocalPublico): Promise<{ profile: Profile; permisos: Permisos }> {
-  const profile = await requireProfile(rutaLocal(local.slug, '/barbero/calendario'))
-  const permisos = await getPermisos(local.id)
+  const [profile, permisos] = await Promise.all([
+    requireProfile(rutaLocal(local.slug, '/barbero/calendario')),
+    getPermisos(local.id),
+  ])
   if (!permisos.barberoId && !permisos.administra) redirect(rutaLocal(local.slug, '/dashboard'))
   return { profile, permisos }
 }
@@ -134,8 +146,7 @@ type PermisoDeAccion = 'administra' | 'editaCatalogo' | 'operaPrivado'
  * llega acá quien la llama a mano. La base, igual, la frenaría.
  */
 export async function exigirPermiso(local: LocalPublico, permiso: PermisoDeAccion): Promise<Profile> {
-  const profile = await requireProfile()
-  const permisos = await getPermisos(local.id)
+  const [profile, permisos] = await Promise.all([requireProfile(), getPermisos(local.id)])
   if (!permisos[permiso]) throw new Error('No tenés permiso para hacer esto en este local')
   return profile
 }

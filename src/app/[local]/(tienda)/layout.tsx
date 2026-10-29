@@ -1,7 +1,7 @@
 import React from 'react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { getProfile } from '@/lib/auth'
+import { getProfile, getUser } from '@/lib/auth'
 import { getLocal, getPermisos } from '@/lib/local'
 import { rutaLocal } from '@/lib/local-datos'
 import { Logo } from '@/components/ui/Logo'
@@ -18,10 +18,15 @@ export default async function TiendaLayout({ children, params }: { children: Rea
   const local = await getLocal((await params).local)
   if (!local) notFound()
   const ruta = (r: string = '') => rutaLocal(local.slug, r)
-  const conCarrito = (await modoDeCobro(local)) !== 'sin_mercadopago'
   // "Mi cuenta" lleva a lo que es en ESTE local: su panel o su área de cliente.
-  const profile = await getProfile()
-  const permisos = profile ? await getPermisos(local.id) : null
+  // Todo a la vez (la sesión se verifica acá mismo, sin ir a la base).
+  const usuario = await getUser()
+  const [cobro, profile, permisos] = await Promise.all([
+    modoDeCobro(local),
+    usuario ? getProfile() : null,
+    usuario ? getPermisos(local.id) : null,
+  ])
+  const conCarrito = cobro !== 'sin_mercadopago'
   const cuentaLink = !profile
     ? null
     : permisos?.editaCatalogo

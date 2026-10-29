@@ -4,7 +4,7 @@ import { createClient, createServiceClient } from '@/lib/supabase'
 import { crearPreferencia } from '@/lib/mercadopago'
 import { cuentaDelLocal } from '@/lib/mp-conexion'
 import { direccionesDelCobro, modoDeCobro, referenciaDe } from '@/lib/cobros'
-import { getUser, requireProfile } from '@/lib/auth'
+import { getUser, requireProfile, requireUser } from '@/lib/auth'
 import { sendConfirmacionTurno, sendCancelacionTurno, datosDelLocal } from '@/lib/resend'
 import { getLocal, localDeAccion } from '@/lib/local'
 import { localVisible, rutaLocal } from '@/lib/local-datos'
@@ -318,7 +318,9 @@ export async function crearReserva(formData: FormData) {
 /** Los turnos del cliente conectado en ESTE local. */
 export async function getTurnosCliente(slug: string) {
   const local = await localDeAccion(slug)
-  const profile = await requireProfile(rutaLocal(local.slug, '/turnos'))
+  // Alcanza con quién es (se verifica sin ir a la base): no hace falta esperar
+  // al perfil para pedir sus turnos.
+  const usuario = await requireUser(rutaLocal(local.slug, '/turnos'))
   const supabase = await createClient()
 
   const { data, error } = await supabase
@@ -331,7 +333,7 @@ export async function getTurnosCliente(slug: string) {
       barberos ( nombre, apellido ),
       servicios ( nombre, duracion_minutos, precio )
     `)
-    .eq('cliente_id', profile.id)
+    .eq('cliente_id', usuario.id)
     .eq('local_id', local.id)
     .order('fecha', { ascending: true })
     .order('hora', { ascending: true })

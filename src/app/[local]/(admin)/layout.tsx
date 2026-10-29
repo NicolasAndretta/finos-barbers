@@ -14,9 +14,8 @@ import { getRolEquipo } from '@/lib/plataforma'
 export default async function AdminLayout({ children, params }: { children: React.ReactNode; params: Promise<{ local: string }> }) {
   const local = await getLocal((await params).local)
   if (!local) notFound()
-  const { profile, permisos } = await requirePanelAdmin(local)
+  const [{ profile, permisos }, rolEquipo] = await Promise.all([requirePanelAdmin(local), getRolEquipo()])
   // El equipo de la plataforma tiene a mano la vuelta a la lista de locales.
-  const rolEquipo = await getRolEquipo()
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col font-sans">
