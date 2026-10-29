@@ -1,6 +1,6 @@
 # Pase a producción: la marca de cada local (color y logo)
 
-> **Solo si Nico la aprueba** (se armó el 29/10 como propuesta). **Lo corre Nico**, en Git
+> **Aprobada por Nico el 29/10.** **Lo corre Nico**, en Git
 > Bash, parado en la carpeta del proyecto. **Va DESPUÉS de `PASE-FASE-7.md`**: la `0017` usa lo
 > que crea la `0016` (si faltara, la migración frena sola y no cambia nada). Tiempo: unos 10
 > minutos.

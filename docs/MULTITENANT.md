@@ -195,7 +195,7 @@ Después de cada cambio en producción:
 | 6 | Alta de barberías desde el panel (demo → activo), ver la sección de abajo | ✅ Hecha en desarrollo el 26/10/2026, aprobada de antemano por Nico. **No va en el pase de las Fases 1 a 5**: va en un pase siguiente (la `0014` y el código) |
 | 6b | Arreglos de lo que se vio en producción: muestras que vencen, avisos, velocidad | ✅ Hecha en desarrollo el 29/10/2026, con vía libre de Nico. Pase: `docs/PASE-FASE-6B.md` |
 | 7 | Los planes (Básico, Pro, Premium) en la base: límites, candados, panel según el plan; reseñas verificadas, reportes, exportar | ✅ Hecha en desarrollo el 29/10/2026, aprobada de antemano por Nico. Pase: `docs/PASE-FASE-7.md` (después del de la 6b) |
-| Marca | El color de acento y el logo de cada local; un cliente ya no cancela un turno que pasó | ✅ Hecha en desarrollo el 29/10/2026, **sin aprobar** (propuesta, para que Nico la vea). Pase: `docs/PASE-MARCA.md` (después del de la 7) |
+| Marca | El color de acento y el logo de cada local; un cliente ya no cancela un turno que pasó | ✅ Hecha en desarrollo el 29/10/2026, **aprobada por Nico ese día** (todos los planes). Pase: `docs/PASE-MARCA.md` (después del de la 7) |
 | 7b | Reservar sin cuenta (aprobada el 29/10) | ⏳ Necesita el dominio del producto: sin mails, el cliente no tiene cómo cancelar |
 | 8 | Cobro automático del abono (suscripciones de Mercado Pago) | ⏳ Propuesta; por ahora se cobra a mano |
 
@@ -1736,3 +1736,10 @@ reportes). Ahora no aparece el botón, y la acción tampoco lo deja.
 **Para Nico:** mirá `_e2e_shots/marca-portada.png` y `marca-datos-celu.png` (una muestra en
 verde, con un logo de prueba). Si va, el pase es `docs/PASE-MARCA.md`, después del de la Fase 7.
 Si no, no se publica y listo: la rama fija de la Fase 7 no la tiene.
+
+### Respuestas de Nico (29/10/2026, a la mañana)
+
+- **Las reseñas verificadas se publican al instante** (como quedaron): el dueño no las aprueba antes,
+  solo puede ocultarlas.
+- **La marca de cada local va**, en todos los planes. Su pase: `docs/PASE-MARCA.md`, después del
+  de la Fase 7 (trae también que un cliente no cancele un turno que ya pasó).
