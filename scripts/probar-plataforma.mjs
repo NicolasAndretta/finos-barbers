@@ -166,6 +166,9 @@ try {
   anotar(conteo.servicios === 3 && conteo.tramos === 6 && conteo.domingo === 0, 'con la plantilla: 3 servicios y horario de lunes a sábado de 10 a 20', JSON.stringify(conteo))
   anotar(conteo.profesionales === 'Leo , Tano Gómez', 'con los profesionales que se cargaron', conteo.profesionales)
   anotar((await texto(pc)).includes('¡Muestra creada!') && await sinScrollDeCostado(pc), 'la ficha avisa que se creó, sin scroll de costado')
+  const dias = (await uno(`select extract(epoch from muestra_hasta - now()) / 86400 as d from public.locales where id = $1`, [creado.id])).d
+  anotar(dias > 29.9 && dias <= 30, 'la muestra vence en 30 días', String(dias))
+  anotar((await texto(pc)).includes('Se archiva sola el'), 'y la ficha dice cuándo se archiva sola')
   await pc.screenshot({ path: resolve(CAPTURAS, 'plataforma-ficha-celu.png'), fullPage: true })
 
   // Repetida y reservada: el error, sin vaciar el formulario.
@@ -324,14 +327,38 @@ try {
     p_nombre: 'Muestra que no se vendió', p_slug: SLUG_ARCHIVO, p_rubro: 'unas', p_datos: {}, p_servicios: [], p_profesionales: [],
   })
   anotar(alta.ok, 'otra muestra, de uñas')
-  await pf.goto(`${APP}/plataforma/${SLUG_ARCHIVO}`, { waitUntil: 'networkidle' })
+  // Recién creada (con el aviso de "creada" arriba), como le pasó a Nico el 29/10.
+  await pf.goto(`${APP}/plataforma/${SLUG_ARCHIVO}?nueva=1`, { waitUntil: 'networkidle' })
+  await pf.getByRole('button', { name: 'Sumar 30 días' }).click()
+  let extendida = 0
+  for (let i = 0; i < 60 && extendida < 59; i++) {
+    await pf.waitForTimeout(500)
+    extendida = (await uno(`select extract(epoch from muestra_hasta - now()) / 86400 as d from public.locales where slug = $1`, [SLUG_ARCHIVO])).d
+  }
+  anotar(extendida > 59.9 && extendida <= 60, '"Sumar 30 días" la estira a 60', String(extendida))
   await pf.getByRole('button', { name: 'Archivar la muestra' }).click()
   await pf.waitForFunction(() => document.body.innerText.includes('Revivir la muestra'), null, { timeout: 30_000 })
   await pv.goto(`${APP}/${SLUG_ARCHIVO}`, { waitUntil: 'networkidle' })
   anotar((await localPorSlug(SLUG_ARCHIVO)).estado === 'archivado' && (await texto(pv)).includes('ya no está disponible'), 'la comercial la archiva: el link deja de andar')
+  const fichaArchivada = await texto(pf)
+  anotar(fichaArchivada.includes('Archivada. El link ya no anda') && !fichaArchivada.includes('¡Muestra creada!'),
+    'la ficha dice "Archivada" y ya no "¡Muestra creada!"')
+  await q(`update public.locales set muestra_hasta = now() - interval '5 days' where slug = $1`, [SLUG_ARCHIVO])
   await pf.getByRole('button', { name: 'Revivir la muestra' }).click()
   await pf.waitForFunction(() => document.body.innerText.includes('Archivar la muestra'), null, { timeout: 30_000 })
-  anotar((await localPorSlug(SLUG_ARCHIVO)).estado === 'demo', 'y la revive')
+  const revivida = (await uno(`select extract(epoch from muestra_hasta - now()) / 86400 as d from public.locales where slug = $1`, [SLUG_ARCHIVO])).d
+  anotar((await localPorSlug(SLUG_ARCHIVO)).estado === 'demo' && revivida > 29.9 && revivida <= 30 && (await texto(pf)).includes('Revivida'),
+    'y la revive: 30 días de nuevo', String(revivida))
+
+  // El reloj de la base: lo que corre todas las noches, corrido ahora.
+  const reloj = await uno(`select command, schedule from cron.job where jobname = 'archivar-muestras-vencidas'`)
+  anotar(reloj?.schedule === '0 6 * * *', 'el reloj está programado todas las noches (3 de la mañana en Argentina)')
+  await q(`update public.locales set muestra_hasta = now() - interval '1 minute' where slug = $1`, [SLUG_ARCHIVO])
+  await q(reloj.command)
+  anotar((await localPorSlug(SLUG_ARCHIVO)).estado === 'archivado', 'una muestra vencida se archiva sola')
+  anotar((await localPorSlug(SLUG)).estado === 'activo' && (await localPorSlug('roble'))?.estado === 'demo' && !(await localPorSlug('roble')).muestra_hasta,
+    'y no toca ni un local activo ni a Roble (que no vence)')
+  await q(`update public.locales set estado = 'demo' where slug = $1`, [SLUG_ARCHIVO])
 
   // ─── 9. Por afuera de la pantalla ─────────────────────────────────────────
   titulo('9. Por afuera de la pantalla')
@@ -368,6 +395,13 @@ try {
   anotar(!(r6.ok && r6.datos?.length) && !(await localPorSlug(SLUG_ARCHIVO)).activado_en, 'nadie cambia el registro de alta "a mano", ni el equipo')
   const r7 = await comoUsuario(tDueno, 'PATCH', `/rest/v1/locales?id=eq.${activo.id}`, { slug: `robado-${sello}` })
   anotar(!(r7.ok && r7.datos?.length) && (await localPorSlug(SLUG)), 'el dueño no puede cambiar la dirección web de su local')
+  const lejos = new Date(Date.now() + 400 * 86_400_000).toISOString()
+  const r9 = await comoUsuario(tokenComercial, 'PATCH', `/rest/v1/locales?id=eq.${archivo.id}`, { muestra_hasta: lejos })
+  const r10 = await comoUsuario(tCliente, 'POST', '/rest/v1/rpc/extender_muestra', { p_local: archivo.id })
+  const r11 = await comoUsuario(tDueno, 'POST', '/rest/v1/rpc/extender_muestra', { p_local: archivo.id })
+  const diasArchivo = (await uno(`select extract(epoch from muestra_hasta - now()) / 86400 as d from public.locales where id = $1`, [archivo.id])).d
+  anotar(!(r9.ok && r9.datos?.length) && !r10.ok && !r11.ok && diasArchivo <= 30,
+    'nadie estira una muestra "a mano", y ni un cliente ni un dueño pueden extenderla', String(diasArchivo))
   const r8 = await comoUsuario(tDueno, 'PATCH', `/rest/v1/locales?id=eq.${activo.id}`, { lema: 'Lema del dueño' })
   anotar(r8.ok && r8.datos?.length === 1, 'pero sí los datos de su local')
 

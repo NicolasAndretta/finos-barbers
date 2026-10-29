@@ -116,7 +116,7 @@ const FUNCIONES_REVISADAS = {
   'sumar_dueno(p_local uuid, p_usuario uuid)': 'el admin, o la comercial en una muestra; nunca una cuenta del equipo como dueña',
   'quitar_dueno(p_local uuid, p_usuario uuid)': 'el admin, o la comercial en una muestra',
   'resumen_de_locales()': 'solo el equipo (si no, vacío); cuentas y sí/no, y los mails de dueños de un local activo solo al admin',
-  'is_admin()': 'la vieja de antes de la Fase 2, sin uso: sí o no sobre quien pregunta',
+  'extender_muestra(p_local uuid)': 'solo el equipo, solo una muestra que vence: le suma 30 días (0015)',
   'handle_new_user()': 'función de un disparador: Postgres no deja llamarla desde afuera',
   'rls_auto_enable()': 'función de un disparador de eventos de producción: no se puede llamar desde afuera',
 }

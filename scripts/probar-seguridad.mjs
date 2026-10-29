@@ -120,7 +120,8 @@ titulo('2. Registrarse pidiendo rol admin')
 const email = `prueba.seguridad.${Date.now()}@example.com`
 const clave = `Prueba-${Math.random().toString(36).slice(2)}-9x`
 const alta = await pedir('POST', '/auth/v1/signup', {
-  // Lo mismo que manda el formulario de registro, más un "role" de contrabando.
+  // Lo mismo que manda el formulario de registro, más un "role" de contrabando
+  // (hoy la base lo ignora: los poderes están en equipo y membresias).
   cuerpo: { email, password: clave, data: { nombre: 'Prueba', apellido: 'Seguridad', role: 'admin' } },
 })
 const uid = alta.datos?.user?.id ?? alta.datos?.id
@@ -141,17 +142,23 @@ if (!token) {
 }
 /** Un pedido hecho por el cliente de prueba, ya logueado. */
 const cliente = (metodo, ruta, cuerpo, tipo) => pedir(metodo, ruta, { token, cuerpo, tipo })
-const rolActual = async () => (await servidor('GET', tabla('profiles', `?id=eq.${uid}&select=role`))).datos?.[0]?.role
+// Qué puede hacer una cuenta lo dicen `equipo` y `membresias` (desde la 0015 el
+// perfil no tiene rol): una cuenta nueva no está en ninguna de las dos.
+const poderes = async () => filas(await servidor('GET', tabla('equipo', `?user_id=eq.${uid}&select=rol`)))
+  + filas(await servidor('GET', tabla('membresias', `?user_id=eq.${uid}&rol=neq.cliente&select=rol`)))
+const mailDelPerfil = async () => (await servidor('GET', tabla('profiles', `?id=eq.${uid}&select=email`))).datos?.[0]?.email
 
 try {
-  anotar((await rolActual()) === 'client', 'la cuenta nace como cliente aunque el formulario pida admin')
+  anotar((await poderes()) === 0, 'la cuenta nace sin ningún poder aunque el formulario pida admin')
 
-  // ─── 3. Cambiarse el rol ───────────────────────────────────────────────────
+  // ─── 3. Darse poderes ──────────────────────────────────────────────────────
   titulo('3. Cliente logueado: su propio perfil')
-  for (const rol of ['admin', 'barbero']) {
-    await cliente('PATCH', tabla('profiles', `?id=eq.${uid}`), { role: rol })
-    anotar((await rolActual()) === 'client', `no puede pasarse a ${rol}`)
-  }
+  await cliente('POST', tabla('equipo'), { user_id: uid, rol: 'admin' })
+  await cliente('POST', tabla('membresias'), { user_id: uid, local_id: ROBLE, rol: 'dueno' })
+  anotar((await poderes()) === 0, 'no puede sumarse al equipo ni hacerse dueño de un local')
+  const mailAntes = await mailDelPerfil()
+  await cliente('PATCH', tabla('profiles', `?id=eq.${uid}`), { email: `otro.${uid}@example.com` })
+  anotar(Boolean(mailAntes) && (await mailDelPerfil()) === mailAntes, 'no puede cambiarse el mail del perfil')
   anotar(filas(await cliente('GET', tabla('profiles', '?select=id'))) === 1, 'solo ve su propio perfil')
 
   // ─── 4. Lo de 369 ──────────────────────────────────────────────────────────

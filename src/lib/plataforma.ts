@@ -44,6 +44,7 @@ type FilaResumen = {
   servicios: number; profesionales: number; tramos_horario: number
   tiene_whatsapp: boolean; tiene_direccion: boolean
   duenos: number; duenos_detalle: DuenoDelLocal[] | null; mp_conectado: boolean; turnos_de_prueba: number | null
+  muestra_hasta: string | null
 }
 
 /** Todos los locales, con lo que le falta a cada uno. Para quien no es del equipo, vacío. */
@@ -57,7 +58,7 @@ export const getResumenLocales = cache(async (): Promise<ResumenLocal[]> => {
     servicios: f.servicios, profesionales: f.profesionales, tramosHorario: f.tramos_horario,
     tieneWhatsapp: f.tiene_whatsapp, tieneDireccion: f.tiene_direccion,
     duenos: f.duenos, duenosDetalle: f.duenos_detalle, mpConectado: f.mp_conectado,
-    turnosDePrueba: f.turnos_de_prueba,
+    turnosDePrueba: f.turnos_de_prueba, muestraHasta: f.muestra_hasta,
   }))
 })
 

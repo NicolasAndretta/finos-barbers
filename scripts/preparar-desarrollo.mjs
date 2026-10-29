@@ -152,7 +152,7 @@ async function asegurarAdmin() {
           email,
           password,
           email_confirm: true, // ya confirmada: no hace falta abrir ningún mail
-          user_metadata: { nombre: 'Admin', apellido: 'Desarrollo', role: 'client' },
+          user_metadata: { nombre: 'Admin', apellido: 'Desarrollo' },
         }),
       })
     } catch (e) {

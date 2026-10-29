@@ -4,7 +4,7 @@
  */
 
 import Link from 'next/link'
-import { getResumenLocales, loQueFalta, type ResumenLocal } from '@/lib/plataforma'
+import { cuantoLeQueda, getResumenLocales, loQueFalta, type ResumenLocal } from '@/lib/plataforma'
 import { RUBROS } from '@/lib/plantillas'
 import { Chip, EstadoLocal } from '@/components/plataforma/Insignias'
 
@@ -90,6 +90,7 @@ function Tarjeta({ local }: { local: ResumenLocal }) {
           ? `Activo desde el ${new Date(local.activadoEn).toLocaleDateString('es-AR')}`
           : `Creada ${haceCuanto(local.creadoEn)}${local.creadoPor ? ` por ${local.creadoPor}` : ''}`}
         {local.turnosDePrueba ? ` · ${local.turnosDePrueba} turno(s) de prueba` : ''}
+        {local.estado === 'demo' && local.muestraHasta ? ` · se archiva sola ${cuantoLeQueda(local.muestraHasta)}` : ''}
       </p>
     </Link>
   )

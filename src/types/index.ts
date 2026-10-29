@@ -1,12 +1,10 @@
-﻿export type Role = 'client' | 'admin' | 'barbero'
-
+﻿// Qué puede hacer cada cuenta no está en el perfil: lo dicen `equipo` (la
+// plataforma) y `membresias` (cada local). La 0015 sacó el viejo `role`.
 export type Profile = {
   id: string
   email: string
   nombre: string
   apellido: string
-  role: Role
-  barbero_id: string | null
   created_at: string
 }
 

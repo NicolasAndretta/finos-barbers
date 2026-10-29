@@ -310,7 +310,7 @@ try {
   } else {
     const consultas = [
       ['turnos con cliente, barbero y servicio', 'turnos?select=id,profiles(nombre,apellido,email),barberos(nombre,apellido),servicios(nombre,duracion_minutos,precio)&limit=1'],
-      ['barberos con su cuenta', 'barberos?select=*,cuentas:profiles(id,email)&limit=1'],
+      ['barberos con su cuenta (por la membresía)', 'membresias?select=user_id,barberos(nombre,apellido),profiles(email)&rol=eq.barbero&limit=1'],
     ]
     for (const [texto, ruta] of consultas) {
       try {

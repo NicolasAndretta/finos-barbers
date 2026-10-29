@@ -9,10 +9,10 @@
 import React, { useActionState, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import {
-  activarLocal, cambiarEstadoLocal, invitarDueno, otroLinkDeDueno, quitarDueno,
+  activarLocal, cambiarEstadoLocal, extenderMuestra, invitarDueno, otroLinkDeDueno, quitarDueno,
   type EstadoInvitar, type ResultadoActivar,
 } from '@/app/actions/plataforma'
-import type { DuenoDelLocal, ResumenLocal } from '@/lib/plataforma-datos'
+import { cuantoLeQueda, diaYMes, type DuenoDelLocal, type ResumenLocal } from '@/lib/plataforma-datos'
 import { Spinner } from '@/components/ui/Spinner'
 
 const inputCls = 'w-full bg-zinc-900 border border-zinc-800 text-white rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-amber-500/20'
@@ -231,18 +231,35 @@ export function Activar({ slug, faltan, turnosDePrueba }: { slug: string; faltan
 
 const CAMBIOS: Record<ResumenLocal['estado'], { a: ResumenLocal['estado']; texto: string; explicacion: string; soloAdmin: boolean }[]> = {
   demo: [{ a: 'archivado', texto: 'Archivar la muestra', explicacion: 'Si no se vendió. El link deja de andar; se puede revivir cuando quieras.', soloAdmin: false }],
-  archivado: [{ a: 'demo', texto: 'Revivir la muestra', explicacion: 'Vuelve a ser una muestra, con todo lo que tenía.', soloAdmin: false }],
+  archivado: [{ a: 'demo', texto: 'Revivir la muestra', explicacion: 'Vuelve a ser una muestra, con todo lo que tenía, por 30 días.', soloAdmin: false }],
   activo: [{ a: 'suspendido', texto: 'Suspender', explicacion: 'Si dejó de pagar: su página deja de tomar reservas. Él sigue entrando a su panel.', soloAdmin: true }],
   suspendido: [{ a: 'activo', texto: 'Reactivar', explicacion: 'Su página vuelve a tomar reservas.', soloAdmin: true }],
 }
 
-export function CambiarEstado({ slug, estado, esAdmin }: { slug: string; estado: ResumenLocal['estado']; esAdmin: boolean }) {
+export function CambiarEstado({ slug, estado, esAdmin, muestraHasta }: { slug: string; estado: ResumenLocal['estado']; esAdmin: boolean; muestraHasta: string | null }) {
+  const router = useRouter()
   const [error, setError] = useState('')
   const [pendiente, startTransition] = useTransition()
   const opciones = CAMBIOS[estado]
 
   return (
     <div className="flex flex-col gap-3">
+      {estado === 'demo' && muestraHasta && (
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+          <button
+            type="button"
+            disabled={pendiente}
+            onClick={() => startTransition(async () => setError((await extenderMuestra(conLocal(slug))).error ?? ''))}
+            className={`${botonSecundarioCls} shrink-0`}
+          >
+            {pendiente && <Spinner className="h-4 w-4" />}
+            Sumar 30 días
+          </button>
+          <p className="text-xs text-zinc-500">
+            Se archiva sola el {diaYMes(muestraHasta)} ({cuantoLeQueda(muestraHasta)}) si nadie la extiende.
+          </p>
+        </div>
+      )}
       {opciones.map((o) => (
         o.soloAdmin && !esAdmin ? (
           <p key={o.a} className="text-sm text-zinc-400">{o.texto}: lo hace solo el admin.</p>
@@ -253,7 +270,12 @@ export function CambiarEstado({ slug, estado, esAdmin }: { slug: string; estado:
               disabled={pendiente}
               onClick={() => {
                 if (!window.confirm(`${o.texto}: ¿seguro?`)) return
-                startTransition(async () => setError((await cambiarEstadoLocal(conLocal(slug, { estado: o.a }))).error ?? ''))
+                startTransition(async () => {
+                  const r = await cambiarEstadoLocal(conLocal(slug, { estado: o.a }))
+                  setError(r.error ?? '')
+                  // Sin el "?nueva" de cuando se creó: el aviso pasa a ser el del cambio.
+                  if (!r.error) router.replace(`/plataforma/${slug}?cambio=${o.a}`)
+                })
               }}
               className={`${botonSecundarioCls} shrink-0`}
             >

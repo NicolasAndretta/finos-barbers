@@ -1411,3 +1411,85 @@ local; no había ninguna forma de cambiar los datos de un local sin tocar la bas
   muestras: si no, podría hacerse dueña de un local activo y ver lo privado.
 - El link de invitación lo ve quien invita (así se manda por WhatsApp, con el dueño al lado). Con
   el dominio del producto se puede sumar el mail.
+
+### Los dos pases a producción, hechos (26/10/2026)
+
+- **Fases 1 a 5:** copia antes (`respaldos/2026-10-26_15-20-23_produccion`), las migraciones
+  en tandas según `PASE-A-PRODUCCION.md`, el código publicado y la copia después
+  (`respaldos/2026-10-26_21-46-58_produccion`). Comparadas: no se perdió ninguna fila; turnos
+  pasó de 8 a 10 (las dos reservas de prueba de Nico, canceladas) y aparecieron las tablas
+  nuevas. La estructura de producción quedó igual a la de desarrollo menos la `0014`.
+- **Fase 6:** la `0014` y el código (`main` en `38afaaf`). Revisado: cartel de Muestra y
+  `noindex` en Roble, `/plataforma` con la cuenta de Nico, una muestra de prueba (`prueba-pase`)
+  creada con su plantilla y archivada (el link dice "Esta página ya no está disponible"), y 369
+  igual (fotos, `index`, `/api/health`).
+- `MERCADOPAGO_ACCESS_TOKEN` borrado del hPanel.
+
+**Encontrado en producción, para la próxima tanda:**
+- Después de archivar, la ficha sigue mostrando "¡Muestra creada!" (el aviso depende de `?nueva`
+  en la dirección, no del estado). Nico tocó Archivar dos veces creyendo que no había andado.
+- Una muestra sin dirección muestra "Dónde estamos" vacío y el recuadro del mapa en blanco; y
+  ofrece Mercado Pago aunque no tenga uno conectado.
+- Lentitud: hasta que llega la primera respuesta, 369 tarda 0,5 s, `/roble` 0,7 s y una
+  muestra nueva 1,8 s. Cada página lee todo de la base en cada visita.
+
+**Respuestas de Nico (26/10):** borrar lo que no sirve (las columnas `locales.horarios`,
+`profiles.role` y `profiles.barbero_id`, después de los pases); la plantilla de barbería, con el
+combo a 24.000; las muestras se archivan a mano **y** solas a los 30 días; 369 no se toca (más
+adelante va a su propia base).
+
+### Fase 7 — Los planes: propuesta v2 (29/10/2026, SIN APROBAR)
+
+Discutida por Nico con Claude y con ChatGPT. Falta el OK de Nico a la tabla y al alcance de la
+reserva sin cuenta.
+
+**Mercado:** barberías primero (Roble es la demo). Peluquería, uñas, pestañas y estética ya
+tienen plantilla, pero no son la prioridad de venta.
+
+| | **Básico** · u$s 19 | **Pro** · u$s 35 | **Premium** · u$s 59 |
+|---|:-:|:-:|:-:|
+| Página del local y reserva online | ✓ | ✓ | ✓ |
+| Horarios, horario cortado, feriados, licencias | ✓ | ✓ | ✓ |
+| Horario propio de cada profesional | ✓ | ✓ | ✓ |
+| Panel: turnos y calendario | ✓ | ✓ | ✓ |
+| Exportar sus datos | ✓ (nuevo) | ✓ | ✓ |
+| Profesionales activos | hasta 2 | hasta 5 | sin límite |
+| Cuenta propia de cada profesional, con su agenda | — | ✓ | ✓ |
+| Seña con Mercado Pago (a la cuenta del local) | — | ✓ | ✓ |
+| Reseñas verificadas (de turnos reales) | — | ✓ (nuevo) | ✓ |
+| Reportes: turnos, cancelaciones, ausentes | — | ✓ (nuevo) | ✓ |
+| Tienda (productos, categorías) | — | — | ✓ |
+| Finanzas: caja e ingresos | — | — | ✓ |
+
+Los precios son la hipótesis del 14/10 (la competencia en Argentina va de USD 5 a 30): se
+validan con los primeros locales. Recordatorios por WhatsApp: fuera de los planes hasta saber
+cuánto cuesta cada mensaje; después, un agregado.
+
+**Reglas:**
+- El plan va **en la base**, como el resto de los permisos: un local Básico no puede sumar un
+  tercer profesional aunque llame directo a la base. La pantalla solo muestra lo que el plan
+  permite.
+- Los límites cuentan lo **activo**, no lo histórico. El dueño no ocupa lugar de profesional (ya
+  es así: ser dueño y ser barbero son membresías distintas).
+- **Bajar de plan no borra nada:** se esconde la función, no deja crear más de lo que permite el
+  plan nuevo, y el dueño elige qué profesionales siguen activos. Los datos de la tienda y las
+  finanzas quedan guardados.
+- **Las reseñas:** hoy las carga el dueño a mano (`adminCrearResena`), así que cualquiera puede
+  inventarlas. Pasan a salir de un cliente con un turno que ya pasó; el dueño solo puede
+  ocultarlas. Las cargadas a mano se marcan o se ocultan.
+- La demo (Roble) se puede mostrar en cada plan con un interruptor (pedido de Nico, Fase 3b).
+
+**Reservar sin cuenta (cambio aparte dentro de la Fase 7), propuesta:**
+- El cliente reserva con nombre, WhatsApp y mail, sin contraseña. Si tiene cuenta, la usa igual.
+- Queda confirmado al instante. Le llega un mail con un link propio del turno para ver o
+  cancelar; el link guarda solo su huella en la base y deja de andar cuando pasa el turno.
+- Contra el abuso: un turno no pisa a otro (ya existe), un máximo de turnos futuros por mail o
+  WhatsApp en cada local, un tope por conexión, y la seña (en el Pro) como el filtro más fuerte.
+- Como todo lo demás, entra por una función de la base que controla todo eso, nunca escribiendo
+  directo en la tabla.
+- ⚠️ **Depende del dominio del producto:** sin un dominio verificado en Resend los mails no
+  llegan, y sin mail el cliente no tiene cómo cancelar. Primero el nombre y el `.com.ar`.
+
+**Lo que no existe y la propuesta suma:** reportes, reseñas verificadas, exportar datos,
+reservar sin cuenta. **Fuera de la Fase 7:** WhatsApp, cobro del abono (Fase 8), gastos, una
+ficha por cliente, política de cancelación configurable, diseño propio por local (color y logo).

@@ -15,11 +15,19 @@ import { PRODUCTO } from '@/lib/producto'
 import { EstadoLocal } from '@/components/plataforma/Insignias'
 import { Activar, CambiarEstado, CompartirLink, Duenos } from './Acciones'
 
-type Props = { params: Promise<{ slug: string }>; searchParams: Promise<{ nueva?: string; activado?: string }> }
+type Props = { params: Promise<{ slug: string }>; searchParams: Promise<{ nueva?: string; activado?: string; cambio?: string }> }
+
+/** Lo que se avisa después de cambiar el estado desde "Estado" (más abajo). */
+const AVISO_DEL_CAMBIO: Record<string, string> = {
+  archivado: 'Archivada. El link ya no anda: muestra "Esta página ya no está disponible". La podés revivir cuando quieras.',
+  demo: 'Revivida: el link vuelve a andar, con todo lo que tenía, por 30 días más.',
+  suspendido: 'Suspendido: su página dejó de tomar reservas. Él sigue entrando a su panel.',
+  activo: 'Reactivado: su página vuelve a tomar reservas.',
+}
 
 export default async function FichaDelLocal({ params, searchParams }: Props) {
   const { slug } = await params
-  const { nueva, activado } = await searchParams
+  const { nueva, activado, cambio } = await searchParams
   const { rol } = await requireEquipo(`/plataforma/${slug}`)
   const local = (await getResumenLocales()).find((l) => l.slug === slug)
   if (!local) notFound()
@@ -51,9 +59,15 @@ export default async function FichaDelLocal({ params, searchParams }: Props) {
         </div>
       </div>
 
-      {nueva && (
+      {nueva && local.estado === 'demo' && !cambio && (
         <p role="status" className="text-sm rounded-lg px-4 py-3 border text-emerald-400 bg-emerald-500/10 border-emerald-500/20">
           ¡Muestra creada! Ya se puede mostrar. Revisá precios y nombres desde su panel cuando quieras.
+        </p>
+      )}
+
+      {cambio === local.estado && AVISO_DEL_CAMBIO[local.estado] && (
+        <p role="status" className="text-sm rounded-lg px-4 py-3 border text-emerald-400 bg-emerald-500/10 border-emerald-500/20">
+          {AVISO_DEL_CAMBIO[local.estado]}
         </p>
       )}
 
@@ -102,7 +116,7 @@ export default async function FichaDelLocal({ params, searchParams }: Props) {
         {esLaDelProducto ? (
           <p className="text-sm text-zinc-400">Es la muestra del producto (la dirección sola lleva acá): no se activa ni se archiva.</p>
         ) : (
-          <CambiarEstado slug={local.slug} estado={local.estado} esAdmin={rol === 'admin'} />
+          <CambiarEstado slug={local.slug} estado={local.estado} esAdmin={rol === 'admin'} muestraHasta={local.muestraHasta} />
         )}
       </Seccion>
     </>

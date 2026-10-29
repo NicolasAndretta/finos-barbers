@@ -213,3 +213,13 @@ export async function cambiarEstadoLocal(formData: FormData): Promise<{ error?: 
   refrescarTodo()
   return {}
 }
+
+/** Le suma 30 días a una muestra antes de que se archive sola (migración 0015). */
+export async function extenderMuestra(formData: FormData): Promise<{ error?: string }> {
+  const local = await localDeAccion(formData.get('local'))
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('extender_muestra', { p_local: local.id })
+  if (error) return { error: error.message }
+  refrescarTodo()
+  return {}
+}

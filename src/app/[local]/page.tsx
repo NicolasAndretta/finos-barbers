@@ -473,7 +473,7 @@ export default async function HomePage({ params }: { params: Promise<{ local: st
           id="ubicacion"
           className="w-full bg-wood-texture border-t border-white/5 scroll-mt-20"
         >
-          <div className="mx-auto max-w-6xl px-6 py-20 grid md:grid-cols-2 gap-10 items-start">
+          <div className={`mx-auto max-w-6xl px-6 py-20 grid gap-10 items-start ${local.mapaQuery ? "md:grid-cols-2" : ""}`}>
             <div>
               <p className="text-amber-400 text-xs font-semibold tracking-[0.2em] uppercase mb-3">
                 Visitanos
@@ -482,12 +482,14 @@ export default async function HomePage({ params }: { params: Promise<{ local: st
                 Dónde estamos
               </h2>
               <div className="space-y-4 text-sm">
-                <p className="text-zinc-300">
-                  <span className="text-zinc-500 block text-xs uppercase tracking-wide mb-0.5">
-                    Dirección
-                  </span>
-                  {[local.direccion, local.ciudad].filter(Boolean).join(" — ")}
-                </p>
+                {(local.direccion || local.ciudad) && (
+                  <p className="text-zinc-300">
+                    <span className="text-zinc-500 block text-xs uppercase tracking-wide mb-0.5">
+                      Dirección
+                    </span>
+                    {[local.direccion, local.ciudad].filter(Boolean).join(" — ")}
+                  </p>
+                )}
                 <div className="text-zinc-300">
                   <span className="text-zinc-500 block text-xs uppercase tracking-wide mb-1">
                     Horarios
@@ -505,14 +507,18 @@ export default async function HomePage({ params }: { params: Promise<{ local: st
                     </div>
                   ))}
                 </div>
-                <p className="text-zinc-300">
-                  <span className="text-zinc-500 block text-xs uppercase tracking-wide mb-0.5">
-                    Medios de pago
-                  </span>
-                  {local.mediosPago.join(" · ")}
-                </p>
+                {local.mediosPago.length > 0 && (
+                  <p className="text-zinc-300">
+                    <span className="text-zinc-500 block text-xs uppercase tracking-wide mb-0.5">
+                      Medios de pago
+                    </span>
+                    {local.mediosPago.join(" · ")}
+                  </p>
+                )}
               </div>
-              <div className="flex gap-3 mt-7">
+              {(local.whatsapp || local.instagram) && (
+              <div className="flex flex-wrap gap-3 mt-7">
+                {local.whatsapp && (
                 <a
                   href={whatsappLink(local)}
                   target="_blank"
@@ -521,6 +527,7 @@ export default async function HomePage({ params }: { params: Promise<{ local: st
                 >
                   Escribinos
                 </a>
+                )}
                 {local.instagram && (
                   <a
                     href={local.instagramUrl}
@@ -532,7 +539,9 @@ export default async function HomePage({ params }: { params: Promise<{ local: st
                   </a>
                 )}
               </div>
+              )}
             </div>
+            {local.mapaQuery && (
             <div className="relative aspect-[4/3] rounded-2xl overflow-hidden border border-white/10">
               <iframe
                 title={`Ubicación de ${local.nombre}`}
@@ -544,6 +553,7 @@ export default async function HomePage({ params }: { params: Promise<{ local: st
                 referrerPolicy="no-referrer-when-downgrade"
               />
             </div>
+            )}
           </div>
         </section>
       </main>
@@ -557,10 +567,21 @@ export default async function HomePage({ params }: { params: Promise<{ local: st
               {local.descripcion}
             </p>
           </div>
+          {(local.direccion || local.whatsapp || local.email || local.instagram || local.tiktok) && (
           <div className="text-sm">
             <p className="text-white font-semibold mb-3">Contacto</p>
             <div className="space-y-2 text-zinc-400">
               {local.direccion && <p>{local.direccion}</p>}
+              {local.whatsapp && (
+                <a
+                  href={whatsappLink(local)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block hover:text-white transition-colors"
+                >
+                  WhatsApp {local.whatsappMostrar}
+                </a>
+              )}
               {local.email && <p>{local.email}</p>}
               {local.instagram && (
                 <a
@@ -584,6 +605,7 @@ export default async function HomePage({ params }: { params: Promise<{ local: st
               )}
             </div>
           </div>
+          )}
           <div className="text-sm">
             <p className="text-white font-semibold mb-3">Accesos</p>
             <div className="space-y-2 text-zinc-400">

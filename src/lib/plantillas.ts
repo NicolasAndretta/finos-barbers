@@ -16,9 +16,9 @@ export type ServicioDePlantilla = { nombre: string; descripcion: string; precio:
 
 export const PLANTILLAS: Record<Rubro, ServicioDePlantilla[]> = {
   barberia: [
-    { nombre: 'Corte', descripcion: 'Corte a tijera o máquina, con lavado', precio: 12000, duracion: 30 },
-    { nombre: 'Barba', descripcion: 'Perfilado y afeitado con toalla caliente', precio: 8000, duracion: 20 },
-    { nombre: 'Corte + barba', descripcion: 'El combo completo', precio: 18000, duracion: 50 },
+    { nombre: 'Corte', descripcion: 'Corte a tijera o máquina, con lavado', precio: 16000, duracion: 30 },
+    { nombre: 'Barba', descripcion: 'Perfilado y afeitado con toalla caliente', precio: 11000, duracion: 20 },
+    { nombre: 'Corte + barba', descripcion: 'El combo completo', precio: 24000, duracion: 50 },
   ],
   peluqueria: [
     { nombre: 'Corte', descripcion: 'Corte con lavado y secado', precio: 15000, duracion: 45 },

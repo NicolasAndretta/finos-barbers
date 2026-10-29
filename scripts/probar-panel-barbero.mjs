@@ -132,11 +132,12 @@ try {
     await p.getByRole('button', { name: 'Crear cuenta', exact: true }).click()
     await p.getByText(`Tiene cuenta: ${emailBeto}`).waitFor({ timeout: 30_000 })
     anotar(true, 'el panel muestra que Beto ya tiene cuenta, con su mail')
-    const cuenta = await uno(`select u.id, p.role, p.barbero_id from auth.users u join public.profiles p on p.id = u.id where u.email = $1`, [emailBeto])
+    const cuenta = await uno(`select u.id, (select count(*)::int from public.equipo e where e.user_id = u.id) as equipo
+                                from auth.users u join public.profiles p on p.id = u.id where u.email = $1`, [emailBeto])
     if (cuenta) cuentas.push(cuenta.id)
     const membresia = cuenta && await uno(`select local_id, barbero_id from public.membresias where user_id = $1 and rol = 'barbero'`, [cuenta.id])
     anotar(membresia?.local_id === localB && membresia?.barbero_id === beto, 'quedó como barbero de ESTE local, con la agenda de Beto (su membresía)')
-    anotar(cuenta?.role === 'client' && cuenta?.barbero_id === null, 'y su perfil, que es de toda la plataforma, no cambió de rol')
+    anotar(cuenta?.equipo === 0, 'y no es nada en la plataforma: solo barbero de este local')
     await p.context().close()
   }
 

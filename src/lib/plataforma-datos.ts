@@ -10,7 +10,7 @@ export type RolEquipo = 'admin' | 'comercial'
 
 export type DuenoDelLocal = { id: string; email: string; nombre: string; entro: boolean }
 
-/** Una fila de `resumen_de_locales()` (migración 0014), con la forma que usa la web. */
+/** Una fila de `resumen_de_locales()` (migraciones 0014 y 0015), con la forma que usa la web. */
 export type ResumenLocal = {
   id: string
   slug: string
@@ -31,6 +31,21 @@ export type ResumenLocal = {
   mpConectado: boolean
   /** Solo en las muestras. */
   turnosDePrueba: number | null
+  /** Hasta cuándo dura la muestra (después se archiva sola). null: no vence (Roble) o no es muestra. */
+  muestraHasta: string | null
+}
+
+/** "en 12 días" / "mañana" / "hoy": cuánto le queda a una muestra. */
+export function cuantoLeQueda(hasta: string, ahora: number = Date.now()): string {
+  const dias = Math.ceil((new Date(hasta).getTime() - ahora) / 86_400_000)
+  if (dias <= 0) return 'hoy'
+  if (dias === 1) return 'mañana'
+  return `en ${dias} días`
+}
+
+/** La fecha en Argentina: "28/11". */
+export function diaYMes(fecha: string): string {
+  return new Date(fecha).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', timeZone: 'America/Argentina/Buenos_Aires' })
 }
 
 /** Lo que le falta a un local para activarlo (lo obligatorio y lo recomendado). */
