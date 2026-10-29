@@ -2,8 +2,9 @@
 
 /**
  * Panel → Datos del local (Fase 6). Lo que la web muestra del negocio: nombre,
- * lema, dirección, WhatsApp, redes, seña y medios de pago. Lo guardan el dueño
- * y el equipo (la acción y la base revisan el permiso).
+ * lema, dirección, WhatsApp, redes, seña y medios de pago, y su marca (0017: el
+ * color de acento y el logo). Lo guardan el dueño y el equipo (la acción y la
+ * base revisan el permiso).
  *
  * Los valores de arranque salen del local de la página (LocalProvider). Dos
  * campos tienen un valor "de relleno" cuando están vacíos (el nombre corto usa
@@ -11,12 +12,14 @@
  * relleno, el campo arranca vacío, así no se guarda como si lo hubieran escrito.
  */
 
-import React, { useActionState } from 'react'
+import React, { useActionState, useState } from 'react'
 import Link from 'next/link'
 import { useLocal } from '@/components/local/LocalProvider'
 import { Spinner } from '@/components/ui/Spinner'
 import { guardarDatosDelLocal, type EstadoDatosLocal } from '@/app/actions/local'
 import { MEDIOS_DE_PAGO, rutaLocal } from '@/lib/local-datos'
+import { ACENTOS, type Acento } from '@/lib/acentos'
+import { ImageUploadField } from '@/components/ui/ImageUploadField'
 
 const inputCls = 'w-full bg-zinc-900 border border-zinc-800 text-white rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-amber-500/20'
 const etiquetaCls = 'block text-xs font-semibold text-zinc-400 mb-1.5'
@@ -25,6 +28,7 @@ export default function DatosDelLocalPage() {
   const local = useLocal()
   const [estado, guardar, pendiente] = useActionState<EstadoDatosLocal, FormData>(guardarDatosDelLocal, {})
   const mensajeDeRelleno = `¡Hola ${local.nombreCorto}! Quería hacer una consulta / reservar un turno.`
+  const [logo, setLogo] = useState(local.logoUrl)
 
   return (
     <div className="w-full flex flex-col gap-8">
@@ -48,6 +52,26 @@ export default function DatosDelLocalPage() {
           <div className="sm:col-span-2">
             <label className={etiquetaCls} htmlFor="descripcion">Descripción (para Google y los links compartidos)</label>
             <textarea id="descripcion" name="descripcion" defaultValue={local.descripcion} maxLength={600} rows={3} className={inputCls} />
+          </div>
+        </Seccion>
+
+        <Seccion titulo="Tu marca">
+          <fieldset className="sm:col-span-2">
+            <legend className={etiquetaCls}>El color de tu página y de tu panel</legend>
+            <div className="flex flex-wrap gap-2">
+              {(Object.keys(ACENTOS) as Acento[]).map((a) => (
+                <label key={a} className="inline-flex items-center gap-2 bg-zinc-900 border border-zinc-800 has-[:checked]:border-white has-[:checked]:bg-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-200 cursor-pointer">
+                  <input type="radio" name="acento" value={a} defaultChecked={local.acento === a} className="sr-only" />
+                  <span aria-hidden className="w-4 h-4 rounded-full border border-white/20" style={{ background: ACENTOS[a].tonos[4] }} />
+                  {ACENTOS[a].nombre}
+                </label>
+              ))}
+            </div>
+          </fieldset>
+          <div className="sm:col-span-2">
+            <ImageUploadField label="Tu logo (si no subís uno, va tu nombre dibujado)" value={logo} onChange={setLogo} transparencia />
+            <input type="hidden" name="logo_url" value={logo} />
+            <p className="text-xs text-zinc-500 mt-1.5">Mejor un PNG con fondo transparente y en claro: la página es oscura.</p>
           </div>
         </Seccion>
 

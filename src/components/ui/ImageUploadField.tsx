@@ -21,10 +21,13 @@ export function ImageUploadField({
   value,
   onChange,
   label = 'Imagen',
+  transparencia = false,
 }: {
   value: string
   onChange: (url: string) => void
   label?: string
+  /** Para un logo: no pierde lo transparente al achicarse (lib/image-client.ts). */
+  transparencia?: boolean
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
   // Las fotos van a la carpeta del local del panel.
@@ -38,7 +41,7 @@ export function ImageUploadField({
     setError(null)
     try {
       setEstado('preparando')
-      const lista = await prepararFoto(file)
+      const lista = await prepararFoto(file, { transparencia })
       setEstado('subiendo')
       const fd = new FormData()
       fd.append('local', local.slug)

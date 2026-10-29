@@ -22,7 +22,7 @@ const PROYECTO = resolve(import.meta.dirname, '..')
 const APP = (process.env.APP_URL || 'http://127.0.0.1:3000').replace(/\/+$/, '')
 
 const DE_LA_BASE = ['verificar-locales', 'verificar-llave-servidor', 'probar-seguridad', 'probar-aislamiento', 'probar-matriz']
-const DE_NAVEGADOR = ['probar-reservas', 'probar-locales', 'probar-horarios', 'probar-imagenes', 'probar-panel-barbero', 'probar-plataforma', 'probar-planes', 'probar-cobros']
+const DE_NAVEGADOR = ['probar-reservas', 'probar-locales', 'probar-horarios', 'probar-imagenes', 'probar-panel-barbero', 'probar-plataforma', 'probar-planes', 'probar-marca', 'probar-cobros']
 
 const appAnda = await fetch(`${APP}/roble`, { signal: AbortSignal.timeout(10_000) }).then((r) => r.ok).catch(() => false)
 

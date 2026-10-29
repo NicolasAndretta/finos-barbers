@@ -195,6 +195,7 @@ Después de cada cambio en producción:
 | 6 | Alta de barberías desde el panel (demo → activo), ver la sección de abajo | ✅ Hecha en desarrollo el 26/10/2026, aprobada de antemano por Nico. **No va en el pase de las Fases 1 a 5**: va en un pase siguiente (la `0014` y el código) |
 | 6b | Arreglos de lo que se vio en producción: muestras que vencen, avisos, velocidad | ✅ Hecha en desarrollo el 29/10/2026, con vía libre de Nico. Pase: `docs/PASE-FASE-6B.md` |
 | 7 | Los planes (Básico, Pro, Premium) en la base: límites, candados, panel según el plan; reseñas verificadas, reportes, exportar | ✅ Hecha en desarrollo el 29/10/2026, aprobada de antemano por Nico. Pase: `docs/PASE-FASE-7.md` (después del de la 6b) |
+| Marca | El color de acento y el logo de cada local; un cliente ya no cancela un turno que pasó | ✅ Hecha en desarrollo el 29/10/2026, **sin aprobar** (propuesta, para que Nico la vea). Pase: `docs/PASE-MARCA.md` (después del de la 7) |
 | 7b | Reservar sin cuenta (aprobada el 29/10) | ⏳ Necesita el dominio del producto: sin mails, el cliente no tiene cómo cancelar |
 | 8 | Cobro automático del abono (suscripciones de Mercado Pago) | ⏳ Propuesta; por ahora se cobra a mano |
 
@@ -1699,3 +1700,39 @@ Lo que se construye, sobre la tabla v2 aprobada:
 
 **Para producción:** `docs/PASE-FASE-7.md`, después del de la 6b. La `0016` convive con el
 código de la 6b: va primero, y después el código.
+
+### La marca de cada local, hecha en desarrollo (29/10/2026, SIN APROBAR)
+
+Nico preguntó el 29/10 si el diseño iba a ser el mismo para todos. Queda armado, para que lo vea
+antes de decidir si va:
+- **El color de acento** de su página y de su panel, de una **paleta curada de 6**: madera (la
+  de siempre), dorado, verde, azul, rojo y violeta. Curada a propósito: sobre el fondo oscuro, un
+  color libre puede quedar ilegible. Se elige en "Datos del local", en la sección nueva "Tu marca".
+- **Su logo:** se sube ahí mismo, como las fotos (a la carpeta del local). Si no hay, va el nombre
+  dibujado como siempre. El logo **no pierde lo transparente** (antes las fotos se pasaban a JPEG
+  en el navegador: un PNG transparente habría quedado sobre fondo negro).
+- **En todos los planes** (decisión mía, cambiable): es parte de la página propia.
+
+**Cómo anda:** todo el sitio pinta sus acentos con las clases `amber-*`. Su escala pasó a un
+`@theme` sin "inline" en `globals.css`, así las clases usan variables. Cada local redefine las 11
+variables con su color, desde su layout. Sin color propio se ve exactamente igual que antes. La
+base solo acepta los 6 de la paleta (`0017`).
+
+**Y un arreglo:** un cliente podía "Cancelar" un turno que ya pasó (contaba como cancelado en los
+reportes). Ahora no aparece el botón, y la acción tampoco lo deja.
+
+**Las pruebas:**
+- Nueva, `probar-marca` (10 controles):
+  - en el celu, el dueño elige verde y sube un logo PNG transparente;
+  - se guardan, el logo en la carpeta del local y con lo transparente intacto;
+  - su portada y su panel quedan en verde, con su logo arriba;
+  - Roble sigue en madera con su nombre dibujado;
+  - un color fuera de la paleta no entra, ni "a mano".
+- `probar-planes` suma "Cancelar solo en el turno que todavía no pasó".
+- Contraprueba: se sacó la regla de la paleta de la base, y `probar-marca` marcó "fuera de la
+  paleta". Restaurada.
+- **`npm run probar`: 14 pruebas, 641 controles, todo en verde.**
+
+**Para Nico:** mirá `_e2e_shots/marca-portada.png` y `marca-datos-celu.png` (una muestra en
+verde, con un logo de prueba). Si va, el pase es `docs/PASE-MARCA.md`, después del de la Fase 7.
+Si no, no se publica y listo: la rama fija de la Fase 7 no la tiene.

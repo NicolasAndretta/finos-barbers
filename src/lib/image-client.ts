@@ -96,8 +96,12 @@ function medidas(src: ImageBitmap | HTMLImageElement): { w: number; h: number } 
 /**
  * Valida y achica una foto elegida en el panel. Devuelve el archivo listo para
  * subir, o tira `ImagenInvalida` con un mensaje que se puede mostrar tal cual.
+ *
+ * `transparencia` (para los logos, 0017): se achica en WebP (o PNG, si el
+ * navegador no sabe WebP), que guardan lo transparente. En JPEG, un logo con
+ * fondo transparente quedaría sobre un fondo negro.
  */
-export async function prepararFoto(original: File): Promise<File> {
+export async function prepararFoto(original: File, { transparencia = false }: { transparencia?: boolean } = {}): Promise<File> {
   if (original.size === 0) {
     throw new ImagenInvalida("El archivo está vacío. Probá elegirlo de nuevo.");
   }
@@ -152,7 +156,7 @@ export async function prepararFoto(original: File): Promise<File> {
   if (fuente instanceof ImageBitmap) fuente.close();
 
   const aBlob = (calidad: number) =>
-    new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", calidad));
+    new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, transparencia ? "image/webp" : "image/jpeg", calidad));
 
   let blob = await aBlob(CALIDAD);
   // Red de seguridad: si aun achicada sigue pesando (fotos con mucho detalle),
@@ -168,5 +172,7 @@ export async function prepararFoto(original: File): Promise<File> {
   // El canvas ya aplicó la orientación, así que el archivo sale derecho y sin
   // metadatos (también sin la ubicación GPS de la foto). El servidor igual los
   // vuelve a sacar: no confía en que esto haya corrido.
-  return new File([blob], `foto-${Date.now()}.jpg`, { type: "image/jpeg", lastModified: Date.now() });
+  const tipo = blob.type || "image/jpeg";
+  const extension = tipo === "image/webp" ? "webp" : tipo === "image/png" ? "png" : "jpg";
+  return new File([blob], `foto-${Date.now()}.${extension}`, { type: tipo, lastModified: Date.now() });
 }

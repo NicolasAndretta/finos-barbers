@@ -12,6 +12,7 @@
  */
 
 import { palabrasDe, type Palabras } from '@/lib/rubros'
+import { esAcento, type Acento } from '@/lib/acentos'
 
 /** Lo que trae un plan (Fase 7). Sale de la tabla `planes` de la base: acá no se copia. */
 export type Capacidad = 'cuentasProfesionales' | 'senas' | 'resenas' | 'reportes' | 'tienda' | 'finanzas' | 'exportar'
@@ -59,6 +60,10 @@ export type LocalPublico = {
   zonaHoraria: string
   /** Su plan y qué trae (Fase 7). La base es la que pone los candados; esto es para mostrar. */
   plan: PlanDelLocal
+  /** Su color de acento (0017), de la paleta curada. Madera: el de siempre. */
+  acento: Acento
+  /** Su logo como imagen (0017). Vacío: el nombre dibujado. */
+  logoUrl: string
 }
 
 /** Una fila de `datos_del_local(slug)` (migración 0008), tal como llega. */
@@ -72,6 +77,7 @@ export type FilaLocal = {
   plan: PlanDelLocal['codigo']; plan_nombre: string; max_profesionales: number | null
   cuentas_profesionales: boolean; senas: boolean; resenas: boolean; reportes: boolean
   tienda: boolean; finanzas: boolean; exportar: boolean
+  acento: string | null; logo_url: string | null
 }
 
 /** "5491157641147" → "+54 9 11 5764-1147". Si no reconoce la forma, lo deja con "+". */
@@ -123,6 +129,8 @@ export function aLocalPublico(f: FilaLocal): LocalPublico {
       finanzas: f.finanzas,
       exportar: f.exportar,
     },
+    acento: esAcento(f.acento) ? f.acento : 'madera',
+    logoUrl: f.logo_url ?? '',
   }
 }
 

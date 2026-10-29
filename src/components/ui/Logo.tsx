@@ -24,19 +24,36 @@ type LogoProps = {
  * No hay archivo de marca en `public/`: el nombre sale de la base, así que
  * cada local tiene su logo sin hacer nada. El texto usa `textLength` para
  * ocupar siempre el mismo ancho, así que no se descuadra mientras carga la
- * tipografía. (El logo propio de cada local, como imagen, llega en la Fase 4.)
+ * tipografía. Si el local subió su logo (0017), se muestra esa imagen, del
+ * mismo alto.
  */
 export function Logo({
   size = 40,
   variant = "white",
   className = "",
 }: LogoProps) {
+  // "wood" sigue el acento del local (0017): madera, salvo que elija otro. Va
+  // como currentColor (los atributos de SVG no aceptan var() en todos lados).
   const color =
-    variant === "black" ? "#0a0a0a" : variant === "wood" ? "#c79c64" : "#ffffff";
+    variant === "black" ? "#0a0a0a" : variant === "wood" ? "currentColor" : "#ffffff";
   const local = useLocalOpcional();
   const nombre = (local?.nombreCorto ?? PRODUCTO.nombre).toUpperCase();
   const etiqueta = (local?.palabras.negocio ?? "Reservas").toUpperCase();
   const nombreCompleto = local?.nombre ?? PRODUCTO.nombre;
+
+  if (local?.logoUrl) {
+    return (
+      // Una imagen subida al Storage del local: no pasa por next/image (no
+      // hace falta achicarla, ya se achica al subirla).
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={local.logoUrl}
+        alt={nombreCompleto}
+        className={`select-none object-contain ${className}`}
+        style={{ height: size, width: "auto", maxWidth: size * 3.2 }}
+      />
+    );
+  }
 
   return (
     <svg
@@ -44,7 +61,7 @@ export function Logo({
       role="img"
       aria-label={nombreCompleto}
       className={`select-none ${className}`}
-      style={{ height: size, width: "auto" }}
+      style={{ height: size, width: "auto", ...(variant === "wood" ? { color: "var(--color-amber-400)" } : {}) }}
       fill="none"
     >
       {/* Filete superior: el rubro (BARBERÍA, UÑAS...) entre dos reglas */}

@@ -22,6 +22,7 @@ import { LocalProvider } from '@/components/local/LocalProvider'
 import { PwaInstallPrompt } from '@/components/ui/PwaInstallPrompt'
 import { CartelMuestra } from '@/components/local/CartelMuestra'
 import { PRODUCTO } from '@/lib/producto'
+import { cssDelAcento } from '@/lib/acentos'
 
 type Props = { children: React.ReactNode; params: Promise<{ local: string }> }
 
@@ -49,8 +50,14 @@ export default async function LocalLayout({ children, params }: Props) {
     if (!permisos.editaCatalogo) return <LocalNoDisponible nombre={local.nombre} estado={local.estado} />
   }
 
+  // Su color de acento (0017): redefine las 11 variables de la escala de
+  // acentos. Va en un <style> dentro de este layout (no "hoisted"): al salir del
+  // local, se va con él. El texto sale de la paleta curada, no de lo que se cargó.
+  const acento = cssDelAcento(local.acento)
+
   return (
     <LocalProvider local={local}>
+      {acento && <style dangerouslySetInnerHTML={{ __html: acento }} />}
       <CartelMuestra />
       {children}
       <PwaInstallPrompt />

@@ -368,6 +368,13 @@ export async function cancelarTurno(turnoId: string, slug?: string) {
   if (getErr || !turno) return { error: 'Turno no encontrado' }
   if (turno.cliente_id !== profile.id) return { error: 'No autorizado' }
   if (turno.estado === 'cancelado') return { error: 'El turno ya está cancelado' }
+  // Un turno que ya pasó no se cancela (contaría como cancelado en los reportes
+  // del local). La hora, en la zona del local.
+  const delTurno = slug ? await getLocal(slug) : null
+  const ahora = ahoraEnZona(delTurno && delTurno.id === turno.local_id ? delTurno.zonaHoraria : 'America/Argentina/Buenos_Aires')
+  if (turno.fecha < ahora.fecha || (turno.fecha === ahora.fecha && aMinutos(turno.hora) <= ahora.minutos)) {
+    return { error: 'Ese turno ya pasó: no se puede cancelar.' }
+  }
 
   // 2. Actualizar estado
   const { error: updErr } = await supabase

@@ -36,6 +36,8 @@ export function TurnoCard({ turno }: { turno: Turno }) {
   const [hh, mm] = turno.hora.split(':').map(Number)
   const yaPaso = Boolean(ahora && (turno.fecha < ahora.fecha || (turno.fecha === ahora.fecha && hh * 60 + mm <= ahora.minutos)))
   const puedeResenar = Boolean(local?.plan.resenas) && yaPaso && turno.estado !== 'cancelado' && !turno.no_vino && !turno.resenado
+  // Un turno que ya pasó no se cancela (la acción tampoco lo deja).
+  const cancelable = isCancelable && !yaPaso
 
   const handleCancelar = () => {
     if (confirm('¿Estás seguro de que deseas cancelar este turno?')) {
@@ -73,7 +75,7 @@ export function TurnoCard({ turno }: { turno: Turno }) {
 
       <div className="flex flex-col items-end gap-2 w-full sm:w-auto">
         <p className="font-bold text-white">{formatPrecio(turno.servicios.precio)}</p>
-        {isCancelable && (
+        {cancelable && (
           <button onClick={handleCancelar} disabled={isPending}
             className="w-full sm:w-auto text-xs font-bold text-red-400 hover:text-red-300 bg-red-400/10 hover:bg-red-400/20 px-3 py-1.5 rounded-lg transition-colors flex items-center justify-center gap-2 cursor-pointer">
             {isPending && <Spinner className="w-3 h-3 text-red-400" />}

@@ -18,7 +18,8 @@ Todo lo que describe la base de datos vive acá, versionado junto con el código
 | `migrations/0014_alta_de_locales.sql` | Fase 6: las funciones de la plataforma (crear una muestra con su plantilla, activar, archivar, suspender, sumar y sacar dueños, el resumen). Un local se crea y cambia de estado solo con ellas: la guardia de `locales` ya no deja hacerlo "a mano", ni al equipo. No borra datos (activar borra lo de prueba de ese local, cuando alguien lo activa). |
 | `migrations/0015_muestras_que_vencen.sql` | Tanda 6b: las muestras vencen a los 30 días y el reloj de la base (pg_cron) las archiva de noche; el equipo puede sumarles 30 días. Se borran `profiles.role`, `profiles.barbero_id`, `locales.horarios` e `is_admin()`, sin uso desde las Fases 2 y 3b. **Borra datos** (esos valores): en producción, con copia antes. |
 | `migrations/0016_planes.sql` | Fase 7: los planes (tabla `planes`, `locales.plan`) y sus candados en la base: profesionales activos, cuentas de profesionales, Mercado Pago, la tienda, la caja y las reseñas a la vista. Reseñas verificadas (`dejar_resena`), "no vino", reportes (`reporte_del_local`), activar con el plan y `cambiar_plan`. No borra datos. |
-| `migrations/0017` en adelante | Los cambios que siguen. Cada uno se prueba primero en desarrollo. |
+| `migrations/0017_marca_del_local.sql` | La marca de cada local: su color de acento (de una paleta curada) y su logo, en sus datos públicos. No borra datos. |
+| `migrations/0018` en adelante | Los cambios que siguen. Cada uno se prueba primero en desarrollo. |
 | `rescate/volver-antes-de-0009-y-0012.sql` | **No es una migración** (nadie la corre sola): solo para una emergencia en el pase a producción, si hubiera que volver al código viejo después de la última tanda. Ver `docs/PASE-A-PRODUCCION.md`. |
 | `seed-desarrollo.sql` | Datos de ejemplo: el catálogo de Roble, el local de demostración (servicios, barberos, productos, categorías, reseñas). Sin cuentas, turnos, pedidos ni tokens. |
 | `esquema-reporte.md` | Resumen legible de la foto, con alertas de seguridad. Se regenera con cada exportación. |
@@ -100,6 +101,10 @@ node scripts/probar-panel-barbero.mjs
 # el panel según el plan, reseñas verificadas, reportes, exportar y activar
 # eligiendo el plan (solo desarrollo; con la app levantada)
 node scripts/probar-planes.mjs
+
+# Probar la marca de cada local (su color y su logo) con un navegador (solo
+# desarrollo; con la app levantada)
+node scripts/probar-marca.mjs
 
 # Probar el alta de locales de punta a punta con un navegador: crear la muestra,
 # invitar al dueño, activar, suspender, archivar (solo desarrollo; con la app

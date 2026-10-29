@@ -275,6 +275,8 @@ try {
   const desdeLaWeb = await uno(`select rating, texto from public.resenas where turno_id = $1`, [t2])
   anotar(desdeLaWeb?.rating === 4 && desdeLaWeb?.texto === 'Muy buena barba' && await sinScrollDeCostado(pcl), 'la deja desde el celu, sin scroll de costado', JSON.stringify(desdeLaWeb))
   await pcl.screenshot({ path: resolve(CAPTURAS, 'planes-resena-celu.png'), fullPage: true })
+  await pcl.reload({ waitUntil: 'networkidle' })
+  anotar((await pcl.getByRole('button', { name: 'Cancelar' }).count()) === 1, 'y "Cancelar" solo en el turno que todavía no pasó (antes se podía cancelar uno de ayer)')
 
   // ─── 7. Reportes ──────────────────────────────────────────────────────────
   titulo('7. Reportes')

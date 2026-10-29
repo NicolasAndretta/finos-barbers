@@ -17,6 +17,8 @@ import { exigirPermiso } from '@/lib/auth'
 import { localDeAccion } from '@/lib/local'
 import { refrescarLocales } from '@/lib/refrescar'
 import { errorDeUsuario, errorDeWhatsapp, normalizarUsuario, normalizarWhatsapp } from '@/lib/contacto'
+import { esAcento } from '@/lib/acentos'
+import { borrarFotoVieja, fotoValida } from '@/lib/imagenes'
 import { MEDIOS_DE_PAGO } from '@/lib/local-datos'
 
 export type EstadoDatosLocal = { error?: string; guardado?: boolean }
@@ -44,6 +46,17 @@ export async function guardarDatosDelLocal(_prev: EstadoDatosLocal, formData: Fo
   if (!Number.isInteger(sena) || sena < 0 || sena > 100) return { error: 'La seña tiene que ser un porcentaje entre 0 y 100.' }
   if (!medios.length) return { error: 'Elegí al menos un medio de pago.' }
 
+  // La marca (0017): el acento, de la paleta; el logo, subido a la carpeta del
+  // local (no se puede pegar un link).
+  const acento = formData.get('acento')
+  if (acento !== null && !esAcento(acento)) return { error: 'Ese color no está en la paleta.' }
+  let logo: string | null
+  try {
+    logo = fotoValida(local.id, (formData.get('logo_url') as string | null) ?? '', local.logoUrl || null)
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : 'El logo no es válido.' }
+  }
+
   const direccion = opcional('direccion', 120)
   const ciudad = opcional('ciudad', 80)
   // Si cambió la dirección, el mapa la sigue: se olvida lo que se le pedía antes.
@@ -68,11 +81,14 @@ export async function guardarDatosDelLocal(_prev: EstadoDatosLocal, formData: Fo
       alias_pago: opcional('alias_pago', 60),
       sena_porcentaje: sena,
       medios_pago: medios,
+      ...(acento !== null ? { acento } : {}),
+      logo_url: logo,
     })
     .eq('id', local.id)
     .select('id')
   if (error) return { error: error.message }
   if (!data?.length) return { error: 'No tenés permiso para cambiar los datos de este local.' }
+  await borrarFotoVieja(local.id, local.logoUrl || null, logo)
 
   refrescarLocales()
   return { guardado: true }

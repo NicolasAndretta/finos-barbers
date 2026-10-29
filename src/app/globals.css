@@ -22,9 +22,15 @@
   --font-body: var(--font-body), "Montserrat", Arial, sans-serif;
   --font-display: var(--font-display), "Bevan", Georgia, serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
 
-  /* Acento MADERA / COBRE — remapea la escala `amber-*` de Tailwind.
-     Hue cálido ~32°, saturación media: latón/madera noble. */
+/* Acento MADERA / COBRE — remapea la escala `amber-*` de Tailwind.
+   Hue cálido ~32°, saturación media: latón/madera noble.
+   Va en un @theme SIN "inline" a propósito: así las clases usan la variable
+   (var(--color-amber-400)) y cada local puede cambiar su acento (0017,
+   src/lib/acentos.ts) redefiniendo estas 11 variables. Sin acento propio, se
+   ve exactamente igual que siempre. */
+@theme {
   --color-amber-50: #faf6f0;
   --color-amber-100: #f3e9da;
   --color-amber-200: #e7d2b4;
