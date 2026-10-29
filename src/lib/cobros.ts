@@ -40,7 +40,11 @@ export type ModoDeCobro = 'online' | 'muestra' | 'sin_mercadopago'
 
 // `cache`: dentro de un mismo pedido se consulta una sola vez (la página y el
 // formulario preguntan lo mismo).
-const modoPorLocal = cache(async (localId: string, estado: string): Promise<ModoDeCobro> => {
+const modoPorLocal = cache(async (localId: string, estado: string, conSenas: boolean): Promise<ModoDeCobro> => {
+  // Las señas con Mercado Pago son del plan Pro en adelante (Fase 7): sin
+  // ellas, la seña va por transferencia (también en una muestra que se está
+  // mostrando en el plan Básico).
+  if (!conSenas) return 'sin_mercadopago'
   if (estado === 'demo') return 'muestra'
   if (estado !== 'activo') return 'sin_mercadopago'
   if (!urlPublica()) {
@@ -56,8 +60,8 @@ const modoPorLocal = cache(async (localId: string, estado: string): Promise<Modo
   }
 })
 
-export function modoDeCobro(local: Pick<LocalPublico, 'id' | 'estado'>): Promise<ModoDeCobro> {
-  return modoPorLocal(local.id, local.estado)
+export function modoDeCobro(local: Pick<LocalPublico, 'id' | 'estado' | 'plan'>): Promise<ModoDeCobro> {
+  return modoPorLocal(local.id, local.estado, local.plan.senas)
 }
 
 // ─── 2. Referencias y direcciones ───────────────────────────────────────────

@@ -19,6 +19,10 @@ const sinSuscripcion = () => () => {}
  *  - Cobros: todos, cada uno con lo suyo (la comercial ve si el Mercado Pago
  *    está conectado; con qué cuenta y los botones, solo quien administra).
  *  - El catálogo y los datos del local: todos los que entran al panel.
+ * Y lo que trae el plan del local (Fase 7): la tienda (Productos, Categorías)
+ * y la caja, Premium; Reseñas, Cobros (Mercado Pago) y Reportes, Pro en
+ * adelante. Una sección que el plan no trae, si se abre igual, dice qué plan
+ * la trae.
  * Ocultar no es lo que protege (eso lo hace la base): es para no mostrar
  * botones que después dirían "no tenés permiso".
  */
@@ -26,6 +30,7 @@ export function AdminNav({ permisos }: { permisos: { administra: boolean; operaP
   const pathname = usePathname()
   const local = useLocal()
   const ruta = (r: string) => rutaLocal(local.slug, r)
+  const { plan } = local
   const LINKS = [
     { href: ruta('/admin/dashboard'), label: 'Inicio', ver: true },
     { href: ruta('/admin/local'), label: 'Datos del local', ver: true },
@@ -33,12 +38,13 @@ export function AdminNav({ permisos }: { permisos: { administra: boolean; operaP
     { href: ruta('/admin/horarios'), label: 'Horarios', ver: true },
     { href: ruta('/admin/turnos'), label: 'Turnos', ver: permisos.operaPrivado },
     { href: ruta('/admin/calendario'), label: 'Calendario', ver: permisos.operaPrivado },
-    { href: ruta('/admin/productos'), label: 'Productos', ver: true },
-    { href: ruta('/admin/categorias'), label: 'Categorías', ver: true },
+    { href: ruta('/admin/productos'), label: 'Productos', ver: plan.tienda },
+    { href: ruta('/admin/categorias'), label: 'Categorías', ver: plan.tienda },
     { href: ruta('/admin/barberos'), label: conMayuscula(local.palabras.profesionales), ver: true },
-    { href: ruta('/admin/resenas'), label: 'Reseñas', ver: true },
-    { href: ruta('/admin/pagos'), label: 'Cobros', ver: true },
-    { href: ruta('/admin/finanzas'), label: 'Finanzas', ver: permisos.administra },
+    { href: ruta('/admin/resenas'), label: 'Reseñas', ver: plan.resenas },
+    { href: ruta('/admin/reportes'), label: 'Reportes', ver: plan.reportes && permisos.operaPrivado },
+    { href: ruta('/admin/pagos'), label: 'Cobros', ver: plan.senas },
+    { href: ruta('/admin/finanzas'), label: 'Finanzas', ver: permisos.administra && plan.finanzas },
   ].filter((l) => l.ver)
   const [open, setOpen] = useState(false)
   // true solo en el navegador (en el servidor y durante la hidratación da false):

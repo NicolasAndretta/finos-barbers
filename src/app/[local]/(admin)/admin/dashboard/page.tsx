@@ -2,14 +2,14 @@ import React from 'react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { getProfile } from '@/lib/auth'
-import { getLocal } from '@/lib/local'
+import { getLocal, getPermisos } from '@/lib/local'
 import { rutaLocal } from '@/lib/local-datos'
 import { adminGetStats } from '@/app/actions/admin'
 
 export default async function AdminDashboardPage({ params }: { params: Promise<{ local: string }> }) {
   const local = await getLocal((await params).local)
   if (!local) notFound()
-  const [profile, stats] = await Promise.all([getProfile(), adminGetStats(local.slug)])
+  const [profile, stats, permisos] = await Promise.all([getProfile(), adminGetStats(local.slug), getPermisos(local.id)])
   if (!profile) return null
 
   return (
@@ -68,6 +68,18 @@ export default async function AdminDashboardPage({ params }: { params: Promise<{
           </div>
         </Link>
       </div>
+
+      {/* Exportar (Fase 7, todos los planes): los datos son del local. */}
+      {permisos.administra && local.plan.exportar && (
+        <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6 shadow-xl">
+          <h2 className="text-lg font-bold text-white">Tus datos</h2>
+          <p className="text-zinc-400 text-sm mt-1">Son tuyos: bajalos cuando quieras, en un archivo que abre Excel.</p>
+          <div className="flex flex-col sm:flex-row gap-3 mt-4">
+            <a href={rutaLocal(local.slug, '/admin/exportar/turnos')} className="text-center text-sm font-semibold border border-zinc-700 hover:border-zinc-500 text-white rounded-lg px-4 py-2.5">Bajar los turnos</a>
+            <a href={rutaLocal(local.slug, '/admin/exportar/clientes')} className="text-center text-sm font-semibold border border-zinc-700 hover:border-zinc-500 text-white rounded-lg px-4 py-2.5">Bajar los clientes</a>
+          </div>
+        </div>
+      )}
 
       <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6 shadow-xl">
         <h2 className="text-lg font-bold text-white mb-4">Perfil Administrador</h2>

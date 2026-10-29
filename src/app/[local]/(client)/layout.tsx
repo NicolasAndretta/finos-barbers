@@ -37,7 +37,7 @@ export default async function ClientLayout({ children, params }: { children: Rea
             <Link href={ruta('/dashboard')} className="hover:text-white transition-colors">Inicio</Link>
             <Link href={ruta('/reservar')} className="hover:text-white transition-colors">Reservar Turno</Link>
             <Link href={ruta('/turnos')} className="hover:text-white transition-colors">Mis Turnos</Link>
-            <Link href={ruta('/tienda')} className="hover:text-white transition-colors">Tienda</Link>
+            {local.plan.tienda && <Link href={ruta('/tienda')} className="hover:text-white transition-colors">Tienda</Link>}
           </nav>
 
           <div className="flex items-center gap-4 w-full sm:w-auto border-t border-zinc-900 sm:border-t-0 pt-4 sm:pt-0">
@@ -45,7 +45,7 @@ export default async function ClientLayout({ children, params }: { children: Rea
               <p className="text-xs text-zinc-500">Cliente</p>
               <p className="text-sm font-bold text-white">{user.email}</p>
             </div>
-            <CartButton />
+            {local.plan.tienda && <CartButton />}
             <div className="w-full sm:w-36">
               <LogoutButton />
             </div>

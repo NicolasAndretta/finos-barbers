@@ -2,7 +2,8 @@
 
 import React, { useState, useTransition, useCallback, useEffect } from 'react'
 import { useLocal } from '@/components/local/LocalProvider'
-import { adminGetTurnos, adminConfirmarTurno, adminConfirmarSena, adminCancelarTurno } from '@/app/actions/admin'
+import { adminGetTurnos, adminConfirmarTurno, adminConfirmarSena, adminCancelarTurno, adminMarcarNoVino } from '@/app/actions/admin'
+import { ahoraEnZona } from '@/lib/horarios'
 import { AdminNuevoTurnoModal } from '@/components/admin/AdminNuevoTurnoModal'
 import { Spinner } from '@/components/ui/Spinner'
 import { formatPrecio } from '@/lib/format'
@@ -15,6 +16,7 @@ type Turno = {
   metodo_pago: string | null
   sena_monto: number | null
   sena_estado: string | null
+  no_vino: boolean
   profiles: { nombre: string; apellido: string; email: string } | null
   barberos: { nombre: string; apellido: string } | null
   servicios: { nombre: string; duracion_minutos: number; precio: number } | null
@@ -97,6 +99,23 @@ export default function AdminTurnosPage() {
         }
       })
     }
+  }
+
+  // "No vino" (Fase 7): en un turno que ya pasó y no se canceló. Para los reportes.
+  const handleNoVino = (turnoId: string, noVino: boolean) => {
+    startTransition(async () => {
+      const res = await adminMarcarNoVino(turnoId, noVino, local.slug)
+      if (res.error) {
+        alert(res.error)
+      } else {
+        await loadTurnos()
+      }
+    })
+  }
+  const yaPaso = (turno: Turno) => {
+    const ahora = ahoraEnZona(local.zonaHoraria)
+    const [h, m] = turno.hora.split(':').map(Number)
+    return turno.fecha < ahora.fecha || (turno.fecha === ahora.fecha && h * 60 + m <= ahora.minutos)
   }
 
   const statusColors: Record<string, string> = {
@@ -198,6 +217,11 @@ export default function AdminTurnosPage() {
                     >
                       {turno.estado}
                     </span>
+                    {turno.no_vino && (
+                      <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold border bg-zinc-500/10 text-zinc-300 border-zinc-500/20">
+                        No vino
+                      </span>
+                    )}
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 text-sm">
@@ -274,6 +298,16 @@ export default function AdminTurnosPage() {
                           Confirmar seña
                         </button>
                       )}
+
+                    {turno.estado !== 'cancelado' && yaPaso(turno) && (
+                      <button
+                        onClick={() => handleNoVino(turno.id, !turno.no_vino)}
+                        disabled={isPending}
+                        className="flex-1 sm:flex-none text-xs font-bold text-zinc-300 hover:text-white bg-zinc-800 hover:bg-zinc-700 px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                      >
+                        {turno.no_vino ? 'Sí vino' : 'No vino'}
+                      </button>
+                    )}
 
                     {(turno.estado === 'pendiente' || turno.estado === 'confirmado') && (
                       <button

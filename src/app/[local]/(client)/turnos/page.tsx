@@ -111,7 +111,8 @@ export default async function TurnosPage({ params, searchParams }: { params: Pro
               ...turno,
               barberos: Array.isArray(turno.barberos) ? turno.barberos[0] ?? { nombre: '', apellido: '' } : turno.barberos,
               servicios: Array.isArray(turno.servicios) ? turno.servicios[0] ?? { nombre: '', duracion_minutos: 0, precio: 0 } : turno.servicios,
-            } as { id: string; fecha: string; hora: string; estado: string; barberos: { nombre: string; apellido: string }; servicios: { nombre: string; duracion_minutos: number; precio: number } }} />
+              resenado: Array.isArray(turno.resenas) ? turno.resenas.length > 0 : Boolean(turno.resenas),
+            } as { id: string; fecha: string; hora: string; estado: string; no_vino: boolean; resenado: boolean; barberos: { nombre: string; apellido: string }; servicios: { nombre: string; duracion_minutos: number; precio: number } }} />
           ))
         )}
       </div>

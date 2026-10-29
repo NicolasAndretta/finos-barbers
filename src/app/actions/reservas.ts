@@ -330,8 +330,10 @@ export async function getTurnosCliente(slug: string) {
       fecha,
       hora,
       estado,
+      no_vino,
       barberos ( nombre, apellido ),
-      servicios ( nombre, duracion_minutos, precio )
+      servicios ( nombre, duracion_minutos, precio ),
+      resenas ( id )
     `)
     .eq('cliente_id', usuario.id)
     .eq('local_id', local.id)

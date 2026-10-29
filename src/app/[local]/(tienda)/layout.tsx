@@ -16,7 +16,9 @@ import { modoDeCobro } from '@/lib/cobros'
 // producto se consulta por WhatsApp).
 export default async function TiendaLayout({ children, params }: { children: React.ReactNode; params: Promise<{ local: string }> }) {
   const local = await getLocal((await params).local)
-  if (!local) notFound()
+  // La tienda es del plan Premium (Fase 7): sin ella, no existe. (La base,
+  // igual, no muestra sus productos ni acepta pedidos.)
+  if (!local || !local.plan.tienda) notFound()
   const ruta = (r: string = '') => rutaLocal(local.slug, r)
   // "Mi cuenta" lleva a lo que es en ESTE local: su panel o su área de cliente.
   // Todo a la vez (la sesión se verifica acá mismo, sin ir a la base).

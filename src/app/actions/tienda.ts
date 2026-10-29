@@ -1,7 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase'
-import { exigirPermiso, requireProfile } from '@/lib/auth'
+import { exigirPermiso, exigirPlan, requireProfile } from '@/lib/auth'
 import { localDeAccion } from '@/lib/local'
 import { refrescarLocales } from '@/lib/refrescar'
 import { borrarFotoVieja, fotoValida } from '@/lib/imagenes'
@@ -60,6 +60,7 @@ export async function adminGetProductos(slug: string) {
 export async function adminCrearProducto(formData: FormData) {
   const local = await localDeAccion(formData.get('local'))
   await exigirPermiso(local, 'editaCatalogo')
+  await exigirPlan(local, 'tienda')
 
   const nombre       = formData.get('nombre') as string
   const descripcion  = formData.get('descripcion') as string

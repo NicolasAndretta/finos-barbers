@@ -18,6 +18,7 @@
  *  - requirePanelAdmin(local)  → { profile, permisos }  (panel de administración del local)
  *  - requirePanelBarbero(local)→ { profile, permisos }  (agenda del barbero en el local)
  *  - exigirPermiso(local, p)   → Profile          (para acciones: corta si no tiene permiso)
+ *  - exigirPlan(local, c)      → void             (para acciones: corta si el plan no lo trae)
  *  - destinoDespuesDeEntrar()  → a qué página va alguien después del login
  */
 
@@ -25,7 +26,8 @@ import { cache } from 'react'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { getLocal, getPermisos, type Permisos } from '@/lib/local'
-import { rutaLocal, type LocalPublico } from '@/lib/local-datos'
+import { rutaLocal, type Capacidad, type LocalPublico } from '@/lib/local-datos'
+import { planMinimoPara } from '@/lib/planes'
 import { PRODUCTO } from '@/lib/producto'
 import type { Profile } from '@/types'
 import type { SupabaseClient } from '@supabase/supabase-js'
@@ -149,6 +151,18 @@ export async function exigirPermiso(local: LocalPublico, permiso: PermisoDeAccio
   const [profile, permisos] = await Promise.all([requireProfile(), getPermisos(local.id)])
   if (!permisos[permiso]) throw new Error('No tenés permiso para hacer esto en este local')
   return profile
+}
+
+/**
+ * Para las acciones del servidor: el plan del local trae esto (Fase 7). Si no,
+ * corta con un error que dice qué plan lo trae. Las pantallas no lo ofrecen y
+ * la base, en lo que importa (profesionales, cuentas, Mercado Pago, la tienda,
+ * la caja, las reseñas a la vista), lo frena igual.
+ */
+export async function exigirPlan(local: LocalPublico, capacidad: Capacidad): Promise<void> {
+  if (!local.plan[capacidad]) {
+    throw new Error(`Esto es del plan ${await planMinimoPara(capacidad)} en adelante (este local está en el plan ${local.plan.nombre}).`)
+  }
 }
 
 /**

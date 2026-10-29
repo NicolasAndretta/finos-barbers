@@ -33,7 +33,12 @@ export type ResumenLocal = {
   turnosDePrueba: number | null
   /** Hasta cuándo dura la muestra (después se archiva sola). null: no vence (Roble) o no es muestra. */
   muestraHasta: string | null
+  /** El plan (Fase 7): basico · pro · premium. */
+  plan: 'basico' | 'pro' | 'premium'
 }
+
+/** Lo que la plataforma necesita de cada plan para elegirlo. */
+export type OpcionDePlan = { codigo: ResumenLocal['plan']; nombre: string; precioUsd: number; maxProfesionales: number | null }
 
 /** "en 12 días" / "mañana" / "hoy": cuánto le queda a una muestra. */
 export function cuantoLeQueda(hasta: string, ahora: number = Date.now()): string {

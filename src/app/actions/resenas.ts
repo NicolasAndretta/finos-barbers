@@ -1,7 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase'
-import { exigirPermiso, requireProfile } from '@/lib/auth'
+import { exigirPermiso, exigirPlan, requireProfile } from '@/lib/auth'
 import { localDeAccion } from '@/lib/local'
 import { refrescarLocales } from '@/lib/refrescar'
 
@@ -33,6 +33,7 @@ export async function adminGetResenas(slug: string) {
 export async function adminCrearResena(formData: FormData) {
   const local = await localDeAccion(formData.get('local'))
   await exigirPermiso(local, 'editaCatalogo')
+  await exigirPlan(local, 'resenas')
   const nombre = (formData.get('nombre') as string)?.trim()
   const texto  = (formData.get('texto') as string)?.trim()
   const rating = parseInt((formData.get('rating') as string) || '5')
@@ -99,4 +100,25 @@ export async function adminEliminarResena(id: string) {
   if (!data?.length) return { error: 'No se encontró la reseña o no tenés permiso para borrarla.' }
   refrescarLocales()
   return { success: true }
+}
+
+/**
+ * Un cliente deja la reseña de un turno suyo que ya pasó (Fase 7: reseñas
+ * verificadas). Todo lo revisa la base (dejar_resena): que el turno sea suyo,
+ * que haya ido, que ya haya pasado, una sola vez, y que el plan del local
+ * traiga reseñas.
+ */
+export async function dejarResena(formData: FormData): Promise<{ error?: string }> {
+  // Que exista el local de la página (la base revisa que el turno sea de él y del cliente).
+  await localDeAccion(formData.get('local'))
+  await requireProfile()
+  const turno = formData.get('turno')
+  const rating = Number(formData.get('rating'))
+  const texto = formData.get('texto')
+  if (typeof turno !== 'string' || typeof texto !== 'string') return { error: 'Faltan datos.' }
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('dejar_resena', { p_turno: turno, p_rating: rating, p_texto: texto.slice(0, 600) })
+  if (error) return { error: error.message }
+  refrescarLocales()
+  return {}
 }

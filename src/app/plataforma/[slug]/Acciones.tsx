@@ -9,10 +9,10 @@
 import React, { useActionState, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import {
-  activarLocal, cambiarEstadoLocal, extenderMuestra, invitarDueno, otroLinkDeDueno, quitarDueno,
+  activarLocal, cambiarEstadoLocal, cambiarPlan, extenderMuestra, invitarDueno, otroLinkDeDueno, quitarDueno,
   type EstadoInvitar, type ResultadoActivar,
 } from '@/app/actions/plataforma'
-import { cuantoLeQueda, diaYMes, type DuenoDelLocal, type ResumenLocal } from '@/lib/plataforma-datos'
+import { cuantoLeQueda, diaYMes, type DuenoDelLocal, type OpcionDePlan, type ResumenLocal } from '@/lib/plataforma-datos'
 import { Spinner } from '@/components/ui/Spinner'
 
 const inputCls = 'w-full bg-zinc-900 border border-zinc-800 text-white rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-amber-500/20'
@@ -179,16 +179,39 @@ export function Duenos({ slug, nombreLocal, duenos, cantidad, puedeManejar }: {
 
 // ─── Activar ─────────────────────────────────────────────────────────────────
 
-export function Activar({ slug, faltan, turnosDePrueba }: { slug: string; faltan: string[]; turnosDePrueba: number }) {
+/** Las tres opciones de plan, como tarjetas para tocar (sirve en el celu). */
+function ElegirPlan({ planes, elegido, onElegir, nombre }: { planes: OpcionDePlan[]; elegido: string; onElegir: (p: OpcionDePlan['codigo']) => void; nombre: string }) {
+  return (
+    <div role="radiogroup" aria-label={nombre} className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+      {planes.map((p) => (
+        <button
+          key={p.codigo}
+          type="button"
+          role="radio"
+          aria-checked={elegido === p.codigo}
+          onClick={() => onElegir(p.codigo)}
+          className={`text-left rounded-lg border px-4 py-3 cursor-pointer transition-colors ${elegido === p.codigo ? 'border-amber-500 bg-amber-500/10' : 'border-zinc-800 hover:border-zinc-600'}`}
+        >
+          <span className="block text-sm font-bold text-white">{p.nombre}</span>
+          <span className="block text-xs text-zinc-400">u$s {p.precioUsd} por mes · {p.maxProfesionales === null ? 'profesionales sin límite' : `hasta ${p.maxProfesionales} profesionales`}</span>
+        </button>
+      ))}
+    </div>
+  )
+}
+
+export function Activar({ slug, faltan, turnosDePrueba, planes, planActual }: { slug: string; faltan: string[]; turnosDePrueba: number; planes: OpcionDePlan[]; planActual: ResumenLocal['plan'] }) {
   const [seguro, setSeguro] = useState(false)
+  const [plan, setPlan] = useState<ResumenLocal['plan']>(planActual)
   const [resultado, setResultado] = useState<ResultadoActivar>({})
   const [pendiente, startTransition] = useTransition()
   const router = useRouter()
+  const elegido = planes.find((p) => p.codigo === plan)
 
   // Al activarse, esta sección desaparece (es solo de las muestras): el aviso
   // de cuánto se borró lo muestra la ficha, arriba.
   const activar = () => startTransition(async () => {
-    const r = await activarLocal(conLocal(slug))
+    const r = await activarLocal(conLocal(slug, { plan }))
     if (r.borrados) router.replace(`/plataforma/${slug}?activado=${r.borrados.turnos}`)
     else setResultado(r)
   })
@@ -203,10 +226,13 @@ export function Activar({ slug, faltan, turnosDePrueba }: { slug: string; faltan
         </div>
       ) : (
         <div className="flex flex-col gap-3 bg-amber-500/5 border border-amber-500/20 rounded-lg p-4">
+          <p className="text-sm font-semibold text-white">¿Con qué plan arranca?</p>
+          <ElegirPlan planes={planes} elegido={plan} onElegir={setPlan} nombre="El plan con el que arranca" />
           <p className="text-sm text-zinc-200">
+            {elegido ? `Arranca en el plan ${elegido.nombre} (u$s ${elegido.precioUsd} por mes). ` : ''}
             {turnosDePrueba
-              ? `Se van a borrar ${turnosDePrueba} turno(s) de prueba, y los pedidos y la caja de prueba. No se puede deshacer.`
-              : 'Se borra lo de prueba que haya (pedidos, caja). No se puede deshacer.'}
+              ? `Se van a borrar ${turnosDePrueba} turno(s) de prueba, y los pedidos, la caja y las reseñas de prueba. No se puede deshacer.`
+              : 'Se borra lo de prueba que haya (pedidos, caja, reseñas). No se puede deshacer.'}
           </p>
           <div className="flex flex-col sm:flex-row gap-2">
             <button
@@ -287,6 +313,44 @@ export function CambiarEstado({ slug, estado, esAdmin, muestraHasta }: { slug: s
         )
       ))}
       <Aviso ok={false} texto={error} />
+    </div>
+  )
+}
+
+/**
+ * El plan (Fase 7). En una muestra, el equipo la muestra en cada plan (lo que
+ * se ve cambia en el momento). En un local activo es lo que se cobra: lo
+ * cambia solo el admin, y la base revisa que entren sus profesionales.
+ */
+export function CambiarPlan({ slug, estado, plan, planes, esAdmin }: { slug: string; estado: ResumenLocal['estado']; plan: ResumenLocal['plan']; planes: OpcionDePlan[]; esAdmin: boolean }) {
+  const [elegido, setElegido] = useState<ResumenLocal['plan']>(plan)
+  const [aviso, setAviso] = useState<{ ok: boolean; texto: string } | null>(null)
+  const [pendiente, startTransition] = useTransition()
+  const enUso = estado === 'activo' || estado === 'suspendido'
+  const actual = planes.find((p) => p.codigo === plan)
+
+  if (enUso && !esAdmin) {
+    return <p className="text-sm text-zinc-400">Plan {actual?.nombre ?? plan}. El plan de un local activo lo cambia solo el admin.</p>
+  }
+  const guardar = () => startTransition(async () => {
+    const r = await cambiarPlan(conLocal(slug, { plan: elegido }))
+    setAviso(r.error ? { ok: false, texto: r.error } : { ok: true, texto: enUso ? 'Listo: el plan cambió.' : 'Listo: la muestra ya se ve en ese plan.' })
+  })
+  return (
+    <div className="flex flex-col gap-3">
+      <p className="text-xs text-zinc-500">
+        {enUso
+          ? 'Es lo que se cobra. Si baja de plan, no se borra nada: se esconde lo que el plan nuevo no trae.'
+          : 'Para mostrársela al dueño en cada plan: lo que se ve cambia en el momento. El plan de verdad se elige al activarla.'}
+      </p>
+      <ElegirPlan planes={planes} elegido={elegido} onElegir={(p) => { setElegido(p); setAviso(null) }} nombre={enUso ? 'El plan del local' : 'Mostrarla en el plan'} />
+      <div>
+        <button type="button" disabled={pendiente || elegido === plan} onClick={guardar} className={botonSecundarioCls}>
+          {pendiente && <Spinner className="h-4 w-4" />}
+          {enUso ? 'Cambiar el plan' : 'Mostrarla en este plan'}
+        </button>
+      </div>
+      {aviso && <Aviso ok={aviso.ok} texto={aviso.texto} />}
     </div>
   )
 }

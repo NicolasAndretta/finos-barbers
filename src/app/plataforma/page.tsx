@@ -6,6 +6,7 @@
 import Link from 'next/link'
 import { cuantoLeQueda, getResumenLocales, loQueFalta, type ResumenLocal } from '@/lib/plataforma'
 import { RUBROS } from '@/lib/plantillas'
+import { getPlanes } from '@/lib/planes'
 import { Chip, EstadoLocal } from '@/components/plataforma/Insignias'
 
 const SECCIONES: { estado: ResumenLocal['estado']; titulo: string; vacio: string }[] = [
@@ -16,7 +17,8 @@ const SECCIONES: { estado: ResumenLocal['estado']; titulo: string; vacio: string
 ]
 
 export default async function PlataformaPage() {
-  const locales = await getResumenLocales()
+  const [locales, planes] = await Promise.all([getResumenLocales(), getPlanes()])
+  const nombreDelPlan = (codigo: string) => planes.find((p) => p.codigo === codigo)?.nombre ?? codigo
 
   return (
     <>
@@ -43,7 +45,7 @@ export default async function PlataformaPage() {
             </h2>
             {deEsteEstado.length ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {deEsteEstado.map((l) => <Tarjeta key={l.id} local={l} />)}
+                {deEsteEstado.map((l) => <Tarjeta key={l.id} local={l} plan={nombreDelPlan(l.plan)} />)}
               </div>
             ) : (
               <p className="text-sm text-zinc-500">{vacio}</p>
@@ -63,7 +65,7 @@ function haceCuanto(fecha: string): string {
   return `hace ${dias} días`
 }
 
-function Tarjeta({ local }: { local: ResumenLocal }) {
+function Tarjeta({ local, plan }: { local: ResumenLocal; plan: string }) {
   const { obligatorio, recomendado } = loQueFalta(local)
   const rubro = RUBROS.find((r) => r.valor === local.rubro)?.nombre ?? local.rubro
   return (
@@ -74,7 +76,7 @@ function Tarjeta({ local }: { local: ResumenLocal }) {
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="font-bold text-white truncate">{local.nombre}</p>
-          <p className="text-xs text-zinc-500 truncate">/{local.slug} · {rubro}</p>
+          <p className="text-xs text-zinc-500 truncate">/{local.slug} · {rubro} · {local.estado === 'demo' ? `se ve en ${plan}` : `plan ${plan}`}</p>
         </div>
         <EstadoLocal estado={local.estado} />
       </div>

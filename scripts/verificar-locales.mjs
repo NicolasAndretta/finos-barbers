@@ -48,6 +48,7 @@ const SIN_LOCAL = {
   locales: 'es la lista de locales',
   profiles: 'una cuenta es de toda la plataforma; qué es en cada local lo dice membresias',
   equipo: 'el equipo de la plataforma no pertenece a ningún local',
+  planes: 'qué trae cada plan es de toda la plataforma (Fase 7); cada local dice el suyo en locales.plan',
 }
 
 /** Lo de la web de 369: no se toca (ver docs/MULTITENANT.md). */

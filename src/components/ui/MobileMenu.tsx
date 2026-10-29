@@ -22,9 +22,10 @@ export function MobileMenu({
   const [open, setOpen] = useState(false)
   // Los links son los del local de la página (su tienda, su reserva).
   const local = useLocal()
+  // La tienda, solo si el plan del local la trae (Fase 7: Premium).
   const NAV: NavLink[] = [
     { href: '#servicios', label: 'Servicios' },
-    { href: rutaLocal(local.slug, '/tienda'), label: 'Tienda' },
+    ...(local.plan.tienda ? [{ href: rutaLocal(local.slug, '/tienda'), label: 'Tienda' }] : []),
     { href: '#equipo', label: conMayuscula(local.palabras.profesionales) },
     { href: '#ubicacion', label: 'Ubicación' },
   ]

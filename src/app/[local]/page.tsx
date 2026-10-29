@@ -94,9 +94,11 @@ export default async function HomePage({ params }: { params: Promise<{ local: st
             <Link href="#servicios" className="hover:text-white transition-colors">
               Servicios
             </Link>
-            <Link href={ruta("/tienda")} className="hover:text-white transition-colors">
-              Tienda
-            </Link>
+            {local.plan.tienda && (
+              <Link href={ruta("/tienda")} className="hover:text-white transition-colors">
+                Tienda
+              </Link>
+            )}
             {barberos.length > 0 && (
               <Link href="#equipo" className="hover:text-white transition-colors">
                 {conMayuscula(palabras.profesionales)}
@@ -182,12 +184,14 @@ export default async function HomePage({ params }: { params: Promise<{ local: st
               >
                 Reservar turno
               </Link>
-              <Link
-                href={ruta("/tienda")}
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/5 hover:bg-white/10 px-8 py-4 text-base font-semibold text-white transition-all"
-              >
-                Ver tienda
-              </Link>
+              {local.plan.tienda && (
+                <Link
+                  href={ruta("/tienda")}
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/5 hover:bg-white/10 px-8 py-4 text-base font-semibold text-white transition-all"
+                >
+                  Ver tienda
+                </Link>
+              )}
             </div>
           </div>
 
@@ -618,12 +622,14 @@ export default async function HomePage({ params }: { params: Promise<{ local: st
               >
                 Reservar turno
               </Link>
-              <Link
-                href={ruta("/tienda")}
-                className="block hover:text-white transition-colors"
-              >
-                Tienda
-              </Link>
+              {local.plan.tienda && (
+                <Link
+                  href={ruta("/tienda")}
+                  className="block hover:text-white transition-colors"
+                >
+                  Tienda
+                </Link>
+              )}
               <Link
                 href={`/login?local=${local.slug}`}
                 className="block hover:text-white transition-colors"

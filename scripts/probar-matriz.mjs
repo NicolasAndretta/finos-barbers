@@ -68,7 +68,9 @@ const REGLAS = {
   servicios: { ver: (r, L) => editor(r, L) || publico(L), crear: editor, cambiar: editor, borrar: administra },
   // Los productos inactivos y las reseñas ocultas los ve solo quien edita.
   productos: { ver: (r, L, f) => editor(r, L) || (publico(L) && f.activo), crear: editor, cambiar: editor, borrar: administra },
-  resenas: { ver: (r, L, f) => editor(r, L) || (publico(L) && f.visible), crear: editor, cambiar: editor, borrar: administra },
+  // Reseñas a mano: solo en una muestra (Fase 7). En un local activo las dejan sus
+  // clientes después del turno (dejar_resena, en probar-planes.mjs).
+  resenas: { ver: (r, L, f) => editor(r, L) || (publico(L) && f.visible), crear: (r, L) => editor(r, L) && L === 'D', cambiar: editor, borrar: administra },
   horarios: { ver: (r, L) => editor(r, L) || publico(L), crear: editor, cambiar: editor, borrar: editor },
   // Las ausencias (vacaciones, feriados) son privadas: el motivo no lo ve el público.
   ausencias: { ver: editor, crear: editor, cambiar: editor, borrar: editor },
@@ -117,6 +119,12 @@ const FUNCIONES_REVISADAS = {
   'quitar_dueno(p_local uuid, p_usuario uuid)': 'el admin, o la comercial en una muestra',
   'resumen_de_locales()': 'solo el equipo (si no, vacío); cuentas y sí/no, y los mails de dueños de un local activo solo al admin',
   'extender_muestra(p_local uuid)': 'solo el equipo, solo una muestra que vence: le suma 30 días (0015)',
+  // Los planes (Fase 7, 0016). Lo prueba en detalle probar-planes.mjs.
+  'plan_permite(p_local uuid, p_capacidad text)': 'sí o no sobre un local: el plan de un local no es secreto (lo usan las reglas de las tablas)',
+  'activar_local(p_local uuid, p_plan text)': 'solo el equipo, solo una muestra con dueño y con los profesionales que entran en el plan',
+  'cambiar_plan(p_local uuid, p_plan text)': 'en una muestra, el equipo; en un local activo, solo el admin (y revisa los profesionales)',
+  'dejar_resena(p_turno uuid, p_rating integer, p_texto text)': 'solo el cliente de ESE turno, después del turno, una vez, si el plan trae reseñas',
+  'reporte_del_local(p_local uuid, p_desde date, p_hasta date)': 'solo quien opera el local, y si el plan trae reportes: solo cuentas',
   'handle_new_user()': 'función de un disparador: Postgres no deja llamarla desde afuera',
   'rls_auto_enable()': 'función de un disparador de eventos de producción: no se puede llamar desde afuera',
 }
@@ -354,7 +362,7 @@ try {
 
   // ─── 5. Los permisos de Postgres ──────────────────────────────────────────
   titulo('5. Los permisos de Postgres (migración 0013)')
-  const DE_LA_BARBERIA = [...conLocal, 'profiles', 'locales', 'equipo']
+  const DE_LA_BARBERIA = [...conLocal, 'profiles', 'locales', 'equipo', 'planes']
   const sobrantes = await q(`
     select table_name as t, grantee as quien, privilege_type as permiso
       from information_schema.role_table_grants

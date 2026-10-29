@@ -90,6 +90,15 @@ export default function AdminBarberosPage() {
         <div>
           <h1 className="text-3xl font-extrabold text-white tracking-tight">Barberos</h1>
           <p className="text-zinc-400 text-sm mt-1">El equipo que aparece en la web y en la reserva.</p>
+          {/* Lo que permite el plan (Fase 7). La base es la que frena el de más. */}
+          {local.plan.maxProfesionales !== null && !loading && (
+            <p className="text-xs mt-2 text-zinc-500" role="status">
+              Tu plan ({local.plan.nombre}) permite hasta {local.plan.maxProfesionales} a la vista: hoy hay{' '}
+              <span className={items.filter((b) => b.activo).length >= local.plan.maxProfesionales ? 'text-amber-400 font-semibold' : 'text-zinc-300'}>
+                {items.filter((b) => b.activo).length}
+              </span>.
+            </p>
+          )}
         </div>
         <button onClick={() => { reset(); setShowForm(true) }}
           className="bg-amber-500 hover:bg-amber-400 text-black text-sm font-bold px-5 py-2.5 rounded-lg cursor-pointer">+ Nuevo Barbero</button>
@@ -145,10 +154,13 @@ export default function AdminBarberosPage() {
                 {/* Cuenta de acceso */}
                 <div className="mt-3 pt-3 border-t border-zinc-900">
                   {b.cuentas && b.cuentas.length > 0 ? (
-                    <p className="text-[11px] text-emerald-400 flex items-center gap-1.5">
+                    <p className="text-[11px] text-emerald-400 flex items-center gap-1.5 flex-wrap">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                      Tiene cuenta: <span className="text-zinc-400 font-mono">{b.cuentas[0].email}</span>
+                      Tiene cuenta: <span className="text-zinc-400 font-mono break-all">{b.cuentas[0].email}</span>
+                      {!local.plan.cuentasProfesionales && <span className="text-zinc-500">(sin acceso en el plan {local.plan.nombre})</span>}
                     </p>
+                  ) : !local.plan.cuentasProfesionales ? (
+                    <p className="text-[11px] text-zinc-500">Las cuentas propias de cada profesional, con su agenda, son del plan Pro en adelante.</p>
                   ) : cuentaFor === b.id ? (
                     <div className="space-y-2">
                       <p className="text-[11px] text-zinc-400 font-semibold">Crear cuenta de acceso (rol barbero)</p>

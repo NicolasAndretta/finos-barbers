@@ -34,6 +34,9 @@ export async function GET(req: NextRequest) {
 
   if (!(await getUser())) return irA(rutaLogin(pagos))
   if (!(await getPermisos(local.id)).administra) return irA(`${pagos}?error=permiso`)
+  // Las señas con Mercado Pago son del plan Pro en adelante (Fase 7). La base,
+  // igual, no deja guardar la conexión.
+  if (!local.plan.senas) return irA(pagos)
   if (!mpConnectConfigurado()) return irA(`${pagos}?error=config`)
 
   const state = crypto.randomUUID()

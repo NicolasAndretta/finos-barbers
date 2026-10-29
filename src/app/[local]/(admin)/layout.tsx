@@ -44,6 +44,9 @@ export default async function AdminLayout({ children, params }: { children: Reac
               <span className="w-1 h-1 rounded-full bg-white" />
               {permisos.administra ? 'Administrador' : 'Equipo comercial'}
             </span>
+            <span className="ml-1.5 inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-500/10 text-amber-300 border border-amber-500/25">
+              Plan {local.plan.nombre}
+            </span>
             <p className="text-sm font-bold text-white mt-1">{profile.nombre} {profile.apellido}</p>
           </div>
           <div className="w-full sm:w-36">

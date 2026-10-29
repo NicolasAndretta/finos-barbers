@@ -5,9 +5,10 @@ Estado al 29/06/2026. Demo comercial de andmar.studio. La barbería es ficticia:
 ## 🚧 En curso (desde el 10/10/2026): multi-tenant
 Convertir la demo en un producto donde conviven muchos locales en un solo sitio y
 una sola base. Plan, decisiones y bitácora en [`MULTITENANT.md`](./MULTITENANT.md).
-Estado (26/10/2026): Fases 0 a 6 hechas en desarrollo. Las 1 a 5 van juntas a producción con
-[`PASE-A-PRODUCCION.md`](./PASE-A-PRODUCCION.md) (lo corre Nico); la 6 (el alta de locales desde
-`/plataforma`) va en un pase siguiente.
+Estado (29/10/2026): Fases 0 a 7 hechas en desarrollo. En producción, las Fases 1 a 6 (pases
+del 26/10). Siguen, en este orden: la tanda 6b ([`PASE-FASE-6B.md`](./PASE-FASE-6B.md): muestras
+que vencen, páginas 3 veces más rápidas) y la Fase 7 ([`PASE-FASE-7.md`](./PASE-FASE-7.md): los
+planes Básico, Pro y Premium). Los dos los corre Nico.
 
 ## ✅ Hecho (rebrand visual + contenido)
 - Identidad de marca aplicada: **B&N + acento madera/cobre**, fiel al manual de marca.

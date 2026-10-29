@@ -33,6 +33,7 @@ export async function crearPedido(formData: FormData) {
   // El pedido es de la tienda de un local: el de la página donde se compró.
   const local = await localDeAccion(formData.get('local'))
   if (!localVisible(local)) return { error: 'Esta tienda no está vendiendo por ahora.' }
+  if (!local.plan.tienda) return { error: 'Este local no tiene tienda online.' }
 
   // Cómo cobra este local (lib/cobros.ts). Sin Mercado Pago la tienda es un
   // catálogo: no se arma ningún pedido (antes quedaba uno colgado).

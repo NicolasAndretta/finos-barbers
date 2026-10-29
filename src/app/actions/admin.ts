@@ -44,6 +44,7 @@ export async function adminGetTurnos(slug: string, filters?: {
       metodo_pago,
       sena_monto,
       sena_estado,
+      no_vino,
       profiles ( nombre, apellido, email ),
       barberos ( nombre, apellido ),
       servicios ( nombre, duracion_minutos, precio )
@@ -529,4 +530,40 @@ export async function adminGetStats(slug: string) {
     serviciosActivos: serviciosActivos || 0,
     totalClientes: totalClientes || 0,
   }
+}
+/**
+ * "No vino" (Fase 7): lo marca quien opera el local, en un turno que ya pasó y
+ * no se canceló. Sirve para los reportes (cuántos no vienen). Se puede
+ * desmarcar. La base deja tocarlo solo a quien opera el local.
+ */
+export async function adminMarcarNoVino(turnoId: string, noVino: boolean, slug: string) {
+  const local = await localDeAccion(slug)
+  await exigirPermiso(local, 'operaPrivado')
+  const supabase = await createClient()
+
+  const { data: turno } = await supabase
+    .from('turnos')
+    .select('id, local_id, fecha, hora, estado')
+    .eq('id', turnoId)
+    .eq('local_id', local.id)
+    .maybeSingle()
+  if (!turno) return { error: 'Turno no encontrado' }
+  if (turno.estado === 'cancelado') return { error: 'Un turno cancelado no se marca.' }
+  const ahora = ahoraEnZona(local.zonaHoraria)
+  const [h, m] = String(turno.hora).split(':').map(Number)
+  if (turno.fecha > ahora.fecha || (turno.fecha === ahora.fecha && h * 60 + m > ahora.minutos)) {
+    return { error: 'Se marca después de la hora del turno.' }
+  }
+
+  const { data: marcados, error } = await supabase
+    .from('turnos')
+    .update({ no_vino: noVino })
+    .eq('id', turnoId)
+    .eq('local_id', local.id)
+    .select('id')
+  if (error) return { error: error.message }
+  if (!marcados?.length) return { error: 'No tenés permiso para marcar este turno.' }
+
+  refrescarLocales()
+  return { success: true }
 }

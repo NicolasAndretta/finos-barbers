@@ -12,8 +12,9 @@ import { RUBROS } from '@/lib/plantillas'
 import { urlPublica } from '@/lib/sitio'
 import { rutaLocal } from '@/lib/local-datos'
 import { PRODUCTO } from '@/lib/producto'
+import { getPlanes } from '@/lib/planes'
 import { EstadoLocal } from '@/components/plataforma/Insignias'
-import { Activar, CambiarEstado, CompartirLink, Duenos } from './Acciones'
+import { Activar, CambiarEstado, CambiarPlan, CompartirLink, Duenos } from './Acciones'
 
 type Props = { params: Promise<{ slug: string }>; searchParams: Promise<{ nueva?: string; activado?: string; cambio?: string }> }
 
@@ -29,7 +30,9 @@ export default async function FichaDelLocal({ params, searchParams }: Props) {
   const { slug } = await params
   const { nueva, activado, cambio } = await searchParams
   // A la vez: el resumen, para quien no es del equipo, viene vacío.
-  const [{ rol }, locales] = await Promise.all([requireEquipo(`/plataforma/${slug}`), getResumenLocales()])
+  const [{ rol }, locales, planes] = await Promise.all([requireEquipo(`/plataforma/${slug}`), getResumenLocales(), getPlanes()])
+  const opcionesDePlan = planes.map((p) => ({ codigo: p.codigo, nombre: p.nombre, precioUsd: p.precioUsd, maxProfesionales: p.maxProfesionales }))
+  const nombreDelPlan = (codigo: string) => planes.find((p) => p.codigo === codigo)?.nombre ?? codigo
   const local = locales.find((l) => l.slug === slug)
   if (!local) notFound()
 
@@ -109,9 +112,13 @@ export default async function FichaDelLocal({ params, searchParams }: Props) {
 
       {local.estado === 'demo' && !esLaDelProducto && (
         <Seccion titulo="Activar" detalle="Se borra lo de prueba (turnos, pedidos, caja y clientes de prueba), se va el cartel de Muestra, Google la puede encontrar y empiezan a salir los mails.">
-          <Activar slug={local.slug} faltan={obligatorio} turnosDePrueba={local.turnosDePrueba ?? 0} />
+          <Activar slug={local.slug} faltan={obligatorio} turnosDePrueba={local.turnosDePrueba ?? 0} planes={opcionesDePlan} planActual={local.plan} />
         </Seccion>
       )}
+
+      <Seccion titulo={`Plan: ${nombreDelPlan(local.plan)}`}>
+        <CambiarPlan slug={local.slug} estado={local.estado} plan={local.plan} planes={opcionesDePlan} esAdmin={rol === 'admin'} />
+      </Seccion>
 
       <Seccion titulo="Estado">
         {esLaDelProducto ? (

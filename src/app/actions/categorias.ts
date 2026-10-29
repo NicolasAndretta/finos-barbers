@@ -1,7 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase'
-import { exigirPermiso, requireProfile } from '@/lib/auth'
+import { exigirPermiso, exigirPlan, requireProfile } from '@/lib/auth'
 import { localDeAccion } from '@/lib/local'
 import { refrescarLocales } from '@/lib/refrescar'
 
@@ -46,6 +46,7 @@ export async function adminGetCategorias(slug: string, tipo?: TipoCategoria) {
 export async function adminCrearCategoria(formData: FormData) {
   const local = await localDeAccion(formData.get('local'))
   await exigirPermiso(local, 'editaCatalogo')
+  await exigirPlan(local, 'tienda')
   const nombre   = (formData.get('nombre') as string)?.trim()
   const tipo     = formData.get('tipo') as TipoCategoria
   const parentId = (formData.get('parent_id') as string) || null

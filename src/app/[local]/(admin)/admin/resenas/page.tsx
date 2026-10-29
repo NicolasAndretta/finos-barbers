@@ -7,7 +7,8 @@ import {
 } from '@/app/actions/resenas'
 import { Spinner } from '@/components/ui/Spinner'
 
-type Resena = { id: string; nombre: string; texto: string; rating: number; visible: boolean; orden: number }
+/** turno_id: la dejó un cliente después de su turno (verificada, Fase 7). Vacío: cargada a mano. */
+type Resena = { id: string; nombre: string; texto: string; rating: number; visible: boolean; orden: number; turno_id: string | null }
 type FormState = { id: string | null; nombre: string; texto: string; rating: string; orden: string; visible: boolean }
 const EMPTY: FormState = { id: null, nombre: '', texto: '', rating: '5', orden: '0', visible: true }
 
@@ -59,16 +60,23 @@ export default function AdminResenasPage() {
   }
 
   const inputCls = 'w-full bg-zinc-900 border border-zinc-800 text-white rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-amber-500/20'
+  // Cargar reseñas a mano: solo en una muestra (para mostrarla). En un local
+  // activo las dejan sus clientes después del turno; la base lo frena igual.
+  const aMano = local.estado === 'demo'
 
   return (
     <div className="w-full">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-extrabold text-white tracking-tight">Reseñas</h1>
-          <p className="text-zinc-400 text-sm mt-1">Las que estén visibles aparecen en la página principal.</p>
+          <p className="text-zinc-400 text-sm mt-1">
+            Las dejan tus clientes después de su turno, desde &quot;Mis turnos&quot;. Las visibles aparecen en tu página: podés ocultar las que no quieras mostrar.
+          </p>
         </div>
-        <button onClick={() => { reset(); setShowForm(true) }}
-          className="bg-amber-500 hover:bg-amber-400 text-black text-sm font-bold px-5 py-2.5 rounded-lg cursor-pointer">+ Nueva Reseña</button>
+        {aMano && (
+          <button onClick={() => { reset(); setShowForm(true) }}
+            className="bg-amber-500 hover:bg-amber-400 text-black text-sm font-bold px-5 py-2.5 rounded-lg cursor-pointer shrink-0">+ Reseña de muestra</button>
+        )}
       </div>
 
       {showForm && (
@@ -115,14 +123,18 @@ export default function AdminResenasPage() {
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-amber-400 text-sm">{'★'.repeat(r.rating)}</span>
                   <span className="text-white font-bold text-sm">{r.nombre}</span>
+                  {r.turno_id
+                    ? <span className="text-[10px] text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full">De un cliente</span>
+                    : <span className="text-[10px] text-zinc-400 bg-zinc-800 px-2 py-0.5 rounded-full">De muestra</span>}
                   {!r.visible && <span className="text-[10px] text-zinc-500 bg-zinc-800 px-2 py-0.5 rounded-full">Oculta</span>}
                 </div>
                 <p className="text-zinc-400 text-sm">{r.texto}</p>
               </div>
               <div className="flex gap-2 shrink-0 h-fit">
-                <button onClick={() => handleEdit(r)} disabled={isPending} className="text-[11px] font-bold text-zinc-300 bg-zinc-800 hover:bg-zinc-700 px-3 py-1.5 rounded-md cursor-pointer">Editar</button>
+                {/* La de un cliente no se edita ni se borra: se oculta. */}
+                {!r.turno_id && <button onClick={() => handleEdit(r)} disabled={isPending} className="text-[11px] font-bold text-zinc-300 bg-zinc-800 hover:bg-zinc-700 px-3 py-1.5 rounded-md cursor-pointer">Editar</button>}
                 <button onClick={() => handleToggle(r.id)} disabled={isPending} className={`text-[11px] font-bold px-3 py-1.5 rounded-md cursor-pointer ${r.visible ? 'text-amber-400 bg-amber-400/10' : 'text-emerald-400 bg-emerald-400/10'}`}>{r.visible ? 'Ocultar' : 'Mostrar'}</button>
-                <button onClick={() => handleDelete(r.id)} disabled={isPending} className="text-[11px] font-bold text-red-400 bg-red-500/10 px-3 py-1.5 rounded-md cursor-pointer">Borrar</button>
+                {!r.turno_id && <button onClick={() => handleDelete(r.id)} disabled={isPending} className="text-[11px] font-bold text-red-400 bg-red-500/10 px-3 py-1.5 rounded-md cursor-pointer">Borrar</button>}
               </div>
             </div>
           ))}

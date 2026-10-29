@@ -13,6 +13,16 @@
 
 import { palabrasDe, type Palabras } from '@/lib/rubros'
 
+/** Lo que trae un plan (Fase 7). Sale de la tabla `planes` de la base: acá no se copia. */
+export type Capacidad = 'cuentasProfesionales' | 'senas' | 'resenas' | 'reportes' | 'tienda' | 'finanzas' | 'exportar'
+
+export type PlanDelLocal = {
+  codigo: 'basico' | 'pro' | 'premium'
+  nombre: string
+  /** null: sin límite */
+  maxProfesionales: number | null
+} & Record<Capacidad, boolean>
+
 export type LocalPublico = {
   id: string
   /** El nombre en la dirección: sitio.com/<slug> */
@@ -47,6 +57,8 @@ export type LocalPublico = {
   diasReserva: number
   /** La zona horaria del local: "qué hora es" se calcula ahí, no en el servidor. */
   zonaHoraria: string
+  /** Su plan y qué trae (Fase 7). La base es la que pone los candados; esto es para mostrar. */
+  plan: PlanDelLocal
 }
 
 /** Una fila de `datos_del_local(slug)` (migración 0008), tal como llega. */
@@ -57,6 +69,9 @@ export type FilaLocal = {
   whatsapp: string | null; whatsapp_mensaje: string | null; instagram: string | null; tiktok: string | null
   alias_pago: string | null; sena_porcentaje: number; medios_pago: string[] | null
   anticipacion_minutos: number; dias_reserva: number; zona_horaria: string
+  plan: PlanDelLocal['codigo']; plan_nombre: string; max_profesionales: number | null
+  cuentas_profesionales: boolean; senas: boolean; resenas: boolean; reportes: boolean
+  tienda: boolean; finanzas: boolean; exportar: boolean
 }
 
 /** "5491157641147" → "+54 9 11 5764-1147". Si no reconoce la forma, lo deja con "+". */
@@ -96,6 +111,18 @@ export function aLocalPublico(f: FilaLocal): LocalPublico {
     anticipacionMinutos: f.anticipacion_minutos,
     diasReserva: f.dias_reserva,
     zonaHoraria: f.zona_horaria || 'America/Argentina/Buenos_Aires',
+    plan: {
+      codigo: f.plan,
+      nombre: f.plan_nombre,
+      maxProfesionales: f.max_profesionales,
+      cuentasProfesionales: f.cuentas_profesionales,
+      senas: f.senas,
+      resenas: f.resenas,
+      reportes: f.reportes,
+      tienda: f.tienda,
+      finanzas: f.finanzas,
+      exportar: f.exportar,
+    },
   }
 }
 

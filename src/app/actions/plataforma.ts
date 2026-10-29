@@ -193,12 +193,17 @@ export async function quitarDueno(formData: FormData): Promise<{ error?: string 
 
 // ─── Estados ────────────────────────────────────────────────────────────────
 
-export type ResultadoActivar = { error?: string; borrados?: { turnos: number; pedidos: number; movimientos: number; clientes: number } }
+export type ResultadoActivar = { error?: string; borrados?: { turnos: number; pedidos: number; movimientos: number; clientes: number; resenas: number } }
 
+const PLANES = ['basico', 'pro', 'premium']
+
+/** Activa con el plan elegido (Fase 7): la base revisa que entren sus profesionales. */
 export async function activarLocal(formData: FormData): Promise<ResultadoActivar> {
   const local = await localDeAccion(formData.get('local'))
+  const plan = texto(formData, 'plan', 20)
+  if (!PLANES.includes(plan)) return { error: 'Elegí el plan con el que arranca.' }
   const supabase = await createClient()
-  const { data, error } = await supabase.rpc('activar_local', { p_local: local.id })
+  const { data, error } = await supabase.rpc('activar_local', { p_local: local.id, p_plan: plan })
   if (error) return { error: error.message }
   refrescarTodo()
   return { borrados: data as ResultadoActivar['borrados'] }
@@ -219,6 +224,22 @@ export async function extenderMuestra(formData: FormData): Promise<{ error?: str
   const local = await localDeAccion(formData.get('local'))
   const supabase = await createClient()
   const { error } = await supabase.rpc('extender_muestra', { p_local: local.id })
+  if (error) return { error: error.message }
+  refrescarTodo()
+  return {}
+}
+
+/**
+ * Cambia el plan (Fase 7). En una muestra, el equipo (para mostrarla en cada
+ * plan); en un local activo, solo el admin, y la base revisa que entren sus
+ * profesionales.
+ */
+export async function cambiarPlan(formData: FormData): Promise<{ error?: string }> {
+  const local = await localDeAccion(formData.get('local'))
+  const plan = texto(formData, 'plan', 20)
+  if (!PLANES.includes(plan)) return { error: 'Ese plan no existe.' }
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('cambiar_plan', { p_local: local.id, p_plan: plan })
   if (error) return { error: error.message }
   refrescarTodo()
   return {}

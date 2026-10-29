@@ -193,7 +193,10 @@ Después de cada cambio en producción:
 | 4b | Imágenes por local; las llamadas con la llave del servidor, revisadas y filtradas por local | ✅ Hecha en desarrollo el 26/10/2026, aprobada de antemano por Nico (va a producción con el resto, después de la Fase 5) |
 | 5 | Prueba automática de aislamiento completa | ✅ Hecha en desarrollo el 26/10/2026, aprobada de antemano por Nico. Sigue el pase a producción de todo junto (lo corre Nico: `docs/PASE-A-PRODUCCION.md`) |
 | 6 | Alta de barberías desde el panel (demo → activo), ver la sección de abajo | ✅ Hecha en desarrollo el 26/10/2026, aprobada de antemano por Nico. **No va en el pase de las Fases 1 a 5**: va en un pase siguiente (la `0014` y el código) |
-| 7 | Interruptores de plan: turnos, tienda, finanzas | ⏳ |
+| 6b | Arreglos de lo que se vio en producción: muestras que vencen, avisos, velocidad | ✅ Hecha en desarrollo el 29/10/2026, con vía libre de Nico. Pase: `docs/PASE-FASE-6B.md` |
+| 7 | Los planes (Básico, Pro, Premium) en la base: límites, candados, panel según el plan; reseñas verificadas, reportes, exportar | ✅ Hecha en desarrollo el 29/10/2026, aprobada de antemano por Nico. Pase: `docs/PASE-FASE-7.md` (después del de la 6b) |
+| 7b | Reservar sin cuenta (aprobada el 29/10) | ⏳ Necesita el dominio del producto: sin mails, el cliente no tiene cómo cancelar |
+| 8 | Cobro automático del abono (suscripciones de Mercado Pago) | ⏳ Propuesta; por ahora se cobra a mano |
 
 Cada fase se prueba en desarrollo. A producción van todas juntas después de la
 Fase 5: con copia de seguridad, en un horario tranquilo, y revisando la demo y
@@ -1591,3 +1594,108 @@ base la que decide qué puede ver y tocar cada uno.
 
 **Para producción:** `docs/PASE-FASE-6B.md`. La `0015` va primero (convive con el código de la
 Fase 6, que no lee nada de lo que borra) y después el código.
+
+### Fase 7 — Los planes: el plan (29/10/2026, aprobado de antemano)
+
+Lo que se construye, sobre la tabla v2 aprobada:
+- **El plan vive en la base:** una tabla `planes` con qué trae cada uno (la única fuente) y
+  `locales.plan`. La app no copia la tabla: la lee.
+- **Los candados, en la base** (no alcanza con esconder botones), cada uno con su prueba por
+  afuera de la pantalla: profesionales activos, cuentas de profesionales, conectar Mercado Pago,
+  la tienda, la caja, las reseñas a la vista.
+- **El panel y la web, según el plan:** el menú muestra lo que trae; una sección que no trae,
+  abierta igual, dice qué plan la trae; la tienda de un local sin tienda no existe.
+- **La plataforma:** el plan se elige al activar; en una muestra, el equipo la muestra en cada
+  plan; en un local activo, lo cambia solo el admin.
+- **Lo nuevo de la tabla:** reseñas verificadas, reportes (con la marca "no vino" para contar
+  los ausentes) y exportar los datos.
+- **Afuera:** reservar sin cuenta (necesita el dominio: sin mails el cliente no puede cancelar,
+  queda como Fase 7b), WhatsApp, el cobro del abono (Fase 8).
+
+### Fase 7 — Los planes, hecha en desarrollo (29/10/2026)
+
+**Qué cambió, en simple**
+
+| Antes | Ahora |
+|---|---|
+| Todos los locales tenían todo | Cada local tiene su plan, y la base pone los límites |
+| Profesionales sin límite | Hasta 2 (Básico), 5 (Pro), sin límite (Premium): la base frena dar de alta o volver a mostrar uno de más |
+| Cualquier local creaba cuentas de barbero y conectaba Mercado Pago | Desde el Pro. En Básico, la reserva cobra la seña por transferencia |
+| La tienda y la caja, en todos | Solo Premium: sin ella, la tienda no existe (y la base no muestra sus productos ni acepta pedidos) |
+| Las reseñas las cargaba el dueño a mano | Las deja el cliente desde "Mis turnos", después de su turno (una vez, al que fue). El dueño las oculta, no las edita ni las borra. A mano, solo en una muestra (activar las borra) |
+| No había reportes | Reportes (Pro en adelante): turnos, cancelados, no vinieron, atendidos y lo facturado, por mes, por profesional y por servicio, de los últimos 30, 90 o 180 días |
+| No había forma de marcar a quien no vino | "No vino" en Turnos del panel, en un turno que ya pasó |
+| No había forma de llevarse los datos | "Tus datos" en el inicio del panel: los turnos y los clientes en CSV (todos los planes) |
+| Activar no preguntaba nada | Al activar se elige el plan (tarjetas con precio y límite). La ficha tiene "Plan", para cambiarlo |
+
+**Las piezas**
+- La migración `0016_planes.sql`:
+  - la tabla `planes` (19/35/59 USD, la hipótesis);
+  - `locales.plan` (nace en Premium);
+  - `plan_permite(local, capacidad)`;
+  - `datos_del_local` con el plan (cada página lo sabe sin otra consulta);
+  - los disparadores de los límites;
+  - las reglas de lo público (productos, categorías, reseñas) y de la caja con el plan;
+  - `dejar_resena`, `reporte_del_local`, `cambiar_plan`, y `activar_local(local, plan)`. La de
+    un solo dato sigue, para el código de la 6b mientras se publica la 7;
+  - `turnos.no_vino`.
+- La reseña apunta a su turno con el candado doble (local + turno), como todo lo demás.
+- En la app:
+  - `lib/planes.ts` (lee la tabla);
+  - `SoloConElPlan` y `NoIncluido` (el aviso de las secciones que el plan no trae);
+  - `exigirPlan` en las acciones;
+  - la página de Reportes;
+  - la ruta de exportar (`/<local>/admin/exportar/turnos|clientes`);
+  - "Dejar reseña" en "Mis turnos";
+  - el plan en la plataforma.
+
+**Decisiones que tomé (cambiables)**
+- **Los profesionales de más no se tocan solos:** activar o bajar de plan con más profesionales
+  a la vista de los que permite el plan no se puede, y el error dice cuántos sobran. Así elige
+  el dueño cuáles siguen. En una muestra, "Mostrarla en el plan" no revisa eso (es para mirar).
+- **Bajar de plan no borra nada:**
+  - la cuenta del barbero queda, sin acceso a su agenda;
+  - la conexión de Mercado Pago queda, sin usarse;
+  - los productos, la caja y las reseñas quedan, sin verse.
+  Si vuelve a subir, aparece todo.
+- **Las reseñas verificadas se publican al instante,** con el nombre y la inicial del apellido
+  ("Carla C."). El dueño puede ocultarlas.
+- **"Facturado"** es el precio de los servicios de los turnos atendidos, una estimación: no es
+  la caja.
+- **Exportar** lo hace quien administra (el dueño y el admin), no la comercial. El CSV se
+  protege contra fórmulas de Excel (un valor que empieza con `=` no se ejecuta).
+- En Básico, "Cobros" (Mercado Pago) no está; **la seña por transferencia** sigue en "Datos del
+  local".
+
+**Las pruebas**
+- **Nueva: `probar-planes`, 50 controles:**
+  - la tabla de planes la ve cualquiera y nadie la cambia;
+  - quién cambia el plan;
+  - cada candado de la base en Básico, con la llave del servidor incluida;
+  - el panel y la web en Básico y en Pro;
+  - reseñas verificadas: las 7 reglas, y dejarla desde el celu;
+  - las cuentas de los reportes, con un caso armado;
+  - exportar: dueño sí, cliente 403, sin cuenta al login;
+  - activar eligiendo Básico desde la plataforma, en el celu;
+  - subir y bajar de plan sin perder nada.
+- **Adaptadas:**
+  - `verificar-locales`: `planes` es de toda la plataforma;
+  - `probar-matriz`: las funciones nuevas revisadas; `planes` en la lista de lo que la clave
+    pública no puede escribir; las reseñas a mano, solo en la muestra.
+- **Contraprueba 1 (la base):** se sacó el disparador del límite de profesionales.
+  `probar-planes` marcó "un profesional de más no entra" y "volver a mostrarlo no". Se volvió a
+  pasar la `0016` y pasa.
+- **Contraprueba 2 (la app):** se hizo que las secciones del panel se mostraran aunque el plan
+  no las trae. `probar-planes` marcó exactamente esa. Restaurado (archivo idéntico, misma
+  huella) y pasa.
+- **`npm run probar`: 13 pruebas, 629 controles, todo en verde.** `npm run lint`: 0 errores
+  (las 6 advertencias viejas). `npm run build`: en verde.
+
+**Para Nico (cuando pueda)**
+- Probar el panel en cada plan con una muestra: en su ficha, "Plan" → "Mostrarla en este plan".
+- ¿Las reseñas verificadas se publican al instante (como ahora), o el dueño las aprueba antes?
+- Anotado para después: el cliente puede "Cancelar" un turno que ya pasó (ya era así antes de
+  esta fase).
+
+**Para producción:** `docs/PASE-FASE-7.md`, después del de la 6b. La `0016` convive con el
+código de la 6b: va primero, y después el código.

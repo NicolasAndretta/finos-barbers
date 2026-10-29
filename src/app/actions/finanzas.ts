@@ -1,7 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase'
-import { exigirPermiso, requireProfile } from '@/lib/auth'
+import { exigirPermiso, exigirPlan, requireProfile } from '@/lib/auth'
 import { localDeAccion } from '@/lib/local'
 import { refrescarLocales } from '@/lib/refrescar'
 
@@ -25,6 +25,7 @@ export async function adminGetTransacciones(slug: string) {
 export async function adminCrearTransaccion(formData: FormData) {
   const local = await localDeAccion(formData.get('local'))
   const profile = await exigirPermiso(local, 'administra')
+  await exigirPlan(local, 'finanzas')
 
   const tipo        = formData.get('tipo') as string
   const categoria   = formData.get('categoria') as string
