@@ -17,6 +17,9 @@ Al terminar: `git checkout ccr-21a597dc-01874p`.
 - **"Tu marca"** en "Datos del local": cada local elige su color (madera, dorado, verde, azul,
   rojo o violeta) y sube su logo. Sin elegir nada, todo se ve igual que hoy.
 - Un cliente ya no puede cancelar un turno que ya pasó.
+- Lo que vio Nico en el pase de la 6b: la muestra archivada, para quien la administra, con un
+  cartel "Archivada"; la página "no disponible" sin el link a Roble; y las confirmaciones de la
+  plataforma (archivar, revivir, suspender, sacar un dueño) dentro de la página.
 
 La `0017` convive con el código de la Fase 7 (suma dos datos que ese código ignora): primero la
 base, después el código.

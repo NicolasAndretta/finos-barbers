@@ -15,9 +15,8 @@
 
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import Link from 'next/link'
 import { getLocal, getPermisos } from '@/lib/local'
-import { localVisible } from '@/lib/local-datos'
+import { localVisible, whatsappLink } from '@/lib/local-datos'
 import { LocalProvider } from '@/components/local/LocalProvider'
 import { PwaInstallPrompt } from '@/components/ui/PwaInstallPrompt'
 import { CartelMuestra } from '@/components/local/CartelMuestra'
@@ -47,7 +46,7 @@ export default async function LocalLayout({ children, params }: Props) {
 
   if (!localVisible(local)) {
     const permisos = await getPermisos(local.id)
-    if (!permisos.editaCatalogo) return <LocalNoDisponible nombre={local.nombre} estado={local.estado} />
+    if (!permisos.editaCatalogo) return <LocalNoDisponible nombre={local.nombre} estado={local.estado} whatsapp={local.whatsapp ? whatsappLink(local) : ''} />
   }
 
   // Su color de acento (0017): redefine las 11 variables de la escala de
@@ -65,7 +64,9 @@ export default async function LocalLayout({ children, params }: Props) {
   )
 }
 
-function LocalNoDisponible({ nombre, estado }: { nombre: string; estado: string }) {
+// Sin link "Volver al inicio": "/" lleva a la muestra del producto (Roble), que
+// no tiene nada que ver con este local. Si tiene WhatsApp, a su WhatsApp.
+function LocalNoDisponible({ nombre, estado, whatsapp }: { nombre: string; estado: string; whatsapp: string }) {
   const texto = estado === 'archivado'
     ? 'Esta página ya no está disponible.'
     : 'Por el momento no está tomando reservas desde acá.'
@@ -73,9 +74,11 @@ function LocalNoDisponible({ nombre, estado }: { nombre: string; estado: string 
     <main className="min-h-screen flex flex-col items-center justify-center gap-4 px-6 text-center">
       <h1 className="text-2xl font-bold text-white">{nombre}</h1>
       <p className="text-zinc-400 max-w-sm">{texto}</p>
-      <Link href="/" className="text-sm text-zinc-500 hover:text-white underline underline-offset-4">
-        Volver al inicio
-      </Link>
+      {whatsapp && (
+        <a href={whatsapp} target="_blank" rel="noopener noreferrer" className="text-sm text-zinc-300 hover:text-white underline underline-offset-4">
+          Escribinos por WhatsApp
+        </a>
+      )}
     </main>
   )
 }

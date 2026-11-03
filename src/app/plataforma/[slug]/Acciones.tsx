@@ -19,6 +19,29 @@ const inputCls = 'w-full bg-zinc-900 border border-zinc-800 text-white rounded-l
 const botonCls = 'bg-amber-500 hover:bg-amber-400 disabled:bg-amber-500/40 disabled:cursor-not-allowed text-black text-sm font-bold px-5 py-2.5 rounded-lg inline-flex items-center justify-center gap-2 cursor-pointer'
 const botonSecundarioCls = 'border border-zinc-800 hover:border-zinc-600 text-zinc-200 text-sm font-semibold px-4 py-2 rounded-lg inline-flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50'
 
+/**
+ * Una confirmación dentro de la página, en vez del cartel del navegador
+ * (window.confirm): dice qué va a pasar, con un botón para hacerlo y otro para
+ * volver atrás.
+ */
+function Confirmar({ pregunta, detalle, si, onSi, onNo, pendiente }: {
+  pregunta: string; detalle: string; si: string; onSi: () => void; onNo: () => void; pendiente: boolean
+}) {
+  return (
+    <div role="alertdialog" aria-label={pregunta} className="flex flex-col gap-3 bg-amber-500/5 border border-amber-500/20 rounded-lg p-4">
+      <p className="text-sm font-semibold text-white">{pregunta}</p>
+      <p className="text-sm text-zinc-300">{detalle}</p>
+      <div className="flex flex-col sm:flex-row gap-2">
+        <button type="button" disabled={pendiente} onClick={onSi} className={botonCls}>
+          {pendiente && <Spinner className="h-4 w-4" />}
+          {si}
+        </button>
+        <button type="button" disabled={pendiente} onClick={onNo} className={botonSecundarioCls}>Todavía no</button>
+      </div>
+    </div>
+  )
+}
+
 function Aviso({ ok, texto }: { ok: boolean; texto?: string }) {
   if (!texto) return null
   return (
@@ -82,6 +105,7 @@ export function Duenos({ slug, nombreLocal, duenos, cantidad, puedeManejar }: {
   const [otro, setOtro] = useState<{ link?: string; error?: string; de?: string }>({})
   const [errorQuitar, setErrorQuitar] = useState('')
   const [trabajando, setTrabajando] = useState<string | null>(null)
+  const [aSacar, setASacar] = useState<string | null>(null)
 
   const sacarOtroLink = async (d: DuenoDelLocal) => {
     setTrabajando(d.id)
@@ -90,11 +114,11 @@ export function Duenos({ slug, nombreLocal, duenos, cantidad, puedeManejar }: {
     setTrabajando(null)
   }
   const quitar = async (d: DuenoDelLocal) => {
-    if (!window.confirm(`¿Sacar a ${d.email} como dueño? La cuenta no se borra: deja de administrar este local.`)) return
     setTrabajando(d.id)
     const r = await quitarDueno(conLocal(slug, { usuario: d.id }))
     setErrorQuitar(r.error ?? '')
     setTrabajando(null)
+    setASacar(null)
   }
 
   return (
@@ -123,12 +147,22 @@ export function Duenos({ slug, nombreLocal, duenos, cantidad, puedeManejar }: {
                         Sacar otro link
                       </button>
                     )}
-                    <button type="button" disabled={trabajando === d.id} onClick={() => quitar(d)} className={`${botonSecundarioCls} text-red-400`}>
+                    <button type="button" disabled={trabajando === d.id} onClick={() => setASacar(d.id)} className={`${botonSecundarioCls} text-red-400`}>
                       Sacar
                     </button>
                   </div>
                 )}
               </div>
+              {aSacar === d.id && (
+                <Confirmar
+                  pregunta={`¿Sacar a ${d.email} como dueño?`}
+                  detalle="La cuenta no se borra: deja de administrar este local."
+                  si="Sí, sacarlo"
+                  onSi={() => quitar(d)}
+                  onNo={() => setASacar(null)}
+                  pendiente={trabajando === d.id}
+                />
+              )}
               {otro.de === d.id && otro.error && <Aviso ok={false} texto={otro.error} />}
               {otro.de === d.id && otro.link && (
                 <LinkParaCompartir link={otro.link} mensaje={mensajeDeInvitacion(nombreLocal, otro.link)} etiqueta={`El link de ${d.email}`} />
@@ -255,18 +289,41 @@ export function Activar({ slug, faltan, turnosDePrueba, planes, planActual }: { 
 
 // ─── Los otros estados ───────────────────────────────────────────────────────
 
-const CAMBIOS: Record<ResumenLocal['estado'], { a: ResumenLocal['estado']; texto: string; explicacion: string; soloAdmin: boolean }[]> = {
-  demo: [{ a: 'archivado', texto: 'Archivar la muestra', explicacion: 'Si no se vendió. El link deja de andar; se puede revivir cuando quieras.', soloAdmin: false }],
-  archivado: [{ a: 'demo', texto: 'Revivir la muestra', explicacion: 'Vuelve a ser una muestra, con todo lo que tenía, por 30 días.', soloAdmin: false }],
-  activo: [{ a: 'suspendido', texto: 'Suspender', explicacion: 'Si dejó de pagar: su página deja de tomar reservas. Él sigue entrando a su panel.', soloAdmin: true }],
-  suspendido: [{ a: 'activo', texto: 'Reactivar', explicacion: 'Su página vuelve a tomar reservas.', soloAdmin: true }],
+type Cambio = { a: ResumenLocal['estado']; texto: string; explicacion: string; soloAdmin: boolean; pregunta: string; detalle: string; si: string }
+
+const CAMBIOS: Record<ResumenLocal['estado'], Cambio[]> = {
+  demo: [{
+    a: 'archivado', texto: 'Archivar la muestra', explicacion: 'Si no se vendió. El link deja de andar; se puede revivir cuando quieras.', soloAdmin: false,
+    pregunta: '¿Archivar la muestra?', si: 'Sí, archivar',
+    detalle: 'Quien abra el link va a ver "Esta página ya no está disponible". Vos la seguís viendo, con un cartel de archivada, y la podés revivir cuando quieras.',
+  }],
+  archivado: [{
+    a: 'demo', texto: 'Revivir la muestra', explicacion: 'Vuelve a ser una muestra, con todo lo que tenía, por 30 días.', soloAdmin: false,
+    pregunta: '¿Revivir la muestra?', si: 'Sí, revivir', detalle: 'El link vuelve a andar, con todo lo que tenía, y vence en 30 días.',
+  }],
+  activo: [{
+    a: 'suspendido', texto: 'Suspender', explicacion: 'Si dejó de pagar: su página deja de tomar reservas. Él sigue entrando a su panel.', soloAdmin: true,
+    pregunta: '¿Suspender el local?', si: 'Sí, suspender', detalle: 'Su página deja de tomar reservas. El dueño sigue entrando a su panel, y no se borra nada.',
+  }],
+  suspendido: [{
+    a: 'activo', texto: 'Reactivar', explicacion: 'Su página vuelve a tomar reservas.', soloAdmin: true,
+    pregunta: '¿Reactivar el local?', si: 'Sí, reactivar', detalle: 'Su página vuelve a tomar reservas.',
+  }],
 }
 
 export function CambiarEstado({ slug, estado, esAdmin, muestraHasta }: { slug: string; estado: ResumenLocal['estado']; esAdmin: boolean; muestraHasta: string | null }) {
   const router = useRouter()
   const [error, setError] = useState('')
   const [pendiente, startTransition] = useTransition()
+  const [confirmando, setConfirmando] = useState<ResumenLocal['estado'] | null>(null)
   const opciones = CAMBIOS[estado]
+  const cambiar = (o: Cambio) => startTransition(async () => {
+    const r = await cambiarEstadoLocal(conLocal(slug, { estado: o.a }))
+    setError(r.error ?? '')
+    setConfirmando(null)
+    // Sin el "?nueva" de cuando se creó: el aviso pasa a ser el del cambio.
+    if (!r.error) router.replace(`/plataforma/${slug}?cambio=${o.a}`)
+  })
 
   return (
     <div className="flex flex-col gap-3">
@@ -289,23 +346,16 @@ export function CambiarEstado({ slug, estado, esAdmin, muestraHasta }: { slug: s
       {opciones.map((o) => (
         o.soloAdmin && !esAdmin ? (
           <p key={o.a} className="text-sm text-zinc-400">{o.texto}: lo hace solo el admin.</p>
+        ) : confirmando === o.a ? (
+          <Confirmar key={o.a} pregunta={o.pregunta} detalle={o.detalle} si={o.si} onSi={() => cambiar(o)} onNo={() => setConfirmando(null)} pendiente={pendiente} />
         ) : (
           <div key={o.a} className="flex flex-col sm:flex-row sm:items-center gap-3">
             <button
               type="button"
               disabled={pendiente}
-              onClick={() => {
-                if (!window.confirm(`${o.texto}: ¿seguro?`)) return
-                startTransition(async () => {
-                  const r = await cambiarEstadoLocal(conLocal(slug, { estado: o.a }))
-                  setError(r.error ?? '')
-                  // Sin el "?nueva" de cuando se creó: el aviso pasa a ser el del cambio.
-                  if (!r.error) router.replace(`/plataforma/${slug}?cambio=${o.a}`)
-                })
-              }}
+              onClick={() => setConfirmando(o.a)}
               className={`${botonSecundarioCls} shrink-0`}
             >
-              {pendiente && <Spinner className="h-4 w-4" />}
               {o.texto}
             </button>
             <p className="text-xs text-zinc-500">{o.explicacion}</p>

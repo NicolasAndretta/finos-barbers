@@ -286,6 +286,9 @@ try {
   anotar(Boolean(await uno(`select 1 as hay from public.membresias where user_id = $1 and local_id = $2 and rol = 'dueno'`, [otra.id, creado.id])), 'y queda como dueña')
   await pf.reload({ waitUntil: 'networkidle' })
   await pf.locator('li', { hasText: otra.email }).getByRole('button', { name: 'Sacar', exact: true }).click()
+  // La confirmación es de la página (no el cartel del navegador): dice qué pasa y pide el sí.
+  anotar((await texto(pf)).includes(`¿Sacar a ${otra.email} como dueño?`), 'sacar un dueño pide confirmar, dentro de la página')
+  await pf.getByRole('button', { name: 'Sí, sacarlo' }).click()
   await pf.waitForFunction((m) => !document.body.innerText.includes(m), otra.email, { timeout: 30_000 }).catch(() => {})
   anotar(!(await uno(`select 1 as hay from public.membresias where user_id = $1 and local_id = $2 and rol = 'dueno'`, [otra.id, creado.id])), 'se la puede sacar (la cuenta no se borra)')
   await invitar('Nico', jefe.email)
@@ -319,6 +322,7 @@ try {
   await pa.goto(`${APP}/plataforma/${SLUG}`, { waitUntil: 'networkidle' })
   anotar((await texto(pa)).includes(MAIL_DUENO), 'el admin sí ve los dueños de un local activo')
   await pa.getByRole('button', { name: 'Suspender' }).click()
+  await pa.getByRole('button', { name: 'Sí, suspender' }).click()
   await pa.waitForFunction(() => document.body.innerText.includes('Reactivar'), null, { timeout: 30_000 })
   anotar((await localPorSlug(SLUG)).estado === 'suspendido', 'el admin lo suspende')
   await pv.goto(`${APP}/${SLUG}`, { waitUntil: 'networkidle' })
@@ -326,6 +330,7 @@ try {
   await pd.goto(`${APP}/${SLUG}/admin/dashboard`, { waitUntil: 'networkidle' })
   anotar(pd.url().includes(`/${SLUG}/admin/dashboard`) && !(await texto(pd)).includes('no está tomando reservas'), 'el dueño sigue entrando a su panel')
   await pa.getByRole('button', { name: 'Reactivar' }).click()
+  await pa.getByRole('button', { name: 'Sí, reactivar' }).click()
   await pa.waitForFunction(() => document.body.innerText.includes('Suspender'), null, { timeout: 30_000 })
   anotar((await localPorSlug(SLUG)).estado === 'activo', 'y lo reactiva')
 
@@ -346,14 +351,23 @@ try {
   }
   anotar(extendida > 59.9 && extendida <= 60, '"Sumar 30 días" la estira a 60', String(extendida))
   await pf.getByRole('button', { name: 'Archivar la muestra' }).click()
+  anotar((await texto(pf)).includes('¿Archivar la muestra?') && (await localPorSlug(SLUG_ARCHIVO)).estado === 'demo', 'archivar pide confirmar, dentro de la página (todavía no archivó)')
+  await pf.getByRole('button', { name: 'Sí, archivar' }).click()
   await pf.waitForFunction(() => document.body.innerText.includes('Revivir la muestra'), null, { timeout: 30_000 })
   await pv.goto(`${APP}/${SLUG_ARCHIVO}`, { waitUntil: 'networkidle' })
   anotar((await localPorSlug(SLUG_ARCHIVO)).estado === 'archivado' && (await texto(pv)).includes('ya no está disponible'), 'la comercial la archiva: el link deja de andar')
+  anotar(!(await texto(pv)).includes('Volver al inicio'), 'y no manda a nadie a Roble ("Volver al inicio" llevaba a la muestra del producto)')
+  const pcA = await nuevaPagina('celu')
+  await entrar(pcA, comercial)
+  await pcA.goto(`${APP}/${SLUG_ARCHIVO}`, { waitUntil: 'networkidle' })
+  anotar((await texto(pcA)).includes('Archivada: el público no la ve'), 'quien la administra la sigue viendo, con un cartel que dice que está archivada')
+  await pcA.context().close()
   const fichaArchivada = await texto(pf)
   anotar(fichaArchivada.includes('Archivada. El link ya no anda') && !fichaArchivada.includes('¡Muestra creada!'),
     'la ficha dice "Archivada" y ya no "¡Muestra creada!"')
   await q(`update public.locales set muestra_hasta = now() - interval '5 days' where slug = $1`, [SLUG_ARCHIVO])
   await pf.getByRole('button', { name: 'Revivir la muestra' }).click()
+  await pf.getByRole('button', { name: 'Sí, revivir' }).click()
   await pf.waitForFunction(() => document.body.innerText.includes('Archivar la muestra'), null, { timeout: 30_000 })
   const revivida = (await uno(`select extract(epoch from muestra_hasta - now()) / 86400 as d from public.locales where slug = $1`, [SLUG_ARCHIVO])).d
   anotar((await localPorSlug(SLUG_ARCHIVO)).estado === 'demo' && revivida > 29.9 && revivida <= 30 && (await texto(pf)).includes('Revivida'),

@@ -1743,3 +1743,24 @@ Si no, no se publica y listo: la rama fija de la Fase 7 no la tiene.
   solo puede ocultarlas.
 - **La marca de cada local va**, en todos los planes. Su pase: `docs/PASE-MARCA.md`, después del
   de la Fase 7 (trae también que un cliente no cancele un turno que ya pasó).
+
+### El pase de la tanda 6b, hecho (02 y 03/11/2026)
+
+- Copia antes (`respaldos/2026-11-02_23-35-36_produccion`), la `0015` (la corrió Nico: la
+  herramienta de Claude no deja escribir en producción, ni con su OK) y el código (`main` en
+  `247f57d`). El reloj de la base quedó programado sin tocar el panel de Supabase.
+- Revisado: la demo y 369 bien; Nico nota Roble más rápido; una muestra nueva (`prueba-6b`) dice
+  cuándo vence, y archivada no se ve.
+
+**Lo que vio Nico, arreglado en desarrollo (va con el pase de la marca):**
+- La muestra archivada se le seguía viendo en su navegador. Es a propósito (quien la administra la
+  ve, para revisarla y revivirla), pero confundía: ahora tiene un cartel "Archivada: el público no
+  la ve" (y "Suspendido" en un local suspendido).
+- "Volver al inicio", en la página de un local no disponible, llevaba a Roble (la muestra del
+  producto). Se sacó; si el local tiene WhatsApp, "Escribinos por WhatsApp".
+- Archivar, revivir, suspender, reactivar y sacar un dueño preguntaban con el cartel del navegador.
+  Ahora la confirmación es de la página: qué va a pasar, "Sí, archivar" y "Todavía no".
+- `probar-plataforma` suma 4 controles. **`npm run probar`: 14 pruebas, 645 controles, todo en
+  verde.**
+
+Anotado: cancelar un turno (en el panel y en "Mis turnos") todavía usa el cartel del navegador.
