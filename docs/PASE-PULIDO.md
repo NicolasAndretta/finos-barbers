@@ -18,7 +18,7 @@
 ```bash
 cd "C:/Users/Usuario/Desktop/ANDRETTA-UNIVERSO/desarrollo-web/finos-barbers"
 git fetch origin
-git push origin origin/pase/pulido:main
+git push origin pase/pulido:main
 ```
 Es un avance directo de `main`. Si git lo rechaza, alguien tocó `main`: frená y avisá.
 
