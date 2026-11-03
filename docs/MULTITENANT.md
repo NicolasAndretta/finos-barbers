@@ -1764,3 +1764,25 @@ Si no, no se publica y listo: la rama fija de la Fase 7 no la tiene.
   verde.**
 
 Anotado: cancelar un turno (en el panel y en "Mis turnos") todavía usa el cartel del navegador.
+
+### Los pases de la Fase 7 y de la marca, hechos (03/11/2026)
+
+- **Fase 7:** copia antes (`respaldos/2026-11-03_00-36-19_produccion`), la `0016` y el código
+  (`main` en `e9879bb`). Revisado por Nico: el panel de Roble dice "Plan Premium" y tiene
+  Reportes (sus números cierran: 8 turnos, 1 cancelado, 7 atendidos, $28.500); una muestra
+  mostrada en Básico pierde Productos, Reseñas, Cobros y Finanzas del menú, la portada no lleva a la
+  tienda y la tienda no existe. Las variables del hPanel siguen.
+- **La marca** (con los arreglos de la 6b): copia antes (`respaldos/2026-11-03_01-40-17_produccion`),
+  la `0017` y el código (`main` en `dea61fe`). Revisado: una muestra en azul con su logo; Roble
+  sigue en madera con su nombre dibujado (comprobado en producción); 369 bien.
+- **Producción tiene todo lo hecho hasta hoy** (Fases 1 a 7 y la marca). La rama de trabajo y
+  `main` están en el mismo commit.
+
+**Para pulir (anotado):**
+- En Premium el menú del panel tiene 13 secciones: en una compu de 1366 px, "Finanzas" baja a una
+  segunda línea.
+- La textura de madera de algunas secciones ("El equipo", "Dónde estamos") sigue marrón con otro
+  acento: queda mejor si toma el color del local.
+- Un logo con fondo blanco se ve como un cuadrado blanco sobre la página oscura (el aviso ya lo dice:
+  mejor PNG transparente y en claro).
+- Cancelar un turno (panel y "Mis turnos") todavía usa el cartel del navegador.
