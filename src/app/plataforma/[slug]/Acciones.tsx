@@ -14,33 +14,11 @@ import {
 } from '@/app/actions/plataforma'
 import { cuantoLeQueda, diaYMes, type DuenoDelLocal, type OpcionDePlan, type ResumenLocal } from '@/lib/plataforma-datos'
 import { Spinner } from '@/components/ui/Spinner'
+import { Confirmacion } from '@/components/ui/Confirmacion'
 
 const inputCls = 'w-full bg-zinc-900 border border-zinc-800 text-white rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-amber-500/20'
 const botonCls = 'bg-amber-500 hover:bg-amber-400 disabled:bg-amber-500/40 disabled:cursor-not-allowed text-black text-sm font-bold px-5 py-2.5 rounded-lg inline-flex items-center justify-center gap-2 cursor-pointer'
 const botonSecundarioCls = 'border border-zinc-800 hover:border-zinc-600 text-zinc-200 text-sm font-semibold px-4 py-2 rounded-lg inline-flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50'
-
-/**
- * Una confirmación dentro de la página, en vez del cartel del navegador
- * (window.confirm): dice qué va a pasar, con un botón para hacerlo y otro para
- * volver atrás.
- */
-function Confirmar({ pregunta, detalle, si, onSi, onNo, pendiente }: {
-  pregunta: string; detalle: string; si: string; onSi: () => void; onNo: () => void; pendiente: boolean
-}) {
-  return (
-    <div role="alertdialog" aria-label={pregunta} className="flex flex-col gap-3 bg-amber-500/5 border border-amber-500/20 rounded-lg p-4">
-      <p className="text-sm font-semibold text-white">{pregunta}</p>
-      <p className="text-sm text-zinc-300">{detalle}</p>
-      <div className="flex flex-col sm:flex-row gap-2">
-        <button type="button" disabled={pendiente} onClick={onSi} className={botonCls}>
-          {pendiente && <Spinner className="h-4 w-4" />}
-          {si}
-        </button>
-        <button type="button" disabled={pendiente} onClick={onNo} className={botonSecundarioCls}>Todavía no</button>
-      </div>
-    </div>
-  )
-}
 
 function Aviso({ ok, texto }: { ok: boolean; texto?: string }) {
   if (!texto) return null
@@ -154,7 +132,7 @@ export function Duenos({ slug, nombreLocal, duenos, cantidad, puedeManejar }: {
                 )}
               </div>
               {aSacar === d.id && (
-                <Confirmar
+                <Confirmacion
                   pregunta={`¿Sacar a ${d.email} como dueño?`}
                   detalle="La cuenta no se borra: deja de administrar este local."
                   si="Sí, sacarlo"
@@ -347,7 +325,7 @@ export function CambiarEstado({ slug, estado, esAdmin, muestraHasta }: { slug: s
         o.soloAdmin && !esAdmin ? (
           <p key={o.a} className="text-sm text-zinc-400">{o.texto}: lo hace solo el admin.</p>
         ) : confirmando === o.a ? (
-          <Confirmar key={o.a} pregunta={o.pregunta} detalle={o.detalle} si={o.si} onSi={() => cambiar(o)} onNo={() => setConfirmando(null)} pendiente={pendiente} />
+          <Confirmacion tono="aviso" key={o.a} pregunta={o.pregunta} detalle={o.detalle} si={o.si} onSi={() => cambiar(o)} onNo={() => setConfirmando(null)} pendiente={pendiente} />
         ) : (
           <div key={o.a} className="flex flex-col sm:flex-row sm:items-center gap-3">
             <button

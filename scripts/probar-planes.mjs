@@ -306,6 +306,20 @@ try {
   const sinCuenta = await fetch(`${APP}/${SLUG}/admin/exportar/turnos`, { redirect: 'manual' })
   anotar(deCliente.status === 403 && sinCuenta.status >= 300 && sinCuenta.status < 400, 'un cliente no puede (403), y sin cuenta va al login', `${deCliente.status} · ${sinCuenta.status}`)
 
+  // Cancelar pide confirmar dentro de la página (no el cartel del navegador).
+  await pcl.goto(`${APP}/${SLUG}/turnos`, { waitUntil: 'networkidle' })
+  await pcl.getByRole('button', { name: 'Cancelar' }).click()
+  const preguntaCancelar = (await texto(pcl)).includes('¿cancelar este turno?')
+  const sigue = (await uno(`select estado from public.turnos where id = $1`, [tFuturo])).estado
+  await pcl.getByRole('button', { name: 'Sí, cancelar' }).click()
+  await pcl.getByText('Cancelado', { exact: false }).first().waitFor({ timeout: 30_000 }).catch(() => {})
+  let cancelado = ''
+  for (let i = 0; i < 40 && cancelado !== 'cancelado'; i++) {
+    await pcl.waitForTimeout(250)
+    cancelado = (await uno(`select estado from public.turnos where id = $1`, [tFuturo])).estado
+  }
+  anotar(preguntaCancelar && sigue !== 'cancelado' && cancelado === 'cancelado', 'cancelar un turno pide confirmar dentro de la página, y recién con el "sí" se cancela', `${sigue} → ${cancelado}`)
+
   // ─── 9. Activar con el plan elegido, desde la plataforma ───────────────────
   titulo('9. Activar eligiendo el plan, y bajar de plan sin perder nada')
   const pp = await nuevaPagina('celu')

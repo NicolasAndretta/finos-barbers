@@ -1786,3 +1786,19 @@ Anotado: cancelar un turno (en el panel y en "Mis turnos") todavía usa el carte
 - Un logo con fondo blanco se ve como un cuadrado blanco sobre la página oscura (el aviso ya lo dice:
   mejor PNG transparente y en claro).
 - Cancelar un turno (panel y "Mis turnos") todavía usa el cartel del navegador.
+
+### El pulido, hecho en desarrollo (03/11/2026)
+
+Lo anotado al hacer los pases:
+- **El menú del panel** va en su propia fila, abajo del encabezado: en una compu de 1366 px las 13
+  secciones de Premium entran en una línea (`probar-marca` lo comprueba).
+- **La textura de madera y el degradé del título toman el acento del local** (`globals.css` usa
+  `var(--color-amber-*)`). Con madera, los mismos colores de siempre.
+- **Ninguna confirmación usa el cartel del navegador:** `components/ui/Confirmacion.tsx` (rojo para
+  lo que cancela o borra), en "Mis turnos", Turnos y Calendario del panel, categorías, ausencias,
+  reseñas de muestra y la plataforma. `probar-planes` comprueba que cancelar recién cancela con el
+  "sí".
+- **`npm run probar`: 14 pruebas, 647 controles, todo en verde.** Pase: `docs/PASE-PULIDO.md` (solo
+  código, sin migración).
+
+Los planes no cambian: quedan como se aprobaron el 29/10, ni más ni menos (Nico, 03/11).

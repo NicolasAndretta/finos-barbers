@@ -4,6 +4,7 @@ import React, { useState, useTransition } from 'react'
 import { cancelarTurno } from '@/app/actions/reservas'
 import { dejarResena } from '@/app/actions/resenas'
 import { ahoraEnZona } from '@/lib/horarios'
+import { Confirmacion } from '@/components/ui/Confirmacion'
 import { Spinner } from '@/components/ui/Spinner'
 import { formatPrecio } from '@/lib/format'
 import { useLocalOpcional } from '@/components/local/LocalProvider'
@@ -39,13 +40,13 @@ export function TurnoCard({ turno }: { turno: Turno }) {
   // Un turno que ya pasó no se cancela (la acción tampoco lo deja).
   const cancelable = isCancelable && !yaPaso
 
+  const [confirmando, setConfirmando] = useState(false)
   const handleCancelar = () => {
-    if (confirm('¿Estás seguro de que deseas cancelar este turno?')) {
-      startTransition(async () => {
-        const res = await cancelarTurno(turno.id, local?.slug)
-        if (res.error) alert(res.error)
-      })
-    }
+    startTransition(async () => {
+      const res = await cancelarTurno(turno.id, local?.slug)
+      if (res.error) alert(res.error)
+      setConfirmando(false)
+    })
   }
 
   const statusColors: Record<string, string> = {
@@ -55,7 +56,7 @@ export function TurnoCard({ turno }: { turno: Turno }) {
   }
 
   return (
-    <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-5 shadow-lg flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-5 shadow-lg flex flex-col sm:flex-row sm:flex-wrap justify-between items-start sm:items-center gap-4">
       <div>
         <div className="flex items-center gap-3 mb-2">
           <h3 className="text-lg font-bold text-white">{turno.servicios.nombre}</h3>
@@ -75,14 +76,25 @@ export function TurnoCard({ turno }: { turno: Turno }) {
 
       <div className="flex flex-col items-end gap-2 w-full sm:w-auto">
         <p className="font-bold text-white">{formatPrecio(turno.servicios.precio)}</p>
-        {cancelable && (
-          <button onClick={handleCancelar} disabled={isPending}
+        {cancelable && !confirmando && (
+          <button onClick={() => setConfirmando(true)} disabled={isPending}
             className="w-full sm:w-auto text-xs font-bold text-red-400 hover:text-red-300 bg-red-400/10 hover:bg-red-400/20 px-3 py-1.5 rounded-lg transition-colors flex items-center justify-center gap-2 cursor-pointer">
             {isPending && <Spinner className="w-3 h-3 text-red-400" />}
             Cancelar
           </button>
         )}
       </div>
+      {confirmando && (
+        <Confirmacion
+          pregunta="¿Cancelar este turno?"
+          detalle={`El ${fechaLegible} a las ${horaLegible} queda libre para otra persona.`}
+          si="Sí, cancelar"
+          no="No, lo mantengo"
+          onSi={handleCancelar}
+          onNo={() => setConfirmando(false)}
+          pendiente={isPending}
+        />
+      )}
     </div>
   )
 }

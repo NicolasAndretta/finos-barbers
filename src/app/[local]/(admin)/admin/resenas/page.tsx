@@ -6,6 +6,7 @@ import {
   adminGetResenas, adminCrearResena, adminActualizarResena, adminToggleResena, adminEliminarResena,
 } from '@/app/actions/resenas'
 import { Spinner } from '@/components/ui/Spinner'
+import { Confirmacion } from '@/components/ui/Confirmacion'
 
 /** turno_id: la dejó un cliente después de su turno (verificada, Fase 7). Vacío: cargada a mano. */
 type Resena = { id: string; nombre: string; texto: string; rating: number; visible: boolean; orden: number; turno_id: string | null }
@@ -54,9 +55,9 @@ export default function AdminResenasPage() {
   const handleToggle = (id: string) => startTransition(async () => {
     const r = await adminToggleResena(id); if (r.error) alert(r.error); else await load()
   })
+  const [aBorrar, setABorrar] = useState<string | null>(null)
   const handleDelete = (id: string) => {
-    if (!confirm('¿Eliminar esta reseña?')) return
-    startTransition(async () => { const r = await adminEliminarResena(id); if (r.error) alert(r.error); else await load() })
+    startTransition(async () => { const r = await adminEliminarResena(id); setABorrar(null); if (r.error) alert(r.error); else await load() })
   }
 
   const inputCls = 'w-full bg-zinc-900 border border-zinc-800 text-white rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-amber-500/20'
@@ -118,7 +119,7 @@ export default function AdminResenasPage() {
       ) : (
         <div className="space-y-3">
           {items.map(r => (
-            <div key={r.id} className={`bg-zinc-950 border border-zinc-900 rounded-xl p-5 flex flex-col sm:flex-row justify-between gap-4 ${!r.visible ? 'opacity-55' : ''}`}>
+            <div key={r.id} className={`bg-zinc-950 border border-zinc-900 rounded-xl p-5 flex flex-col sm:flex-row sm:flex-wrap justify-between gap-4 ${!r.visible ? 'opacity-55' : ''}`}>
               <div className="min-w-0">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-amber-400 text-sm">{'★'.repeat(r.rating)}</span>
@@ -134,8 +135,18 @@ export default function AdminResenasPage() {
                 {/* La de un cliente no se edita ni se borra: se oculta. */}
                 {!r.turno_id && <button onClick={() => handleEdit(r)} disabled={isPending} className="text-[11px] font-bold text-zinc-300 bg-zinc-800 hover:bg-zinc-700 px-3 py-1.5 rounded-md cursor-pointer">Editar</button>}
                 <button onClick={() => handleToggle(r.id)} disabled={isPending} className={`text-[11px] font-bold px-3 py-1.5 rounded-md cursor-pointer ${r.visible ? 'text-amber-400 bg-amber-400/10' : 'text-emerald-400 bg-emerald-400/10'}`}>{r.visible ? 'Ocultar' : 'Mostrar'}</button>
-                {!r.turno_id && <button onClick={() => handleDelete(r.id)} disabled={isPending} className="text-[11px] font-bold text-red-400 bg-red-500/10 px-3 py-1.5 rounded-md cursor-pointer">Borrar</button>}
+                {!r.turno_id && <button onClick={() => setABorrar(r.id)} disabled={isPending} className="text-[11px] font-bold text-red-400 bg-red-500/10 px-3 py-1.5 rounded-md cursor-pointer">Borrar</button>}
               </div>
+              {aBorrar === r.id && (
+                <Confirmacion
+                  pregunta={`¿Borrar la reseña de ${r.nombre}?`}
+                  detalle="Se borra de tu página. Si solo no querés mostrarla, mejor ocultala."
+                  si="Sí, borrar"
+                  onSi={() => handleDelete(r.id)}
+                  onNo={() => setABorrar(null)}
+                  pendiente={isPending}
+                />
+              )}
             </div>
           ))}
         </div>

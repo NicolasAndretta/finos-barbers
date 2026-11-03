@@ -15,6 +15,7 @@
 import React, { useCallback, useEffect, useState, useTransition } from 'react'
 import { useLocal } from '@/components/local/LocalProvider'
 import { Spinner } from '@/components/ui/Spinner'
+import { Confirmacion } from '@/components/ui/Confirmacion'
 import { conMayuscula } from '@/lib/rubros'
 import { NOMBRES_DIA, SEMANA, type Tramo } from '@/lib/horarios'
 import {
@@ -342,8 +343,9 @@ function Ausencias({ slug, datos, alGuardar }: { slug: string; datos: Datos; alG
     })
   }
 
+  const [aBorrar, setABorrar] = useState<string | null>(null)
   const borrar = (id: string) => {
-    if (!confirm('¿Borrar esta ausencia?')) return
+    setABorrar(null)
     startTransition(async () => {
       const r = await adminEliminarAusencia(id)
       setAviso(r.error ? { ok: false, texto: r.error } : { ok: true, texto: 'Ausencia borrada.' })
@@ -383,13 +385,25 @@ function Ausencias({ slug, datos, alGuardar }: { slug: string; datos: Datos; alG
       ) : (
         <ul className="flex flex-col gap-2 mt-3">
           {datos.ausencias.map((a) => (
-            <li key={a.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-zinc-900/50 border border-zinc-800 rounded-lg px-4 py-3">
+            <li key={a.id} className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center justify-between gap-2 bg-zinc-900/50 border border-zinc-800 rounded-lg px-4 py-3">
               <div className="text-sm">
                 <span className="text-white font-semibold">{nombreDe(a.barbero_id)}</span>
                 <span className="text-zinc-400"> · {a.desde === a.hasta ? fechaLinda(a.desde) : `${fechaLinda(a.desde)} al ${fechaLinda(a.hasta)}`}</span>
                 {a.motivo && <span className="text-zinc-500"> · {a.motivo}</span>}
               </div>
-              <button type="button" onClick={() => borrar(a.id)} disabled={pendiente} className="self-start sm:self-auto text-[11px] font-bold text-red-400 bg-red-500/10 px-3 py-1.5 rounded-md cursor-pointer">Borrar</button>
+              {aBorrar !== a.id && (
+                <button type="button" onClick={() => setABorrar(a.id)} disabled={pendiente} className="self-start sm:self-auto text-[11px] font-bold text-red-400 bg-red-500/10 px-3 py-1.5 rounded-md cursor-pointer">Borrar</button>
+              )}
+              {aBorrar === a.id && (
+                <Confirmacion
+                  pregunta="¿Borrar esta ausencia?"
+                  detalle="Esos días se vuelven a ofrecer turnos."
+                  si="Sí, borrar"
+                  onSi={() => borrar(a.id)}
+                  onNo={() => setABorrar(null)}
+                  pendiente={pendiente}
+                />
+              )}
             </li>
           ))}
         </ul>

@@ -7,6 +7,7 @@ import {
   adminToggleCategoria, adminEliminarCategoria, type TipoCategoria,
 } from '@/app/actions/categorias'
 import { Spinner } from '@/components/ui/Spinner'
+import { Confirmacion } from '@/components/ui/Confirmacion'
 
 type Categoria = {
   id: string
@@ -70,9 +71,9 @@ export default function AdminCategoriasPage() {
   const handleToggle = (id: string) => startTransition(async () => {
     const r = await adminToggleCategoria(id); if (r.error) alert(r.error); else await load()
   })
+  const [aBorrar, setABorrar] = useState<string | null>(null)
   const handleDelete = (id: string) => {
-    if (!confirm('¿Eliminar esta categoría? Los productos/servicios quedan sin categoría.')) return
-    startTransition(async () => { const r = await adminEliminarCategoria(id); if (r.error) alert(r.error); else await load() })
+    startTransition(async () => { const r = await adminEliminarCategoria(id); setABorrar(null); if (r.error) alert(r.error); else await load() })
   }
 
   const padres = cats.filter(c => c.tipo === form.tipo && !c.parent_id && c.id !== form.id)
@@ -153,6 +154,16 @@ export default function AdminCategoriasPage() {
                 {porTipo(tipo).length === 0 && (
                   <p className="text-zinc-600 text-sm">Sin categorías todavía.</p>
                 )}
+                {aBorrar && porTipo(tipo).some(c => c.id === aBorrar) && (
+                  <Confirmacion
+                    pregunta={`¿Borrar la categoría «${cats.find(c => c.id === aBorrar)?.nombre}»?`}
+                    detalle="Lo que estaba en ella queda sin categoría (no se borra)."
+                    si="Sí, borrar"
+                    onSi={() => handleDelete(aBorrar)}
+                    onNo={() => setABorrar(null)}
+                    pendiente={isPending}
+                  />
+                )}
                 {porTipo(tipo).map(c => (
                   <div key={c.id} className={`bg-zinc-950 border border-zinc-900 rounded-lg px-4 py-3 flex items-center justify-between gap-3 ${c.parent_id ? 'ml-6' : ''} ${!c.activo ? 'opacity-50' : ''}`}>
                     <div className="min-w-0">
@@ -167,7 +178,7 @@ export default function AdminCategoriasPage() {
                       <button onClick={() => handleToggle(c.id)} disabled={isPending}
                         className={`text-[11px] font-bold px-3 py-1.5 rounded-md cursor-pointer ${c.activo ? 'text-amber-400 bg-amber-400/10' : 'text-emerald-400 bg-emerald-400/10'}`}>
                         {c.activo ? 'Ocultar' : 'Mostrar'}</button>
-                      <button onClick={() => handleDelete(c.id)} disabled={isPending}
+                      <button onClick={() => setABorrar(c.id)} disabled={isPending}
                         className="text-[11px] font-bold text-red-400 hover:text-red-300 bg-red-500/10 px-3 py-1.5 rounded-md cursor-pointer">Borrar</button>
                     </div>
                   </div>

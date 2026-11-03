@@ -4,6 +4,7 @@ import React, { useState, useTransition, useCallback, useEffect } from 'react'
 import { useLocal } from '@/components/local/LocalProvider'
 import { adminGetTurnos, adminConfirmarTurno, adminConfirmarSena, adminCancelarTurno, adminMarcarNoVino } from '@/app/actions/admin'
 import { ahoraEnZona } from '@/lib/horarios'
+import { Confirmacion } from '@/components/ui/Confirmacion'
 import { AdminNuevoTurnoModal } from '@/components/admin/AdminNuevoTurnoModal'
 import { Spinner } from '@/components/ui/Spinner'
 import { formatPrecio } from '@/lib/format'
@@ -88,17 +89,17 @@ export default function AdminTurnosPage() {
     })
   }
 
+  const [aCancelar, setACancelar] = useState<string | null>(null)
   const handleCancelar = (turnoId: string) => {
-    if (confirm('¿Estás seguro de que deseas cancelar este turno?')) {
-      startTransition(async () => {
-        const res = await adminCancelarTurno(turnoId, local.slug)
-        if (res.error) {
-          alert(res.error)
-        } else {
-          await loadTurnos()
-        }
-      })
-    }
+    startTransition(async () => {
+      const res = await adminCancelarTurno(turnoId, local.slug)
+      setACancelar(null)
+      if (res.error) {
+        alert(res.error)
+      } else {
+        await loadTurnos()
+      }
+    })
   }
 
   // "No vino" (Fase 7): en un turno que ya pasó y no se canceló. Para los reportes.
@@ -203,7 +204,7 @@ export default function AdminTurnosPage() {
             {turnos.map((turno) => (
               <div
                 key={turno.id}
-                className="bg-zinc-950 border border-zinc-900 rounded-xl p-5 shadow-lg flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4"
+                className="bg-zinc-950 border border-zinc-900 rounded-xl p-5 shadow-lg flex flex-col lg:flex-row lg:flex-wrap justify-between items-start lg:items-center gap-4"
               >
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2 flex-wrap">
@@ -309,9 +310,9 @@ export default function AdminTurnosPage() {
                       </button>
                     )}
 
-                    {(turno.estado === 'pendiente' || turno.estado === 'confirmado') && (
+                    {(turno.estado === 'pendiente' || turno.estado === 'confirmado') && aCancelar !== turno.id && (
                       <button
-                        onClick={() => handleCancelar(turno.id)}
+                        onClick={() => setACancelar(turno.id)}
                         disabled={isPending}
                         className="flex-1 sm:flex-none text-xs font-bold text-red-400 hover:text-red-300 bg-red-400/10 hover:bg-red-400/20 px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2 cursor-pointer"
                       >
@@ -321,6 +322,17 @@ export default function AdminTurnosPage() {
                     )}
                   </div>
                 </div>
+                {aCancelar === turno.id && (
+                  <Confirmacion
+                    pregunta="¿Cancelar este turno?"
+                    detalle={`El cliente lo va a ver cancelado en "Mis turnos", y el ${formatFecha(turno.fecha)} a las ${formatHora(turno.hora)} queda libre.`}
+                    si="Sí, cancelar"
+                    no="No, lo mantengo"
+                    onSi={() => handleCancelar(turno.id)}
+                    onNo={() => setACancelar(null)}
+                    pendiente={isPending}
+                  />
+                )}
               </div>
             ))}
           </div>

@@ -161,6 +161,17 @@ try {
   await pc.goto(`${APP}/${SLUG}/admin/dashboard`, { waitUntil: 'networkidle' })
   const enSuPanel = await pc.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--color-amber-400').trim())
   anotar(enSuPanel.includes('163.223'), 'y su panel también', enSuPanel)
+  // El menú del panel en Premium (13 secciones), en una compu de 1366: una sola línea.
+  const pcCompu = await nuevaPagina(false)
+  await pcCompu.setViewportSize({ width: 1366, height: 768 })
+  await entrar(pcCompu, dueno, SLUG)
+  await pcCompu.goto(`${APP}/${SLUG}/admin/dashboard`, { waitUntil: 'networkidle' })
+  const menu = await pcCompu.evaluate(() => {
+    const links = [...document.querySelectorAll('header nav a')].filter((a) => a.offsetParent !== null)
+    return { cantidad: links.length, filas: new Set(links.map((a) => Math.round(a.getBoundingClientRect().top))).size }
+  })
+  anotar(menu.cantidad === 13 && menu.filas === 1, 'en una compu de 1366, las 13 secciones del menú entran en una sola línea', JSON.stringify(menu))
+  await pcCompu.screenshot({ path: resolve(CAPTURAS, 'marca-panel-compu.png') })
 
   // ─── 3. Los demás locales, iguales ────────────────────────────────────────
   titulo('3. Los demás locales siguen igual')

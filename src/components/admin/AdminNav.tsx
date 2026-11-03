@@ -60,7 +60,10 @@ export function AdminNav({ permisos }: { permisos: { administra: boolean; operaP
 
   // Desktop: nav en línea (con wrap por si hay muchos ítems en pantallas medianas).
   const desktopNav = (
-    <nav className="hidden md:flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm font-semibold text-zinc-400">
+    // En compu va en su propia fila, abajo del logo y la cuenta (order-last + basis-full
+    // dentro del encabezado, que hace wrap): con todo el ancho entran las 13 secciones
+    // del plan Premium sin partirse en dos líneas.
+    <nav className="hidden md:flex md:order-last md:basis-full flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm font-semibold text-zinc-400 md:border-t md:border-zinc-900 md:pt-3">
       {LINKS.map((l) => (
         <Link
           key={l.href}

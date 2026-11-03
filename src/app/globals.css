@@ -79,24 +79,26 @@ body {
 
 /* Texto con degradé madera, para titulares destacados. */
 .text-wood-gradient {
-  background: linear-gradient(180deg, #e7d2b4 0%, #c79c64 55%, #976c3c 100%);
+  background: linear-gradient(180deg, var(--color-amber-200) 0%, var(--color-amber-400) 55%, var(--color-amber-600) 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
 
 /* ── Texturas y superficies ──────────────────────────────────────── */
+/* Los tonos salen del acento del local (var(--color-amber-*), 0017): con madera
+   dan exactamente los de siempre; con otro acento, la textura lo acompaña. */
 
 /* Textura de madera sutil: vetas cálidas casi imperceptibles sobre el
    fondo casi-negro. Pensada como fondo de sección. */
 .bg-wood-texture {
   background-color: #0a0a0a;
   background-image:
-    radial-gradient(120% 80% at 50% 0%, rgba(199, 156, 100, 0.06), transparent 60%),
+    radial-gradient(120% 80% at 50% 0%, color-mix(in srgb, var(--color-amber-400) 6%, transparent), transparent 60%),
     repeating-linear-gradient(
       90deg,
-      rgba(199, 156, 100, 0.022) 0px,
-      rgba(199, 156, 100, 0.022) 1px,
+      color-mix(in srgb, var(--color-amber-400) 2.2%, transparent) 0px,
+      color-mix(in srgb, var(--color-amber-400) 2.2%, transparent) 1px,
       transparent 1px,
       transparent 4px
     ),
@@ -126,7 +128,7 @@ body {
 
 /* Brillo metálico para bordes de cards premium en hover. */
 .ring-wood\/30 {
-  --tw-ring-color: rgba(199, 156, 100, 0.3);
+  --tw-ring-color: color-mix(in srgb, var(--color-amber-400) 30%, transparent);
 }
 
 /* ── Bastón de barbero, muy tenue ────────────────────────────────── */
@@ -135,8 +137,8 @@ body {
 .bg-barber-pole {
   background-image: repeating-linear-gradient(
     -45deg,
-    rgba(199, 156, 100, 0.11) 0px,
-    rgba(199, 156, 100, 0.11) 16px,
+    color-mix(in srgb, var(--color-amber-400) 11%, transparent) 0px,
+    color-mix(in srgb, var(--color-amber-400) 11%, transparent) 16px,
     transparent 16px,
     transparent 32px,
     rgba(244, 241, 236, 0.06) 32px,
@@ -152,7 +154,7 @@ body {
 .bg-hero-glow {
   background-image: radial-gradient(
     55% 45% at 50% 38%,
-    rgba(199, 156, 100, 0.14),
+    color-mix(in srgb, var(--color-amber-400) 14%, transparent),
     transparent 70%
   );
 }

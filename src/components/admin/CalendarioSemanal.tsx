@@ -5,6 +5,7 @@ import { adminGetCalendario, adminConfirmarTurno, adminCancelarTurno } from '@/a
 import { Spinner } from '@/components/ui/Spinner'
 import { useLocal } from '@/components/local/LocalProvider'
 import { formatPrecio } from '@/lib/format'
+import { Confirmacion } from '@/components/ui/Confirmacion'
 
 // ─── Constantes del grid ─────────────────────────────────────────────────────
 const HORA_INICIO = 9
@@ -201,8 +202,9 @@ export function CalendarioSemanal() {
     })
   }
 
+  const [aCancelar, setACancelar] = useState<string | null>(null)
   const handleCancelar = (id: string) => {
-    if (!confirm('¿Cancelar este turno?')) return
+    setACancelar(null)
     startTransition(async () => {
       const res = await adminCancelarTurno(id, local.slug)
       if (!res.error) {
@@ -502,7 +504,18 @@ export function CalendarioSemanal() {
                 </div>
 
                 {/* Acciones */}
-                {(selected.estado === 'pendiente' || selected.estado === 'confirmado') && (
+                {(selected.estado === 'pendiente' || selected.estado === 'confirmado') && aCancelar === selected.id && (
+                  <Confirmacion
+                    pregunta="¿Cancelar este turno?"
+                    detalle="El cliente lo va a ver cancelado, y el horario queda libre."
+                    si="Sí, cancelar"
+                    no="No, lo mantengo"
+                    onSi={() => handleCancelar(selected.id)}
+                    onNo={() => setACancelar(null)}
+                    pendiente={isPending}
+                  />
+                )}
+                {(selected.estado === 'pendiente' || selected.estado === 'confirmado') && aCancelar !== selected.id && (
                   <div className="flex gap-2">
                     {selected.estado === 'pendiente' && (
                       <button
@@ -515,7 +528,7 @@ export function CalendarioSemanal() {
                       </button>
                     )}
                     <button
-                      onClick={() => handleCancelar(selected.id)}
+                      onClick={() => setACancelar(selected.id)}
                       disabled={isPending}
                       className="flex-1 flex items-center justify-center gap-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 text-xs font-bold py-2.5 rounded-xl transition-colors cursor-pointer disabled:opacity-50"
                     >
