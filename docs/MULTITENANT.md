@@ -94,9 +94,12 @@ vivir ahí también: lo que hay hoy pasa a ser Roble, el local de demostración.
 - Los scripts que escriben en la base se niegan a tocar producción salvo que se
   lo pidas a propósito con `--produccion`.
 
-### 4. `/` sola lleva a `/roble`
+### 4. `/` sola lleva a `/roble` (hasta el 04/11/2026)
 Mientras no exista la página pública del producto (fuera de alcance por ahora),
 la dirección sola lleva al local de demostración.
+- **Desde el 04/11/2026, `/` es la página de Retoque** (`src/app/(producto)/`), y
+  Roble es su demo en vivo. Los links viejos de la demo (`/reservar`, `/tienda`...)
+  siguen yendo a Roble.
 
 ### 5. Las demos aceptan reservas "de muestra"
 En un local en estado **demo**, el flujo de reserva funciona completo para

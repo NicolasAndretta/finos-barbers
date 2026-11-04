@@ -47,3 +47,12 @@ export const PRODUCTO = {
 export function esProvisorio(valor: string): boolean {
   return valor.startsWith('[')
 }
+
+/** El mensaje con el que arranca la charla por WhatsApp desde la página. */
+export const MENSAJE_MUESTRA = `Hola! Quiero que me armen una muestra de ${PRODUCTO.nombre} para mi barbería.`
+
+/** El link al WhatsApp del producto, o null mientras no haya número cargado. */
+export function whatsappProducto(mensaje: string = MENSAJE_MUESTRA): string | null {
+  const numero = PRODUCTO.whatsapp.replace(/\D/g, '')
+  return numero ? `https://wa.me/${numero}?text=${encodeURIComponent(mensaje)}` : null
+}
