@@ -10,7 +10,7 @@
  * no como componente.
  */
 
-/** "Roble Barbería" → "RB"; "Turnos" → "T". */
+/** "Roble Barbería" → "RB"; "Retoque" → "R". */
 export function iniciales(nombre: string): string {
   return nombre
     .split(/\s+/)

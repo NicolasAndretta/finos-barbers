@@ -8,8 +8,8 @@
 > nada se prueba ahí. El producto va a vivir en ese mismo proyecto (ver
 > decisión 3).
 >
-> El producto todavía no tiene nombre (ver decisión 7). Roble es la barbería
-> ficticia que se usa para mostrarlo.
+> El producto se llama **Retoque** (lo eligió Nico el 04/11/2026, ver decisión
+> 7). Roble es la barbería ficticia que se usa para mostrarlo.
 
 ---
 
@@ -118,6 +118,9 @@ muestran la marca de la barbería, no la del producto.
 - Hace falta antes de crear la app de Mercado Pago, el dominio y la página del
   producto. **Para la Fase 3 no** (decidido el 22/10): mientras no haya nombre se
   usa uno provisorio en ese mismo archivo, y cambiarlo después es una línea.
+- **Decidido el 04/11/2026: Retoque** (`src/lib/producto.ts`). El provisorio era
+  "Turnos". Candidatos y descartes: `marca/identidad/nombre-producto-turnos.md`
+  en el universo.
 - El repo (`finos-barbers`) y los proyectos de Supabase se renombran después,
   junto con el sitio propio del producto: renombrar el repo puede afectar el
   deploy de Hostinger y conviene hacer todo de una vez.

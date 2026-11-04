@@ -2,6 +2,11 @@
 
 Sistema de gestión integral para barbería desarrollado como proyecto portfolio full-stack. Cubre el ciclo completo de operaciones: reservas online, agenda visual, tienda con pagos reales y panel financiero con gráficos.
 
+> **El producto se llama Retoque** (desde el 04/11/2026): una plataforma de turnos donde
+> conviven muchos locales, cada uno con su página, sus turnos y su marca. Su página está en
+> `/`, y Roble (`/roble`) es su local de demostración. El nombre vive en
+> `src/lib/producto.ts`; la historia, en `docs/MULTITENANT.md`.
+
 > **Es una demo, y la barbería no existe.** "Roble Barbería" es una marca ficticia
 > creada para mostrar el sistema sin usar la identidad de ningún negocio real: el
 > nombre, la dirección, el mail, las redes y el alias de cobro son inventados, el logo

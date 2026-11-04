@@ -18,6 +18,7 @@
 import { Resend } from 'resend'
 import type { LocalPublico } from '@/lib/local-datos'
 import { conMayuscula } from '@/lib/rubros'
+import { PRODUCTO } from '@/lib/producto'
 
 // ─── Variables de entorno ────────────────────────────────────────────────────
 
@@ -46,14 +47,15 @@ function motivoParaNoEnviar(datos: DatosTurno): string | null {
 
 /**
  * La dirección del remitente; el nombre que se ve es el del local.
- * ⚠️ Este dominio no existe: los envíos de verdad necesitan el dominio del
- * producto verificado en Resend (cuando tenga nombre), y cambiarlo acá.
+ * ⚠️ Este dominio no existe: los envíos de verdad necesitan el dominio de
+ * Retoque (retoque.com.ar, todavía sin comprar) verificado en Resend, y
+ * cambiarlo acá.
  */
 const DIRECCION_REMITENTE = 'turnos@roblebarberia.com.ar'
 
 /** "El Tano" <turnos@...>, sin los caracteres que romperían el encabezado del mail. */
 function remitente(negocio: string): string {
-  const nombre = negocio.replace(/["<>\r\n]/g, '').trim() || 'Turnos'
+  const nombre = negocio.replace(/["<>\r\n]/g, '').trim() || PRODUCTO.nombre
   return `${nombre} <${DIRECCION_REMITENTE}>`
 }
 
