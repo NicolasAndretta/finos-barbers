@@ -1,8 +1,8 @@
 /**
  * src/app/(producto)/layout.tsx — las páginas de Retoque, el producto.
  *
- * La página del producto (/) y, más adelante, sus páginas legales comparten
- * la cabecera y el pie. No son de ningún local: el logo dibuja el nombre del
+ * La página del producto (/) y sus páginas legales (/terminos, /privacidad,
+ * /arrepentimiento y /baja) comparten la cabecera y el pie. No son de ningún local: el logo dibuja el nombre del
  * producto (src/lib/producto.ts).
  *
  * El llamado principal depende de si hay WhatsApp del producto: sin número,
@@ -14,6 +14,7 @@ import Link from 'next/link'
 import { Logo } from '@/components/ui/Logo'
 import { PRODUCTO, whatsappProducto } from '@/lib/producto'
 import { rutaLocal } from '@/lib/local-datos'
+import { LINKS_LEGALES } from '@/components/producto/Legal'
 
 const DESCRIPCION =
   'La página de tu barbería, con turnos online, seña y reseñas de clientes que fueron de verdad. ' +
@@ -95,7 +96,7 @@ export default function ProductoLayout({ children }: { children: React.ReactNode
         <div className="mx-auto max-w-6xl px-4 sm:px-6 py-12 flex flex-col gap-8">
           <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-6">
             <div className="flex flex-col gap-3 max-w-sm">
-              <Logo size={30} />
+              <Logo size={30} className="self-start" />
               <p className="text-zinc-400 text-sm leading-relaxed">
                 Turnos online y la página propia de tu barbería. Hecho en Buenos Aires.
               </p>
@@ -112,9 +113,31 @@ export default function ProductoLayout({ children }: { children: React.ReactNode
               )}
             </nav>
           </div>
-          <p className="text-zinc-600 text-xs border-t border-white/5 pt-6">
-            © {new Date().getFullYear()} {PRODUCTO.nombre}
-          </p>
+          {/* Los dos botones de la Disposición 954/2025: visibles y con su nombre. */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Link
+              href="/arrepentimiento"
+              className="inline-flex items-center justify-center rounded-lg border border-white/20 bg-white/5 hover:bg-white/10 px-4 py-2.5 text-sm font-semibold text-white transition-colors"
+            >
+              Botón de arrepentimiento
+            </Link>
+            <Link
+              href="/baja"
+              className="inline-flex items-center justify-center rounded-lg border border-white/20 bg-white/5 hover:bg-white/10 px-4 py-2.5 text-sm font-semibold text-white transition-colors"
+            >
+              Botón de baja
+            </Link>
+          </div>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-t border-white/5 pt-6 text-xs">
+            <p className="text-zinc-600">© {new Date().getFullYear()} {PRODUCTO.nombre}</p>
+            <nav aria-label="Legales" className="flex flex-wrap gap-x-5 gap-y-2">
+              {LINKS_LEGALES.map((l) => (
+                <Link key={l.href} href={l.href} className="text-zinc-400 hover:text-white transition-colors">
+                  {l.texto}
+                </Link>
+              ))}
+            </nav>
+          </div>
         </div>
       </footer>
     </div>

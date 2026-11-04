@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Retoque: el reloj con el tilde">
+  <!-- Propuesta C: un reloj abierto (el turno) cerrado por un tilde (reservado). La más "app". -->
+  <rect width="512" height="512" rx="112" fill="#c79c64"/>
+  <path d="M352 150 A150 150 0 1 0 404 248" fill="none" stroke="#0a0a0a" stroke-width="34" stroke-linecap="round"/>
+  <path d="M190 262 L242 314 L392 164" fill="none" stroke="#0a0a0a" stroke-width="40" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

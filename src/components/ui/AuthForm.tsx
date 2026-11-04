@@ -3,6 +3,7 @@
 import React, { useActionState } from 'react'
 import Link from 'next/link'
 import { Spinner } from './Spinner'
+import { PRODUCTO } from '@/lib/producto'
 
 export type AuthFormState = {
   error?: string
@@ -113,6 +114,19 @@ export function AuthForm({ type, action, volver, local }: AuthFormProps) {
           {type === 'login' ? 'Crear cuenta' : 'Iniciar sesión'}
         </Link>
       </div>
+
+      {/* Lo legal de la plataforma (Retoque), para cualquier local. */}
+      <p className="mt-6 pt-5 border-t border-zinc-800 text-center text-xs text-zinc-500 leading-relaxed">
+        {type === 'register' ? `Al crear tu cuenta aceptás los ` : `${PRODUCTO.nombre}: `}
+        <Link href="/terminos" className="text-zinc-300 hover:text-white underline underline-offset-2">
+          {type === 'register' ? 'términos y condiciones' : 'Términos y condiciones'}
+        </Link>
+        {type === 'register' ? ' y la ' : ' · '}
+        <Link href="/privacidad" className="text-zinc-300 hover:text-white underline underline-offset-2">
+          {type === 'register' ? 'política de privacidad' : 'Política de privacidad'}
+        </Link>
+        {type === 'register' ? `.` : ''}
+      </p>
     </div>
   )
 }

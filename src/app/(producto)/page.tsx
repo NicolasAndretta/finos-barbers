@@ -281,12 +281,12 @@ export default async function PaginaDelProducto() {
               const anterior = planes[i - 1]
               const suma = LO_QUE_TRAE.filter((c) => plan[c.capacidad] && !(anterior && anterior[c.capacidad]))
               return (
-                <article key={plan.codigo} className="rounded-2xl bg-zinc-900/50 border border-white/10 p-6 sm:p-7 flex flex-col">
+                <article key={plan.codigo} className="rounded-2xl bg-zinc-900/50 border border-white/10 p-6 md:p-5 lg:p-7 flex flex-col">
                   <h3 className="text-xl font-extrabold text-white">{plan.nombre}</h3>
                   {PRODUCTO.mostrarPrecios && (
-                    <p className="mt-3 flex items-baseline gap-1.5">
-                      <span className="font-display text-4xl text-amber-400">u$s {plan.precioUsd}</span>
-                      <span className="text-zinc-500 text-sm">por mes</span>
+                    <p className="mt-3 flex flex-wrap items-baseline gap-x-1.5">
+                      <span className="font-display text-4xl md:text-3xl lg:text-4xl text-amber-400 whitespace-nowrap">u$s {plan.precioUsd}</span>
+                      <span className="text-zinc-500 text-sm whitespace-nowrap">por mes</span>
                     </p>
                   )}
                   <p className="text-sm text-zinc-300 font-semibold mt-4">{profesionales(plan)}</p>
@@ -362,7 +362,7 @@ export default async function PaginaDelProducto() {
               },
               {
                 p: '¿Puedo dar de baja cuando quiera?',
-                r: 'Sí. Lo pedís por el mismo medio por el que contrataste, o escribiéndonos.',
+                r: 'Sí. Lo pedís desde el «Botón de baja», al pie de esta página, por el mismo medio por el que contrataste o escribiéndonos.',
               },
             ].map((f) => (
               <details key={f.p} className="group rounded-2xl bg-zinc-950/60 border border-white/5 open:border-amber-400/25">

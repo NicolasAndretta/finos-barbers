@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Retoque: monograma en rombo">
+  <!-- Propuesta A: la R dentro del rombo del logo (el rombo del filete de abajo). Sigue al logo actual. -->
+  <rect width="512" height="512" rx="112" fill="#0a0a0a"/>
+  <rect x="106" y="106" width="300" height="300" rx="18" transform="rotate(45 256 256)" fill="none" stroke="#c79c64" stroke-width="14"/>
+  <g transform="translate(187 168) scale(0.73)" fill="#f4f1ec">
+    <path fill-rule="evenodd" d="M0 0H112A68 68 0 0 1 112 136H58V240H0Z M58 42H108A26 26 0 0 1 108 94H58Z"/>
+    <path d="M78 136H140L190 240H126Z"/>
+  </g>
+</svg>

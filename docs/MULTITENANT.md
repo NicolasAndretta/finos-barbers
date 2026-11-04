@@ -1808,3 +1808,50 @@ Lo anotado al hacer los pases:
   código, sin migración).
 
 Los planes no cambian: quedan como se aprobaron el 29/10, ni más ni menos (Nico, 03/11).
+
+### Retoque: el nombre, su página y lo legal, hecho en desarrollo (04/11/2026, de noche)
+
+Lo hizo un chat solo, con el plan `_contexto-global/plan-noche-04-11.md` del universo.
+
+**Qué cambió, en simple**
+
+| Antes | Ahora |
+|---|---|
+| El producto se llamaba "Turnos" (provisorio) | **Retoque** (lo eligió Nico el 04/11), en `src/lib/producto.ts` |
+| `/` llevaba a Roble | `/` es la página de Retoque, y Roble es su demo en vivo. Los links viejos de la demo siguen yendo a Roble |
+| No había términos ni privacidad | `/terminos`, `/privacidad`, `/arrepentimiento` y `/baja` (borradores, para revisar con un abogado) |
+| Un local se podía llamar `terminos` o `baja` | La base no lo deja (`0018`): esas direcciones son de la plataforma |
+
+**Las piezas**
+- `src/app/(producto)/`: un grupo de rutas con su cabecera y su pie, que no cambia ninguna
+  dirección. La página, las cuatro legales y la imagen para compartir (solo para estas páginas:
+  Roble no la hereda).
+- **Los planes de la página salen de la tabla `planes`** (`getPlanes`): qué trae cada uno se arma
+  comparando un plan con el anterior ("Todo lo del Básico, más:"). El precio se oculta con
+  `PRODUCTO.mostrarPrecios`.
+- **`PRODUCTO` suma** `mostrarPrecios`, `whatsapp` (vacío: sin número no hay botón de WhatsApp y el
+  llamado es "Mirá la demo") y los datos del titular, provisorios y entre corchetes (la página los
+  resalta).
+- **Los botones de arrepentimiento y de baja** (Disp. 954/2025, que reemplazó a las resoluciones
+  424/2020 y 316/2018): un formulario sin registrarse que da un código y arma el pedido para mandarlo
+  por mail o WhatsApp. No guarda nada en la base.
+- **Términos y privacidad** se linkean desde el pie, el login, el registro, "Nueva muestra" y
+  "Activar el local".
+- `docs/logo-retoque/`: tres propuestas de isotipo, sin enchufar.
+
+**Las pruebas**
+- **Nueva: `probar-producto`:** `/` es la página (título, imagen para compartir, el gancho, la demo);
+  Roble sigue igual y los links viejos van a Roble; los planes son los de la tabla (nombres, orden,
+  precio y límite); sin WhatsApp no hay botón; las cuatro páginas legales, desde el pie, el login y
+  el registro; los dos botones dan su código sin registrarse; los datos provisorios se ven
+  resaltados; la base frena los 4 nombres; sin scroll de costado en los 6 anchos.
+- **Contraprueba 1 (la app):** con `mostrarPrecios` cambiado sin volver a armar la app,
+  `probar-producto` marcó exactamente "sin precios". Restaurado.
+- **Contraprueba 2 (la base):** con un local ya llamado "baja", la `0018` se frenó con su mensaje y
+  no cambió nada.
+- **`npm run probar`: 15 pruebas, 690 controles, todo en verde.** `npm run lint`: 0 errores (las 6
+  advertencias viejas). `npm run build`: en verde.
+
+**Para Nico:** el pase es `docs/PASE-RETOQUE.md` (solo código; la `0018` es opcional). Ahí está lo
+que tenés que completar (el WhatsApp, los datos del titular, el remitente, la app de Mercado Pago) y
+lo que tiene que mirar un abogado.

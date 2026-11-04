@@ -38,6 +38,8 @@ export const PRODUCTO = {
     cuit: '[CUIT: en trámite]',
     domicilio: '[Domicilio legal]',
     mail: '[Mail de contacto de Retoque]',
+    /** Por mail o WhatsApp, de lunes a viernes y al menos 8 horas (Disp. 954/2025). */
+    horarioAtencion: '[Días y horario de atención]',
   },
   /** Fecha de la última versión de los términos y de la privacidad. */
   legalesActualizados: '4 de noviembre de 2026',

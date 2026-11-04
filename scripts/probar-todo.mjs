@@ -8,8 +8,8 @@
  * 1. Las de la base (siempre): verificar-locales, verificar-llave-servidor,
  *    probar-seguridad, probar-aislamiento y probar-matriz (la matriz completa).
  * 2. Las de navegador, si la app está levantada en http://127.0.0.1:3000
- *    (o APP_URL): reservas, locales, horarios, imágenes, panel del barbero y
- *    cobros. Cobros necesita la app levantada contra el Mercado Pago de
+ *    (o APP_URL): reservas, locales, horarios, imágenes, panel del barbero,
+ *    plataforma, planes, marca, la página del producto (04/11) y cobros. Cobros necesita la app levantada contra el Mercado Pago de
  *    mentira (ver arriba de probar-cobros.mjs); si no lo está, se avisa.
  *
  * Solo DESARROLLO: cada prueba arma sus datos y los borra al final. Termina con
@@ -22,7 +22,7 @@ const PROYECTO = resolve(import.meta.dirname, '..')
 const APP = (process.env.APP_URL || 'http://127.0.0.1:3000').replace(/\/+$/, '')
 
 const DE_LA_BASE = ['verificar-locales', 'verificar-llave-servidor', 'probar-seguridad', 'probar-aislamiento', 'probar-matriz']
-const DE_NAVEGADOR = ['probar-reservas', 'probar-locales', 'probar-horarios', 'probar-imagenes', 'probar-panel-barbero', 'probar-plataforma', 'probar-planes', 'probar-marca', 'probar-cobros']
+const DE_NAVEGADOR = ['probar-reservas', 'probar-locales', 'probar-horarios', 'probar-imagenes', 'probar-panel-barbero', 'probar-plataforma', 'probar-planes', 'probar-marca', 'probar-producto', 'probar-cobros']
 
 const appAnda = await fetch(`${APP}/roble`, { signal: AbortSignal.timeout(10_000) }).then((r) => r.ok).catch(() => false)
 

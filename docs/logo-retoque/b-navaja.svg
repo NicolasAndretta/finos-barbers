@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Retoque: la R con pierna de navaja">
+  <!-- Propuesta B: la pierna de la R es la hoja de una navaja, con su perno. Lo más "barbería". -->
+  <rect width="512" height="512" rx="112" fill="#0a0a0a"/>
+  <g transform="translate(150 126)">
+    <path fill="#f4f1ec" fill-rule="evenodd" d="M0 0H118A72 72 0 0 1 118 144H62V260H0Z M62 46H112A26 26 0 0 1 112 98H62Z"/>
+    <!-- la hoja: filo recto abajo, lomo curvo arriba -->
+    <path fill="#c79c64" d="M86 150 L226 238 Q240 248 232 262 L222 270 Q214 262 200 258 L72 176 Z"/>
+    <circle cx="82" cy="160" r="15" fill="#0a0a0a" stroke="#c79c64" stroke-width="8"/>
+  </g>
+</svg>

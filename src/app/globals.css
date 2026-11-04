@@ -218,3 +218,20 @@ body {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ── Texto legal (términos, privacidad) ──────────────────────────── */
+/* Las páginas de src/app/(producto): listas con viñeta y negritas en blanco. */
+.legal ul {
+  list-style: disc;
+  padding-left: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.legal li::marker {
+  color: var(--color-amber-400);
+}
+.legal strong {
+  color: #fff;
+  font-weight: 600;
+}

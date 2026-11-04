@@ -246,6 +246,12 @@ export function Activar({ slug, faltan, turnosDePrueba, planes, planActual }: { 
               ? `Se van a borrar ${turnosDePrueba} turno(s) de prueba, y los pedidos, la caja y las reseñas de prueba. No se puede deshacer.`
               : 'Se borra lo de prueba que haya (pedidos, caja, reseñas). No se puede deshacer.'}
           </p>
+          <p className="text-xs text-zinc-400">
+            Antes de activar, el dueño tiene que conocer los{' '}
+            <a href="/terminos" target="_blank" rel="noopener" className="text-zinc-200 underline underline-offset-2">términos y condiciones</a>{' '}
+            y la <a href="/privacidad" target="_blank" rel="noopener" className="text-zinc-200 underline underline-offset-2">política de privacidad</a>:
+            al activar, los acepta.
+          </p>
           <div className="flex flex-col sm:flex-row gap-2">
             <button
               type="button"
