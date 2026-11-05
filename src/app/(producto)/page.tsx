@@ -11,7 +11,8 @@
  *
  * Los planes se leen de la tabla `planes` (getPlanes): qué trae cada uno y su
  * precio no se escriben acá. El precio se puede ocultar con
- * PRODUCTO.mostrarPrecios.
+ * PRODUCTO.mostrarPrecios (oculto desde el 05/11/2026): en su lugar, la
+ * muestra de 30 días gratis.
  */
 
 import Link from 'next/link'
@@ -272,8 +273,15 @@ export default async function PaginaDelProducto() {
             <Etiqueta>Planes</Etiqueta>
             <h2 className="font-display text-3xl sm:text-4xl text-white leading-tight">Elegí según tu barbería</h2>
             <p className="text-zinc-400 mt-4 leading-relaxed">
-              La muestra se arma con todo, y el plan lo elegís cuando la activamos. Si después necesitás más, cambiás de
-              plan sin perder nada.
+              {PRODUCTO.mostrarPrecios ? (
+                'La muestra se arma con todo, y el plan lo elegís cuando la activamos.'
+              ) : (
+                <>
+                  Antes de elegir, te armamos la muestra con tu barbería y{' '}
+                  <span className="text-white font-semibold">la probás 30 días gratis.</span>
+                </>
+              )}{' '}
+              Si después necesitás más, cambiás de plan sin perder nada.
             </p>
           </div>
           <div className="grid md:grid-cols-3 gap-4 sm:gap-5 items-stretch">

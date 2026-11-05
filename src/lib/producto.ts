@@ -11,6 +11,8 @@
  */
 export const PRODUCTO = {
   nombre: 'Retoque',
+  /** La marca que hace Retoque (decidido el 05/11/2026): sale en el pie y en los términos. */
+  marca: 'andmar.studio',
   /**
    * A dónde redirigen los links viejos de la demo (/reservar, /tienda...), y
    * el local que la página del producto muestra como demo en vivo.
@@ -19,30 +21,38 @@ export const PRODUCTO = {
   /**
    * La página del producto muestra el precio de cada plan. El precio todavía
    * es una hipótesis: con `false` se ven los planes y lo que trae cada uno,
-   * sin el precio.
+   * sin el precio, y en su lugar la muestra gratis.
+   *
+   * Apagado el 05/11/2026 (Nico): el precio sale de la prueba con las primeras
+   * barberías, y probablemente en pesos.
    */
-  mostrarPrecios: true,
+  mostrarPrecios: false,
   /**
    * El WhatsApp del producto, con código de país y sin el "+" ni espacios
    * (ej.: '5491122334455'). Vacío: la página no muestra el botón de contacto
-   * y el llamado principal es "Mirá la demo". Lo carga Nico.
+   * y el llamado principal es "Mirá la demo". Es el de andmar (05/11/2026).
    */
-  whatsapp: '',
+  whatsapp: '5491157641147',
   /**
    * Quién presta el servicio, para los términos y la privacidad. Un valor
    * entre corchetes es PROVISORIO: la página lo muestra resaltado para que no
-   * pase desapercibido. Lo completa Nico (docs/PASE-RETOQUE.md).
+   * pase desapercibido. Uno vacío no se muestra.
    */
   titular: {
-    nombre: '[Nombre y apellido del titular]',
-    cuit: '[CUIT: en trámite]',
-    domicilio: '[Domicilio legal]',
-    mail: '[Mail de contacto de Retoque]',
+    nombre: 'Nicolás Germán Andretta',
+    cuit: '20-44789018-7',
+    /**
+     * Vacío a propósito (05/11/2026): va el domicilio fiscal el día que se
+     * saque el monotributo, antes del primer cobro. La Res. 270/2020
+     * (comercio electrónico) pide un domicilio físico para vender.
+     */
+    domicilio: '',
+    mail: 'studioandmar@gmail.com',
     /** Por mail o WhatsApp, de lunes a viernes y al menos 8 horas (Disp. 954/2025). */
-    horarioAtencion: '[Días y horario de atención]',
+    horarioAtencion: 'De lunes a viernes, de 14 a 22, por WhatsApp y por mail',
   },
   /** Fecha de la última versión de los términos y de la privacidad. */
-  legalesActualizados: '4 de noviembre de 2026',
+  legalesActualizados: '5 de noviembre de 2026',
 } as const
 
 /** Un dato del titular que todavía no se completó (va entre corchetes). */

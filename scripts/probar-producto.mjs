@@ -59,9 +59,12 @@ try {
 // Lo que dice src/lib/producto.ts (la prueba sigue a lo que cargue Nico).
 const fuente = readFileSync(resolve(PROYECTO, 'src/lib/producto.ts'), 'utf8')
 const NOMBRE = fuente.match(/nombre: '([^']+)'/)[1]
+const MARCA = fuente.match(/marca: '([^']+)'/)?.[1] ?? null
 const MOSTRAR_PRECIOS = /mostrarPrecios: true/.test(fuente)
 const HAY_WHATSAPP = /whatsapp: '\+?\d/.test(fuente)
 const HAY_PROVISORIOS = /: '\[/.test(fuente)
+const HAY_DOMICILIO = !/domicilio: ''/.test(fuente)
+const HAY_MAIL = /mail: '[^'[]/.test(fuente)
 
 const db = new pg.Client({ connectionString: env.SUPABASE_DB_URL })
 try { await db.connect() } catch {
@@ -118,6 +121,10 @@ try {
     MOSTRAR_PRECIOS ? 'cada uno con el precio de la tabla' : 'sin precios (PRODUCTO.mostrarPrecios apagado)')
   anotar(planes.every((pl, i) => textos[i]?.includes(pl.max_profesionales === null ? 'sin límite' : `Hasta ${pl.max_profesionales} profesionales`)),
     'y con su límite de profesionales')
+  if (!MOSTRAR_PRECIOS) {
+    anotar((await p.locator('#planes').getByText('la probás 30 días gratis', { exact: false }).count()) > 0,
+      'en lugar del precio, la muestra de 30 días gratis')
+  }
 
   // ─── 3. El llamado según el WhatsApp ────────────────────────────────────
   titulo('3. El llamado principal, según haya WhatsApp del producto')
@@ -154,6 +161,13 @@ try {
   await t.goto(`${APP}/terminos`, { waitUntil: 'networkidle' })
   anotar(HAY_PROVISORIOS ? (await t.locator('mark').count()) > 0 : (await t.locator('mark').count()) === 0,
     HAY_PROVISORIOS ? 'los datos provisorios del titular se ven resaltados' : 'no queda ningún dato provisorio')
+  const textoTerminos = await t.locator('article').innerText()
+  anotar(textoTerminos.includes('Domicilio:') === HAY_DOMICILIO,
+    HAY_DOMICILIO ? 'los términos muestran el domicilio' : 'sin domicilio cargado, los términos no muestran la línea vacía')
+  if (MARCA) {
+    anotar(textoTerminos.includes(`es un producto de ${MARCA}`), `los términos dicen que ${NOMBRE} es de ${MARCA}`)
+    anotar((await p.locator('footer').innerText()).includes(`${NOMBRE} es un producto de ${MARCA}`), `el pie dice "${NOMBRE} es un producto de ${MARCA}"`)
+  }
   await t.context().close()
 
   for (const [ruta, prefijo] of [['/baja', 'BAJ'], ['/arrepentimiento', 'ARR']]) {
@@ -168,6 +182,8 @@ try {
     const contenido = await estado.innerText()
     anotar(new RegExp(`RT-${prefijo}-\\d{6}-[A-Z0-9]{4}`).test(contenido) && contenido.includes('Carla Prueba') && contenido.includes('Barbería de Prueba'),
       `${ruta}: sin registrarse, da el código de la solicitud con sus datos`)
+    if (HAY_MAIL) anotar((await estado.locator('a[href^="mailto:"]').count()) > 0, `${ruta}: el pedido se puede mandar por mail`)
+    if (HAY_WHATSAPP) anotar((await estado.locator('a[href^="https://wa.me/"]').count()) > 0, `${ruta}: y por WhatsApp`)
     if (ruta === '/baja') await pb.screenshot({ path: resolve(CAPTURAS, 'producto-baja-celu.png'), fullPage: true })
     await pb.context().close()
   }

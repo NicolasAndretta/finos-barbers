@@ -27,7 +27,7 @@ export default function Terminos() {
       bajada={`Las reglas para usar ${n}, contadas en simple. Si algo no queda claro, escribinos antes de contratar.`}
     >
       <Seccion titulo="1. Quién presta el servicio">
-        <p>{n} es un servicio de:</p>
+        <p>{n} es un producto de {PRODUCTO.marca}. El servicio lo presta:</p>
         <DatosDelTitular />
       </Seccion>
 

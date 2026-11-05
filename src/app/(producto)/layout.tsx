@@ -100,6 +100,9 @@ export default function ProductoLayout({ children }: { children: React.ReactNode
               <p className="text-zinc-400 text-sm leading-relaxed">
                 Turnos online y la página propia de tu barbería. Hecho en Buenos Aires.
               </p>
+              <p className="text-zinc-500 text-sm">
+                {PRODUCTO.nombre} es un producto de <span className="text-zinc-300 font-semibold">{PRODUCTO.marca}</span>.
+              </p>
             </div>
             <nav aria-label="Pie" className="flex flex-col gap-2.5 text-sm">
               <Link href={demo} className="text-zinc-300 hover:text-white transition-colors">La demo: Roble</Link>

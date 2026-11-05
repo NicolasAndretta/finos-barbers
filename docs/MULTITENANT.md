@@ -1855,3 +1855,18 @@ Lo hizo un chat solo, con el plan `_contexto-global/plan-noche-04-11.md` del uni
 **Para Nico:** el pase es `docs/PASE-RETOQUE.md` (solo código; la `0018` es opcional). Ahí está lo
 que tenés que completar (el WhatsApp, los datos del titular, el remitente, la app de Mercado Pago) y
 lo que tiene que mirar un abogado.
+
+### Retoque: los datos que faltaban, cargados con Nico (05/11/2026)
+
+| Antes | Ahora |
+|---|---|
+| Sin WhatsApp: el llamado era "Mirá la demo" | El de andmar: "Pedí tu muestra" y "Quiero el…" en cada plan |
+| El titular, entre corchetes | Nicolás Germán Andretta · CUIT · `studioandmar@gmail.com` · de lunes a viernes, de 14 a 22 |
+| No se decía de quién era | **"Retoque es un producto de andmar.studio"**, en el pie y en los términos (`PRODUCTO.marca`) |
+| Los planes con u$s 19, 35 y 59 | **Sin precios** (`mostrarPrecios: false`): en su lugar, *"te armamos la muestra con tu barbería y la probás 30 días gratis"* |
+| El domicilio, entre corchetes | **Vacío a propósito**, y la línea no se muestra: va el fiscal con el monotributo, antes del primer cobro (Res. 270/2020) |
+
+- Los botones de arrepentimiento y de baja ya tienen a dónde mandar el pedido: mail y WhatsApp.
+- `probar-producto` sigue a lo que diga `producto.ts`: 49 controles (eran 42).
+- **`npm run probar`: 15 pruebas, 697 controles, todo en verde.** `npm run lint`: 0 errores.
+  Capturas en los 6 anchos, en Chromium y WebKit, sin scroll de costado.

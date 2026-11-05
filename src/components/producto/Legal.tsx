@@ -4,7 +4,8 @@
  *
  * Los datos del titular salen de PRODUCTO.titular. Mientras uno sea
  * provisorio (va entre corchetes), se ve resaltado para que no pase
- * desapercibido: lo completa Nico (docs/PASE-RETOQUE.md).
+ * desapercibido: lo completa Nico (docs/PASE-RETOQUE.md). Uno vacío (hoy, el
+ * domicilio) no se muestra.
  */
 
 import Link from 'next/link'
@@ -38,7 +39,7 @@ export function DatosDelTitular() {
     <ul className="flex flex-col gap-1.5">
       <li>Titular: <Dato valor={t.nombre} /></li>
       <li>CUIT: <Dato valor={t.cuit} /></li>
-      <li>Domicilio: <Dato valor={t.domicilio} /></li>
+      {t.domicilio && <li>Domicilio: <Dato valor={t.domicilio} /></li>}
       <li>Mail: <MailDeContacto /></li>
       <li>Atención: <Dato valor={t.horarioAtencion} /></li>
     </ul>
